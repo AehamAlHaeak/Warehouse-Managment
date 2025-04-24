@@ -14,6 +14,9 @@ return new class extends Migration
         Schema::create('transfers', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
+            $table->morphs("sourceable");
+            $table->morphs("destinationable");
+
         });
     }
 

@@ -6,18 +6,17 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
+    /*
      * Run the migrations.
      */
     public function up(): void
     {
-        Schema::create('distribution_center__product', function (Blueprint $table) {
+        Schema::create('warehouse__product', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
-            $table->timestamps();
-            $table->unsignedBigInteger("distribution_center_id");
+            $table->unsignedBigInteger("warehouse_id");
             $table->unsignedBigInteger("product_id");
-            $table->foreign("distribution_center_id")->references("id")->on("distribution_centers");
+            $table->foreign("warehouse_id")->references("id")->on("warehouses");
             $table->foreign("product_id")->references("id")->on("products");
             $table->double("max_load");
             $table->double("actual_load");
@@ -26,6 +25,7 @@ return new class extends Migration
             $table->double("variance");
             //n is a unit in company is the import cycle time here is a week
             //in distrebution_center is a day 
+            
         });
     }
 
@@ -34,6 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('distribution_center__product');
+        Schema::dropIfExists('warehouse__product');
     }
 };

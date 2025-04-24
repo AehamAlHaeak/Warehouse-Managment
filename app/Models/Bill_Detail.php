@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
-class distribution_center_Bill extends Pivot
+class Bill_Detail extends Pivot
 {
     //
     protected $guarded;

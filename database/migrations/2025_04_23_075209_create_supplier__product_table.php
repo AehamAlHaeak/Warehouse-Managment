@@ -14,6 +14,15 @@ return new class extends Migration
         Schema::create('supplier__product', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
+            $table->unsignedBigInteger("supplier_id");
+            $table->unsignedBigInteger("product_id");
+            $table->foreign("supplier_id")->references("id")->on("suppliers");
+            $table->foreign("product_id")->references("id")->on("products");
+            $table->double("max_load");
+            $table->double("unit_price");
+            $table->double("max_delivery_time_by_days");
+            
+            
         });
     }
 

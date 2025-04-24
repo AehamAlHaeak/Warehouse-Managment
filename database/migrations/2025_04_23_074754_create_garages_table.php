@@ -14,6 +14,12 @@ return new class extends Migration
         Schema::create('garages', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
+            $table->enum("type",["big","medium"]);
+            $table->morphs("existable");//existable_type,existable_id
+            $table->unique(['existable_id']);
+            $table->bigInteger("max_capacity");
+            /*we willnot add number of the vehicles to the garage we will take it
+             from the realtions with the vehicles*/
         });
     }
 

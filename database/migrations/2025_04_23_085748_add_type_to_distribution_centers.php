@@ -11,9 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('bill__vehicle', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+        Schema::table('distribution_centers', function (Blueprint $table) {
+           
         });
     }
 
@@ -22,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('bill__vehicle');
+        Schema::table('distribution_centers', function (Blueprint $table) {
+            //
+        });
     }
 };
