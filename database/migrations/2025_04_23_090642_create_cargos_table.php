@@ -14,6 +14,10 @@ return new class extends Migration
         Schema::create('cargos', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
+            $table->unsignedBigInteger("type_id");
+            $table->foreign("type_id")->references("id")->on("types");
+            $table->unsignedBigInteger("vehicle_id");
+            $table->foreign("vehicle_id")->references("id")->on("vehicles");
         });
     }
 

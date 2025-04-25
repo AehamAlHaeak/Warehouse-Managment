@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('distribution_center__product', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
-            $table->timestamps();
             $table->unsignedBigInteger("distribution_center_id");
             $table->unsignedBigInteger("product_id");
             $table->foreign("distribution_center_id")->references("id")->on("distribution_centers");
