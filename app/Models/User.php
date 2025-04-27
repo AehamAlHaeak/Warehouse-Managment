@@ -41,4 +41,12 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    public function favoriteProduct(){
+       return $this->belongsToMany(product::class,'favorites');
+    }
+
+
+
+
 }

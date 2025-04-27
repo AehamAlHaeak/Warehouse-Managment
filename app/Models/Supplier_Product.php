@@ -8,4 +8,8 @@ class Supplier_Product extends Pivot
 {
     //
     protected $guarded;
+
+    public function productSupplier(){
+        return $this->belongsToMany(Supplier::class,'supplier__product');
+    }
 }

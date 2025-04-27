@@ -9,4 +9,9 @@ class Cargo extends Model
 {
     use HasFactory;
     protected $guarded;
+
+    public function cargosVehicle(){
+        return $this->hasOne(Vehicle::class);
+    }
+
 }
