@@ -23,9 +23,9 @@ return new class extends Migration
             $table->double("salary");
             $table->date("birth_day");
             $table->string("country");
-            $table->string("start_time");
+            $table->time("start_time");
             $table->double("work_hours");
-            $table->morphs("workable");//workable_type  workable_id
+            $table->nullableMorphs('workable');//workable_type  workable_id
         });
     }
 
