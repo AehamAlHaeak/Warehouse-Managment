@@ -9,4 +9,8 @@ class Employe extends Model
 {
     use HasFactory;
     protected $guarded;
+
+    public function specialization(){
+        return $this->hasOne(Specialization::class);
+    }
 }

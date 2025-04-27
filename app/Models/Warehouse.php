@@ -9,4 +9,14 @@ class Warehouse extends Model
 {
     use HasFactory;
     protected $guarded;
+
+    public function wareHouseProduct(){
+        return $this->belongsToMany(product::class,'warehouse__product');
+    }
+
+    public function wareHouseType(){
+        return $this->hasOne(type::class);
+    }
+
+
 }

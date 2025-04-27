@@ -13,4 +13,21 @@ class Vehicle extends Model
     public function bill(){
         return $this->hasMany(Bill::class);
     }
+
+    public function vehicleTransfer(){
+        return $this->belongsToMany(Transfer::class,'transfer__vehicle');
+    }
+
+    public function vehicleProduct(){
+        return $this->belongsToMany(Product::class,'transfer__vehicle');
+    }
+
+    public function vehicleType(){
+        return $this->hasOne(type::class);
+    }
+
+    public function vehicleCargos(){
+        return $this->hasMany(Cargo::class);
+    }
+
 }
