@@ -23,4 +23,7 @@ class Controller extends BaseController
        return "hellow amjad"; 
 
     }
+    public function amjad(){
+        return "hello Ayham";
+    }
 }
