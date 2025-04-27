@@ -17,4 +17,10 @@ class Transfer extends Model
     public function transferProduct(){
          return $this->belongsToMany(Product::class,'tranfer__vehicle');
     }
+
+    public function transfer_transferVehicle(){
+        return $this->hasMany(Transfer_Vehicle::class);
+    }
+
+
 }

@@ -21,4 +21,10 @@ class DistributionCenter extends Model
     public function distributionCenterType(){
         return $this->hasOne(type::class);
     }
+
+    public function distributionCenter_distribution_center_Product(){
+        return $this->hasMany(distribution_center_Product::class);
+    }
+
+
 }
