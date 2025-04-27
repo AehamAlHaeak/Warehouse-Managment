@@ -34,6 +34,8 @@ class Product extends Model
         return $this->hasOne(type::class);
     }
 
+public function importing_details(){
+    return $this-> hasMany(Supplier_Product::class,'product_id');
 
-
+}
 }

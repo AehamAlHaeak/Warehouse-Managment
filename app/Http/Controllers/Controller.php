@@ -15,7 +15,7 @@ class Controller extends BaseController
     public function Majd()
     {
         return "hellow Majd";
-
+    }
     public function FunctionName(){
        return "hellow amjad"; 
 

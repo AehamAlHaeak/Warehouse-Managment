@@ -13,4 +13,7 @@ class Employe extends Model
     public function specialization(){
         return $this->hasOne(Specialization::class);
     }
+    public function workable(){
+        return $this ->morphTo();
+    }
 }
