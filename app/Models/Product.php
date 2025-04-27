@@ -34,4 +34,6 @@ class Product extends Model
         return $this->hasOne(type::class);
     }
 
+
+
 }
