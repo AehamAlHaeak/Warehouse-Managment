@@ -9,7 +9,13 @@ use Illuminate\Routing\Controller as BaseController;
 class Controller extends BaseController
 {
     use AuthorizesRequests, ValidatesRequests;
-    public function FunctionName(){
-       return "hellow"; 
+    public function FunctionName()
+    {
+        return "hellow";
+    }
+
+    public function Majd()
+    {
+        return "hellow Majd";
     }
 }
