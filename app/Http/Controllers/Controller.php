@@ -15,11 +15,18 @@ class Controller extends BaseController
     public function Majd()
     {
         return "hellow Majd";
+
     }
     public function FunctionName(){
        return "hellow amjad"; 
 
+
+
     }
+    public function punctionName(){
+       return "hellow amjad";
+    }
+
     public function amjad(){
         return "hello Ayham";
     }
