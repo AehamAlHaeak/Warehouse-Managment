@@ -9,4 +9,12 @@ class Transfer extends Model
 {
     use HasFactory;
     protected $guarded;
+
+    public function transferVehicle(){
+        return $this->belongsToMany(Vehicle::class,'tranfer__vehicle');
+    }
+
+    public function transferProduct(){
+         return $this->belongsToMany(Product::class,'tranfer__vehicle');
+    }
 }

@@ -13,4 +13,12 @@ class DistributionCenter extends Model
     public function bill(){
         return $this->hasMany(Bill::class);
     }
+
+    public function distributionCenterProduct(){
+        return $this->belongsToMany(Product::class,'distribution_center__product');
+    }
+
+    public function distributionCenterType(){
+        return $this->hasOne(type::class);
+    }
 }
