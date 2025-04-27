@@ -10,6 +10,6 @@ class Controller extends BaseController
 {
     use AuthorizesRequests, ValidatesRequests;
     public function FunctionName(){
-       return "hellow"; 
+       return "hellow amjad"; 
     }
 }
