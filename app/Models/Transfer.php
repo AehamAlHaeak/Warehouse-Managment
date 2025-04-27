@@ -21,6 +21,14 @@ class Transfer extends Model
     public function transfer_transferVehicle(){
         return $this->hasMany(Transfer_Vehicle::class);
     }
-
+    public function sourceable()
+    {
+        return $this->morphTo();
+    }
+    
+    public function destinationable()
+    {
+        return $this->morphTo();
+    }
 
 }

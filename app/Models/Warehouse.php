@@ -22,6 +22,8 @@ class Warehouse extends Model
     public function warehouse_WareHouse(){
         return $this->hasMany(Werehouse_Product::class);
     }
-
+public function employees(){
+    return $this->morphMany(Employe::class,"workable");
+}
 
 }

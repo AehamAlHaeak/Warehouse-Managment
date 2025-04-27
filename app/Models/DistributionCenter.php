@@ -26,5 +26,7 @@ class DistributionCenter extends Model
         return $this->hasMany(distribution_center_Product::class);
     }
 
-
+    public function employees(){
+        return $this->morphMany(Employe::class,"workable");
+    }
 }
