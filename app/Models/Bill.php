@@ -9,4 +9,11 @@ class Bill extends Model
 {
     use HasFactory;
     protected $guarded;
+
+    public function details(){
+        return $this->hasMany(Bill_Detail::class);
+    }
+
+    
+
 }

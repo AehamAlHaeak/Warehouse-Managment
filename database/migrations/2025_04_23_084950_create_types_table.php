@@ -14,6 +14,11 @@ return new class extends Migration
         Schema::create('types', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
+            //type specialized to the products as food,electronic,etc  and the cargos 
+            //if we add the cargos as a undependent thing from vehicle
+            //this feature allow to high quality managment and reduce the costs and more reality
+            //we can consider it as a second action and we can replace it in any time 
+            $table->string("name")->unique();
         });
     }
 

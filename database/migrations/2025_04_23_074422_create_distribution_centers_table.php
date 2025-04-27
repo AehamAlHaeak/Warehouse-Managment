@@ -18,6 +18,11 @@ return new class extends Migration
             $table->string("location");
             $table->double("latitude");
             $table->double("longitude");
+            //we will not connect the center with the warehouse then the center will send a notifiction
+            //to all warehouses then the warehouse who can send will send 
+            //the center can recieve more than transfers in same time
+            //that means the comunication and the mechanism will be changed
+            //we need to rebuild some concepts 
         });
     }
 

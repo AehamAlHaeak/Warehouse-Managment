@@ -9,4 +9,8 @@ class DistributionCenter extends Model
 {
     use HasFactory;
     protected $guarded;
+
+    public function bill(){
+        return $this->hasMany(Bill::class);
+    }
 }
