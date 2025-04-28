@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string("location");
             $table->double("latitude");
             $table->double("longitude");
+            $table->string("img_path")->nullable();
             
             
         });
