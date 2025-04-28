@@ -26,7 +26,7 @@ protected $guarded = [];
         return 'id'; 
     }
     public function specialization(){
-        return $this->hasOne(Specialization::class);
+        return $this->belongsTo(Specialization::class,"specialization_id");
     }
     public function workable(){
         return $this ->morphTo();

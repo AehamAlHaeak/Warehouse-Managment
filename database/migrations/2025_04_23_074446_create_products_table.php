@@ -16,7 +16,7 @@ return new class extends Migration
             $table->timestamps();
             $table->string("name");
             $table->text("description"); 
-            $table->string("img_path");
+            $table->string("img_path")->nullable();
             $table->date("expiration");
             $table->date("producted_in");
             $table->bigInteger("import_cycle")->nullable();

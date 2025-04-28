@@ -7,9 +7,31 @@ use App\Models\Employe;
 use Hash;
 use Illuminate\Http\Request;
 use App\Traits\CRUDTrait;
+
 use Illuminate\Support\Facades\Auth;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
+
+use App\Models\Bill;
+use App\Models\Cargo;
+use App\Models\Employe;
+use App\Models\DistributionCenter;
+use App\Models\Bill_Detail;
+use App\Models\distribution_center_Product;
+use App\Models\Favorite;
+use App\Models\Garage;
+use App\Models\Product;
+use App\Models\Specialization;
+use App\Models\Supplier;
+use App\Models\Supplier_Product;
+use App\Models\Transfer;
+use App\Models\Transfer_Vehicle;
+use App\Models\Werehouse_Product;
+use App\Models\type;
+use App\Models\User;
+use App\Models\Vehicle;
+use App\Models\Warehouse;
+
 class SuperAdmenController extends Controller
 {
    use CRUDTrait;
@@ -27,23 +49,24 @@ class SuperAdmenController extends Controller
     }
 
 
-    public function create_new_item(Request $request){
-      $request->validate([ "item"=>"required|in:Warehouse,DistributionCenter"]);
+    public function create_new_warehouse(Request $request){
+     
        $validated_values=$request->validate([
           "name"=>"required|max:128",
           "location"=>"required",
-          "latitude"=>"required",
-          "longitude"=>"required",
+          "latitude"=>"required|numeric",
+          "longitude"=>"required|numeric",
           "type_id"=>"required"
          
        ]);
 
-       $model="App\Models"."\\".$request->item;
-       $this->create_item($model,$validated_values);
-       return response()->json(["msg"=>"succesfuly adding"],201);
+       
+       $warehouse=Warehouse::create($validated_values);
+       return response()->json(["msg"=>"warehouse added","warehouse_data"=>$warehouse],201);
 
     }
      
+
      public function create_new_employe(storeEmployeeRequest $request){
       $validated_values=$request->validated();
       $password=Hash::make($validated_values["password"]);
@@ -54,7 +77,137 @@ class SuperAdmenController extends Controller
       $this->create_item("App\Models\\Employe",$validated_values);
       
       return response()->json(["msg"=>"succesfuly adding"],201);
+
+    public function create_new_distribution_center(Request $request){
+     
+      $validated_values=$request->validate([
+         "name"=>"required|max:128",
+         "location"=>"required",
+         "latitude"=>"required|numeric",
+         "longitude"=>"required|numeric",
+         "warehouse_id"=>"required|numeric"
+        
+      ]);
+
+      
+      $center=DistributionCenter::create($validated_values);
+      return response()->json(["msg"=>" distribution_center added!","center_data"=>$center],201);
+
+   }
+
+     public function create_new_employe(Request $request){
+      $request->validate([
+         'image'=>'image|mimes:jpeg,png,jpg,gif|max:4096'
+        ]);
+      $validated_values=$request->validate([
+       "name"=>"required",
+       "email"=>"required|email",
+       "password"=>"required|min:8",
+       "phone_number"=>"required",
+       "specialization_id"=>"required",
+       "salary"=>"required",
+       "birth_day"=>"date",
+       "country"=>"required",
+       "start_time"=>"required",
+       "work_hours"=>"required|integer|max:10",
+       "workable_type"=>"in:Warehouse,DistributionCenter",
+       "workable_id"=>"integer"
+      ]);
+      //the morph may be null if the employee is driver because he dont have a work place 
+        
+         $validated_values['workable_type']="App\Models\\".$request->workable_type;
+         
+
+         if ($request->image != null) {
+            $image = $request->file('image');
+            $image_path = $image->store('Products', 'public');
+            $validated_values["img_path"]= 'storage/' . $image_path;
+        }
+
+     
+      $employe=Employe::create($validated_values);
+      $employe->specialization=$employe->specialization;
+      return response()->json(["msg"=>"employe added","employe_data"=>$employe],201);
      }
+
+
+
+
+
+     public function create_new_vehicle(Request $request){
+
+      $validated_values=$request->validate([
+         "name"=>"required",
+         "expiration"=>"required|date",
+         "producted_in"=>"required|date",
+         "readiness"=>"required|numeric|min:0|max:1",
+         "max_load"=>"required|numeric|min:1000",
+         "location"=>"required",
+         "latitude"=>"required|numeric",
+         "longitude"=>"required|numeric",
+         "type_id"=>"required"
+              ]);
+
+        $request->validate([
+         'image'=>'image|mimes:jpeg,png,jpg,gif|max:4096'
+        ]);
+        if ($request->image != null) {
+         $image = $request->file('image');
+         $image_path = $image->store('Vehicles', 'public');
+         $validated_values["img_path"]= 'storage/' . $image_path;
+     }
+     $vehicle=Vehicle::create($validated_values);
+
+      return response()->json(["msg"=>"vehicle added","vehicle_data"=>$vehicle],201);
+     }
+     public function create_new_cargo(Request $request){
+      $validated_values=$request->validate([
+         "name"=>"required",
+         "expiration"=>"required|date",
+         "producted_in"=>"required|date",
+         "readiness"=>"required|numeric|min:0|max:1",
+         "max_load"=>"required|numeric|min:1000",
+         "type_id"=>"required",
+         "vehicle_id"=>"required|integer"
+              ]); 
+
+         $request->validate([
+            'image'=>'image|mimes:jpeg,png,jpg,gif|max:4096'
+         ]);
+
+         if ($request->image != null) {
+            $image = $request->file('image');
+            $image_path = $image->store('Cargos', 'public');
+            $validated_values["img_path"]= 'storage/' . $image_path;
+        }
+        $cargo=Cargo::creat($validated_values);
+
+        return response()->json(["msg"=>"cargo added","cargo_data"=>$cargo],201);
+
+     }
+       
+     public function create_new_supplier(Request $request){
+      $validated_values=$request->validate([
+       "comunication_way"=>"required",
+       "identifier"=>"required",
+       "country"=>"required"
+
+      ]);
+       $supplier=Supplier::create($validated_values);
+
+       return response()->json(["msg"=>"supplier added","supplier_data"=>$supplier],201);
+
+     }
+     public function create_new_garage(Request $request){
+      $validated_values=$request->validate([
+        "type"=>"required|in:big,medium",
+        "existable_id"=>"integer",
+        "existable_type"=>"required_with:existable_id",
+        "max_capacity"=>"required|integer",
+        'location' => 'required_without:existable_id|max:255',
+        'latitude' => 'required_without:existable_id|numeric',
+        'longitude' => 'required_without:existable_id|numeric',
+
 
 
 
@@ -97,4 +250,19 @@ public function logout_employee(Request $request){
    return response()->json(["msg" => "Failed to logout, please try again later"], 500);
 }
 }
+
+        ]);
+       //the admin can add undependent garage then he is obligated to determine it's location 
+       //else if he create it with an existable_id then cannot determine the location because 
+       //the location is already exist with the existable place
+        
+     
+       
+        $garage=Garage::create($validated_values);
+
+        return response()->json(["msg"=>"garage added","garage_data"=>$garage],201);
+     }
+      
+   
+
 }

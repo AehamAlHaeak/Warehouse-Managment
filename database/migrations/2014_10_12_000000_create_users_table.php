@@ -28,7 +28,8 @@ return new class extends Migration
             and to enhance the authontication system
 
            */ 
-            $table->binary('image')->nullable();//images will be stored in storage and we will organize a file for the images
+            
+           $table->string("img_path")->nullable();//images will be stored in storage and we will organize a file for the images
             $table->rememberToken();/*this step can alow us to make the app more sequre
             id the user has been loged in rhe user can to enter to his account without recive the token 
             and to enhance the authontication system

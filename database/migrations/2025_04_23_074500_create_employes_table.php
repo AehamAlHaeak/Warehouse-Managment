@@ -26,6 +26,7 @@ return new class extends Migration
             $table->time("start_time");
             $table->double("work_hours");
             $table->nullableMorphs('workable');//workable_type  workable_id
+            $table->string("img_path")->nullable();
         });
     }
 
