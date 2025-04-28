@@ -21,8 +21,8 @@ return new class extends Migration
             $table->foreign("transfer_id")->references("id")->on("transfers");
             $table->unsignedBigInteger("product_id");
             $table->foreign("product_id")->references("id")->on("products");
-            $table->double("quantity_by_ton");
-            $table->date("arrival_time");
+            $table->double("quantity_by_kg");
+            $table->date("arrival_time")->nullable();
 
         });
     }
