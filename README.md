@@ -1,7 +1,10 @@
 
 
 ### composer install
-### composer require jwt/tymon
+### composer require tymon/jwt-auth
+### php artisan vendor:publish --provider="Tymon\JWTAuth\Providers\LaravelServiceProvider"
+### php artisan jwt:secret
+
 ### change name file .env.example to .env   only
 ### go to storage/public and create folders ->
 ## cargos
@@ -10,4 +13,5 @@
 ## employes
 ## products 
 ### then activate: php artisan storage:link
+
 
