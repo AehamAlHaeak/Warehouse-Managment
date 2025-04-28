@@ -15,15 +15,15 @@ class Warehouse extends Model
     }
 
     public function wareHouseType(){
-        return $this->hasOne(type::class);
+        return $this->belongsTo(type::class);
     }
 
 
-    public function warehouse_WareHouse(){
+    public function products_and_details(){
         return $this->hasMany(Werehouse_Product::class);
     }
-public function employees(){
+    public function employees(){
     return $this->morphMany(Employe::class,"workable");
-}
+    }
 
 }

@@ -23,7 +23,7 @@ class Vehicle extends Model
     }
 
     public function vehicleType(){
-        return $this->hasOne(type::class);
+        return $this->belongsTo(type::class,"type_id");
     }
 
     public function vehicleCargos(){
