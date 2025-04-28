@@ -2,8 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\storeEmployeeRequest;
+use App\Models\Employe;
+use Hash;
 use Illuminate\Http\Request;
 use App\Traits\CRUDTrait;
+
+use Illuminate\Support\Facades\Auth;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use Tymon\JWTAuth\Exceptions\JWTException;
+
 use App\Models\Bill;
 use App\Models\Cargo;
 use App\Models\Employe;
@@ -23,6 +31,7 @@ use App\Models\type;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\Warehouse;
+
 class SuperAdmenController extends Controller
 {
    use CRUDTrait;
@@ -57,6 +66,18 @@ class SuperAdmenController extends Controller
 
     }
      
+
+     public function create_new_employe(storeEmployeeRequest $request){
+      $validated_values=$request->validated();
+      $password=Hash::make($validated_values["password"]);
+      $validated_values['password']=$password;
+         if($validated_values['workable_type']!=null){
+               $validated_values['workable_type']="App\Models\\".$request->workable_type;
+         }
+      $this->create_item("App\Models\\Employe",$validated_values);
+      
+      return response()->json(["msg"=>"succesfuly adding"],201);
+
     public function create_new_distribution_center(Request $request){
      
       $validated_values=$request->validate([
@@ -175,6 +196,7 @@ class SuperAdmenController extends Controller
        $supplier=Supplier::create($validated_values);
 
        return response()->json(["msg"=>"supplier added","supplier_data"=>$supplier],201);
+
      }
      public function create_new_garage(Request $request){
       $validated_values=$request->validate([
@@ -185,6 +207,49 @@ class SuperAdmenController extends Controller
         'location' => 'required_without:existable_id|max:255',
         'latitude' => 'required_without:existable_id|numeric',
         'longitude' => 'required_without:existable_id|numeric',
+
+
+
+
+
+
+     
+public function login_employee(Request $request){
+   $validated_values=$request->validate([
+      "email"=> "required|email",
+      "password"=> "required",
+   ]);
+  
+$employee=Employe::where("email",$validated_values["email"])->first();
+if (!$employee || !Hash::check($validated_values['password'], $employee->password)) {
+   return response()->json(["msg" => "Invalid email or password"], 401);
+}
+if($employee==null){
+return response()->json(["msg"=> "This email not found"],404);
+   }
+  $token= JWTAuth::claims([
+   'id'=> $employee->id,
+   'email'=> $employee->email,
+   'phone_number'=> $employee->phone_number
+  ])->fromUser($employee);
+  return response()->json(["msg" => "Logged in successfully", "token" => $token], 200);
+
+}
+
+public function logout_employee(Request $request){
+   try{
+   $token=JWTAuth::getToken();
+   if($token){
+      JWTAuth::invalidate();
+      return response()->json(["msg"=> "Successfully Logged out  "],200);
+   }
+   return response()->json(["msg"=> "No Token Found"],400);
+}
+
+ catch (\Exception $e) {
+   return response()->json(["msg" => "Failed to logout, please try again later"], 500);
+}
+}
 
         ]);
        //the admin can add undependent garage then he is obligated to determine it's location 
@@ -199,5 +264,5 @@ class SuperAdmenController extends Controller
      }
       
    
-   
+
 }
