@@ -2,35 +2,35 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\storeEmployeeRequest;
-use App\Models\Employe;
-use Hash;
-use Illuminate\Http\Request;
-use App\Traits\CRUDTrait;
-
-use Illuminate\Support\Facades\Auth;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use Tymon\JWTAuth\Exceptions\JWTException;
-
 use App\Models\Bill;
-use App\Models\Cargo;
-use App\Models\Employe;
-use App\Models\DistributionCenter;
-use App\Models\Bill_Detail;
-use App\Models\distribution_center_Product;
-use App\Models\Favorite;
-use App\Models\Garage;
-use App\Models\Product;
-use App\Models\Specialization;
-use App\Models\Supplier;
-use App\Models\Supplier_Product;
-use App\Models\Transfer;
-use App\Models\Transfer_Vehicle;
-use App\Models\Werehouse_Product;
+
 use App\Models\type;
 use App\Models\User;
+use App\Models\Cargo;
+
+use App\Models\Garage;
+use App\Models\Employe;
+use App\Models\Product;
+
 use App\Models\Vehicle;
+use App\Models\Favorite;
+use App\Models\Supplier;
+use App\Models\Transfer;
 use App\Models\Warehouse;
+use App\Traits\CRUDTrait;
+use App\Models\Bill_Detail;
+use Illuminate\Http\Request;
+use App\Models\Specialization;
+use App\Models\Supplier_Product;
+use App\Models\Transfer_Vehicle;
+use App\Models\Werehouse_Product;
+use App\Models\DistributionCenter;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Tymon\JWTAuth\Exceptions\JWTException;
+use App\Http\Requests\storeEmployeeRequest;
+use App\Models\distribution_center_Product;
 
 class SuperAdmenController extends Controller
 {
@@ -68,16 +68,27 @@ class SuperAdmenController extends Controller
      
 
      public function create_new_employe(storeEmployeeRequest $request){
+      $request->validate([
+         'image'=>'image|mimes:jpeg,png,jpg,gif|max:4096'
+        ]);
       $validated_values=$request->validated();
+
       $password=Hash::make($validated_values["password"]);
+
       $validated_values['password']=$password;
-         if($validated_values['workable_type']!=null){
+      
+         if($request->workable_type!=null){
                $validated_values['workable_type']="App\Models\\".$request->workable_type;
          }
-      $this->create_item("App\Models\\Employe",$validated_values);
-      
+         if ($request->image != null) {
+            $image = $request->file('image');
+            $image_path = $image->store('Products', 'public');
+            $validated_values["img_path"]= 'storage/' . $image_path;
+        }
+        $employe=Employe::create($validated_values);
+        $employe->specialization=$employe->specialization;
       return response()->json(["msg"=>"succesfuly adding"],201);
-
+      }
     public function create_new_distribution_center(Request $request){
      
       $validated_values=$request->validate([
@@ -95,40 +106,7 @@ class SuperAdmenController extends Controller
 
    }
 
-     public function create_new_employe(Request $request){
-      $request->validate([
-         'image'=>'image|mimes:jpeg,png,jpg,gif|max:4096'
-        ]);
-      $validated_values=$request->validate([
-       "name"=>"required",
-       "email"=>"required|email",
-       "password"=>"required|min:8",
-       "phone_number"=>"required",
-       "specialization_id"=>"required",
-       "salary"=>"required",
-       "birth_day"=>"date",
-       "country"=>"required",
-       "start_time"=>"required",
-       "work_hours"=>"required|integer|max:10",
-       "workable_type"=>"in:Warehouse,DistributionCenter",
-       "workable_id"=>"integer"
-      ]);
-      //the morph may be null if the employee is driver because he dont have a work place 
-        
-         $validated_values['workable_type']="App\Models\\".$request->workable_type;
-         
-
-         if ($request->image != null) {
-            $image = $request->file('image');
-            $image_path = $image->store('Products', 'public');
-            $validated_values["img_path"]= 'storage/' . $image_path;
-        }
-
-     
-      $employe=Employe::create($validated_values);
-      $employe->specialization=$employe->specialization;
-      return response()->json(["msg"=>"employe added","employe_data"=>$employe],201);
-     }
+    
 
 
 
@@ -208,35 +186,20 @@ class SuperAdmenController extends Controller
         'latitude' => 'required_without:existable_id|numeric',
         'longitude' => 'required_without:existable_id|numeric',
 
+      ]);
+       //the admin can add undependent garage then he is obligated to determine it's location 
+       //else if he create it with an existable_id then cannot determine the location because 
+       //the location is already exist with the existable place
 
+      
+        $garage=Garage::create($validated_values);
 
-
-
-
+        return response()->json(["msg"=>"garage added","garage_data"=>$garage],201);
+     }
      
-public function login_employee(Request $request){
-   $validated_values=$request->validate([
-      "email"=> "required|email",
-      "password"=> "required",
-   ]);
-  
-$employee=Employe::where("email",$validated_values["email"])->first();
-if (!$employee || !Hash::check($validated_values['password'], $employee->password)) {
-   return response()->json(["msg" => "Invalid email or password"], 401);
-}
-if($employee==null){
-return response()->json(["msg"=> "This email not found"],404);
-   }
-  $token= JWTAuth::claims([
-   'id'=> $employee->id,
-   'email'=> $employee->email,
-   'phone_number'=> $employee->phone_number
-  ])->fromUser($employee);
-  return response()->json(["msg" => "Logged in successfully", "token" => $token], 200);
 
-}
 
-public function logout_employee(Request $request){
+public function logout_employe(Request $request){
    try{
    $token=JWTAuth::getToken();
    if($token){
@@ -251,17 +214,12 @@ public function logout_employee(Request $request){
 }
 }
 
-        ]);
-       //the admin can add undependent garage then he is obligated to determine it's location 
-       //else if he create it with an existable_id then cannot determine the location because 
-       //the location is already exist with the existable place
+        
+      
         
      
        
-        $garage=Garage::create($validated_values);
-
-        return response()->json(["msg"=>"garage added","garage_data"=>$garage],201);
-     }
+      
       
    
 
