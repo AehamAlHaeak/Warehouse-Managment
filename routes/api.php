@@ -18,6 +18,10 @@ Route::controller(SuperAdmenController::class)->group(function () {
     Route::post("create_new_vehicle","create_new_vehicle");
     Route::post("create_new_supplier","create_new_supplier");
     Route::post("create_new_garage","create_new_garage");
+    Route::post("create_new_product","create_new_product");
+    Route::post("create_type_product","create_type_product");
+
+    
 
 });
 //create_new_garage
