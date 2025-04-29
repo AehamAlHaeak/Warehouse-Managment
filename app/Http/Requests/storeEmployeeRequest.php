@@ -31,7 +31,7 @@ class storeEmployeeRequest extends FormRequest
             "birth_day"=>"date",
             "country"=>"required",
             "start_time"=>"required",
-            "work_hours"=>"required|integer|max:10",
+            "work_hours"=>"required",
             "workable_type"=>"in:Warehouse,DistributionCenter",
             "workable_id"=>"integer"
         ];

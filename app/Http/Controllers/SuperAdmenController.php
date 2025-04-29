@@ -76,7 +76,7 @@ class SuperAdmenController extends Controller
    public function create_new_employe(storeEmployeeRequest $request)
    {
       $request->validate([
-         'image' => 'image|mimes:jpeg,png,jpg,gif|max:4096'
+         'image'=>'image|mimes:jpeg,png,jpg,gif|max:4096'
       ]);
       $validated_values = $request->validated();
 
@@ -90,12 +90,14 @@ class SuperAdmenController extends Controller
       if ($request->image != null) {
          $image = $request->file('image');
          $image_path = $image->store('Products', 'public');
-         $validated_values["img_path"] = 'storage/' . $image_path;
+         $validated_values["img_path"] = 'storage/'.$image_path;
       }
       $employe = Employe::create($validated_values);
       $employe->specialization=$employe->specialization;
       return response()->json(["msg" => "succesfuly adding","employe_data"=>$employe], 201);
    }
+
+
    public function create_new_distribution_center(Request $request)
    {
 
