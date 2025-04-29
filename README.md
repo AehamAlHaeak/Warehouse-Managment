@@ -13,5 +13,6 @@
 ## employes
 ## products 
 ### then activate: php artisan storage:link
+### goto .env modefi the constant QUEUE_CONECTION=sync to database
 
 
