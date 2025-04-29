@@ -17,11 +17,11 @@ return new class extends Migration
             $table->id()->unique();//id is unique for any row in dataBase
      
             $table->string('name');
-            $table->string('email')->unique();
+            $table->string('email')->unique()->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
           
-            $table->unsignedBigInteger('phoneNumber')->unique();
+            $table->unsignedBigInteger('phone_number')->unique()->nullable();
             
             /*this step can alow us to make the app more sequre
             id the user has been loged in rhe user can to enter to his account without recive the token 
