@@ -45,4 +45,10 @@ class Handler extends ExceptionHandler
             //
         });
     }
+    public function render($request, Throwable $e){
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Error'], 400);
+        }
+        
+    }
 }

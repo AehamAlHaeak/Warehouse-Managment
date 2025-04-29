@@ -31,7 +31,7 @@ class Product extends Model
     }
 
     public function productType(){
-        return $this->hasOne(type::class);
+        return $this->belongsTo(type::class);
     }
 
 public function importing_details(){
