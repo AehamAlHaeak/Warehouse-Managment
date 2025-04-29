@@ -223,46 +223,7 @@ class SuperAdmenController extends Controller
    }
 
 
-   public function create_type_product(Request $request)
-   {
-      $validated_values = $request->validate([
-         'name' => 'required|string|unique:types,name',    
-      ]);
-      try{
-      $type = Type::find( $request->name );
-if($type){
-   return response()->json(['msg'=>'this type already exists'] ,200);
-}
-      $type = Type::create($validated_values);
-
-      $type_data = new TypeResource($type);
-
-      return response()->json([
-         'message' => 'Product type added successfully',
-         'type_data' => $type
-      ], 201);}
-      catch(\Exception $e){
-         return response()->json(['msg'=>'this type already exists'] ,200);
-
-      }
-   }
-
-
-
-
-
-   public function logout_employe(Request $request)
-   {
-      try {
-         $token = JWTAuth::getToken();
-         if ($token) {
-            JWTAuth::invalidate();
-            return response()->json(["msg" => "Successfully Logged out  "], 200);
-         }
-         return response()->json(["msg" => "No Token Found"], 400);
-      } catch (\Exception $e) {
-         return response()->json(["msg" => "Failed to logout, please try again later"], 500);
-      }
+  
    }
 
 
