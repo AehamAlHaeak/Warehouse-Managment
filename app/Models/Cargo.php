@@ -13,5 +13,8 @@ class Cargo extends Model
     public function cargosVehicle(){
         return $this->hasOne(Vehicle::class);
     }
+    public function import_jop(){
+        return $this->belongsTo(Import_jop::class);
+    }
 
 }

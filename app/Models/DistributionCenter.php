@@ -14,19 +14,12 @@ class DistributionCenter extends Model
         return $this->hasMany(Bill::class);
     }
 
-    public function distributionCenterProduct(){
-        return $this->belongsToMany(Product::class,'distribution_center__product');
+    public function Products(){
+    return $this->hasMany(distribution_center_Product::class,"distribution_center_id");
     }
 
-    public function distributionCenterType(){
-        return $this->hasOne(type::class);
-    }
 
-    public function distributionCenter_distribution_center_Product(){
-        return $this->hasMany(distribution_center_Product::class);
-    }
-
-    public function employees(){
+    public function employes(){
         return $this->morphMany(Employe::class,"workable");
     }
 }

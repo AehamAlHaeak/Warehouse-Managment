@@ -11,8 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('distribution_centers', function (Blueprint $table) {
-           
+        Schema::table('vehicles', function (Blueprint $table) {
+           $table->unsignedBigInteger("import_jop_id");
+           $table->foreign("import_jop_id")->references("id")->on("import_jops");
         });
     }
 
@@ -21,8 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('distribution_centers', function (Blueprint $table) {
-            //
+        Schema::table('vehicles', function (Blueprint $table) {
+            $table->dropColumn("import_jop_id");
         });
     }
 };
