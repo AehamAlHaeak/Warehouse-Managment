@@ -123,7 +123,8 @@ class SuperAdmenController extends Controller
          "location"=>"required",
          "latitude"=>"required|numeric",
          "longitude"=>"required|numeric",
-         "type_id"=>"required"
+         "type_id"=>"required",
+         "import_jop_id"=>"required|integer"
               ]);
 
         $request->validate([
@@ -146,7 +147,8 @@ class SuperAdmenController extends Controller
          "readiness"=>"required|numeric|min:0|max:1",
          "max_load"=>"required|numeric|min:1000",
          "type_id"=>"required",
-         "vehicle_id"=>"required|integer"
+         "vehicle_id"=>"required|integer",
+         "import_jop_id"=>"required|integer"
               ]); 
 
          $request->validate([
@@ -198,21 +200,16 @@ class SuperAdmenController extends Controller
      }
      
 
+     public function create_new_import_jop(Request $request){
 
-public function logout_employe(Request $request){
-   try{
-   $token=JWTAuth::getToken();
-   if($token){
-      JWTAuth::invalidate();
-      return response()->json(["msg"=> "Successfully Logged out  "],200);
-   }
-   return response()->json(["msg"=> "No Token Found"],400);
+
+
+
+     }
+
+
 }
 
- catch (\Exception $e) {
-   return response()->json(["msg" => "Failed to logout, please try again later"], 500);
-}
-}
 
         
       
@@ -223,4 +220,4 @@ public function logout_employe(Request $request){
       
    
 
-}
+
