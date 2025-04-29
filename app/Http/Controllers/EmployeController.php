@@ -2,30 +2,42 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use App\Models\Employe;
 use Illuminate\Http\Request;
+use App\Traits\AlgorithmsTrait;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Hash;
 
 class EmployeController extends Controller
 {
+   use AlgorithmsTrait;
     public function login_employe(Request $request){
         $validated_values=$request->validate([
-           "email"=> "required|email",
+           "email"=> "email",
            "password"=> "required",
+           "phone_number"=>"numeric"
         ]);
+      
+       $employee = null;
+
+   
+       if (!empty($request->email)) {
+         $employee = Employe::where('email', $request->email)->first();
+       }
        
-     $employee=\App\Models\Employe::where("email",$validated_values["email"])->first();
-     if (!$employee || !Hash::check($validated_values['password'], $employee->password)) {
-        return response()->json(["msg" => "Invalid email or password"], 401);
-     }
-     if($employee==null){
-     return response()->json(["msg"=> "This email not found"],404);
-        }
-       $token= JWTAuth::claims([
-        'id'=> $employee->id,
-        'email'=> $employee->email,
-        'phone_number'=> $employee->phone_number
-       ])->fromUser($employee);
+     
+       if (!$employee && !empty($request->phone_number)) {
+         $employee = Employe::where('phone_number', $request->phone_number)->first();
+       }
+       
+    
+       if (!$employee) {
+           return response()->json(["msg" => "account is not exist"], 400);
+       }
+       
+    
+       $token=$this->create_token($employee);
        return response()->json(["msg" => "Logged in successfully", "token" => $token], 200);
      
      }

@@ -120,6 +120,20 @@ class SuperAdmenController extends Controller
 
 
 
+
+      $validated_values=$request->validate([
+         "name"=>"required",
+         "expiration"=>"required|date",
+         "producted_in"=>"required|date",
+         "readiness"=>"required|numeric|min:0|max:1",
+         "max_load"=>"required|numeric|min:1000",
+         "location"=>"required",
+         "latitude"=>"required|numeric",
+         "longitude"=>"required|numeric",
+         "type_id"=>"required",
+         "import_jop_id"=>"required|integer"
+              ]);
+
    public function create_new_vehicle(Request $request)
    {
 
@@ -135,15 +149,57 @@ class SuperAdmenController extends Controller
          "type_id" => "required"
       ]);
 
+
       $request->validate([
          'image' => 'image|mimes:jpeg,png,jpg,gif|max:4096'
       ]);
       if ($request->image != null) {
          $image = $request->file('image');
          $image_path = $image->store('Vehicles', 'public');
+
+         $validated_values["img_path"]= 'storage/' . $image_path;
+     }
+     $vehicle=Vehicle::create($validated_values);
+
+      return response()->json(["msg"=>"vehicle added","vehicle_data"=>$vehicle],201);
+     }
+     public function create_new_cargo(Request $request){
+      $validated_values=$request->validate([
+         "name"=>"required",
+         "expiration"=>"required|date",
+         "producted_in"=>"required|date",
+         "readiness"=>"required|numeric|min:0|max:1",
+         "max_load"=>"required|numeric|min:1000",
+         "type_id"=>"required",
+         "vehicle_id"=>"required|integer",
+         "import_jop_id"=>"required|integer"
+              ]); 
+
+         $request->validate([
+            'image'=>'image|mimes:jpeg,png,jpg,gif|max:4096'
+         ]);
+
+         if ($request->image != null) {
+            $image = $request->file('image');
+            $image_path = $image->store('Cargos', 'public');
+            $validated_values["img_path"]= 'storage/' . $image_path;
+        }
+        $cargo=Cargo::creat($validated_values);
+
+        return response()->json(["msg"=>"cargo added","cargo_data"=>$cargo],201);
+
+     }
+       
+     public function create_new_supplier(Request $request){
+      $validated_values=$request->validate([
+       "comunication_way"=>"required",
+       "identifier"=>"required",
+       "country"=>"required"
+
          $validated_values["img_path"] = 'storage/' . $image_path;
       }
       $vehicle = Vehicle::create($validated_values);
+
 
       return response()->json(["msg" => "vehicle added", "vehicle_data" => $vehicle], 201);
    }
@@ -204,6 +260,27 @@ class SuperAdmenController extends Controller
       //the location is already exist with the existable place
 
 
+
+     public function create_new_import_jop(Request $request){
+
+
+
+
+     }
+
+
+}
+
+
+        
+      
+        
+     
+       
+      
+      
+   
+
       $garage = Garage::create($validated_values);
 
       return response()->json(["msg" => "garage added", "garage_data" => $garage], 201);
@@ -235,4 +312,5 @@ class SuperAdmenController extends Controller
 
 
 
-}
+
+

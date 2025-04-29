@@ -11,13 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('transfers', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
-            $table->morphs("sourceable");
-            $table->morphs("destinationable");
-            
-
+        Schema::table('cargos', function (Blueprint $table) {
+            $table->unsignedBigInteger("import_jop_id");
+            $table->foreign("import_jop_id")->references("id")->on("import_jops");
         });
     }
 
@@ -26,6 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('transfers');
+        Schema::table('cargos', function (Blueprint $table) {
+            $table->dropColumn("import_jop_id");
+        });
     }
 };

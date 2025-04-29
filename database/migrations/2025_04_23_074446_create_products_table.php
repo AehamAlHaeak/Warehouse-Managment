@@ -16,12 +16,14 @@ return new class extends Migration
             $table->timestamps();
             $table->string("name");
             $table->text("description"); 
+
+            $table->string("img_path")->nullable();
+
             $table->string('img_path')->nullable()->change();
             $table->date("expiration");
             $table->date("producted_in");
+
             $table->bigInteger("import_cycle")->nullable();
-            $table->string("unit");
-            $table->double("price_unit");
             $table->double("average");
             //as a note we willnot store standard deviation because it sqrt(variance/n)
             $table->double("variance");

@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->timestamps();
             $table->string("name");
-            $table->string("email")->unique();
+            $table->string("email")->unique()->nullable();
             $table->string("password");
-            $table->integer("phone_number");
+            $table->integer("phone_number")->nullable();
             $table->unsignedBigInteger("specialization_id");
             $table->foreign("specialization_id")->references("id")->on("specializations");
             $table->double("salary");
@@ -26,7 +26,7 @@ return new class extends Migration
             $table->time("start_time");
             $table->double("work_hours");
             $table->nullableMorphs('workable');//workable_type  workable_id
-            $table->string("img_path")->nullable();
+            $table->string("img_path");
         });
     }
 
