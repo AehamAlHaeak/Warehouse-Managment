@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Employe;
 use Illuminate\Http\Request;
+use App\Traits\AlgorithmsTrait;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Hash;
 
 class EmployeController extends Controller
 {
+   use AlgorithmsTrait;
     public function login_employe(Request $request){
         $validated_values=$request->validate([
            "email"=> "email",
@@ -35,11 +37,7 @@ class EmployeController extends Controller
        }
        
     
-       $token= JWTAuth::claims([
-        'id'=> $employee->id,
-        'email'=> $employee->email,
-        'phone_number'=> $employee->phone_number
-       ])->fromUser($employee);
+       $token=$this->create_token($employee);
        return response()->json(["msg" => "Logged in successfully", "token" => $token], 200);
      
      }
