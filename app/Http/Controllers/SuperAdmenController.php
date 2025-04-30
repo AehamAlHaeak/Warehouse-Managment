@@ -93,7 +93,7 @@ class SuperAdmenController extends Controller
          $validated_values["img_path"] = 'storage/'.$image_path;
       }
       $employe = Employe::create($validated_values);
-      $employe->specialization=$employe->specialization;
+      $employe->specialization=$employe->specialization->name;
       return response()->json(["msg" => "succesfuly adding","employe_data"=>$employe], 201);
    }
 
