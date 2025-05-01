@@ -222,14 +222,19 @@ class SuperAdmenController extends Controller
 
    public function create_new_product(storeProductRequest $request)
    {
+
+      $request->validate([
+         'image'=>'image|mimes:jpeg,png,jpg,gif|max:4096'
+      ]);
+
       $validated_values = $request->validated();
 
-      if ($request->hasFile('img_path')) {
-         $path = $request->file('img_path')->store('products', 'public'); // تخزين الصورة في مجلد المنتجات
-         $validated_data['img_path'] = $path;
+      if ($request->hasFile('image')) {
+         $path = $request->file('image')->store('products', 'public'); 
+         $validated_values['img_path'] = $path;
       }
       $product = Product::create($validated_values);
-      return response()->json(['message' => 'Product added successfully', 'product_data' => new ProductResource($product)], 201);
+      return response()->json(['message' => 'Product added successfully', 'product_data' => $product], 201);
    }
 
 

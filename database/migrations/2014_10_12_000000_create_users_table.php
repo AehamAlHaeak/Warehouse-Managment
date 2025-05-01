@@ -15,13 +15,14 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id()->unique();//id is unique for any row in dataBase
-     
             $table->string('name');
+            $table->string('last_name');
+            $table->date('birthday')->nullable();
             $table->string('email')->unique()->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
           
-            $table->unsignedBigInteger('phone_number')->unique()->nullable();
+            $table->string('phone_number')->unique()->nullable();
             
             /*this step can alow us to make the app more sequre
             id the user has been loged in rhe user can to enter to his account without recive the token 
@@ -38,7 +39,7 @@ return new class extends Migration
 
             $table->timestamps();
             $table->string('location');
-            $table->json('criditCard')->nullable();//the user may have more than one cridit card in several banks
+            $table->json('creditCards')->nullable();//the user may have more than one cridit card in several banks
         });
 
     }

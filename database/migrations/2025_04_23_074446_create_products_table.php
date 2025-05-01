@@ -19,9 +19,8 @@ return new class extends Migration
 
             $table->string("img_path")->nullable();
 
-            $table->string('img_path')->nullable()->change();
-            $table->date("expiration");
-            $table->date("producted_in");
+         
+           
 
             $table->bigInteger("import_cycle")->nullable();
             $table->double("average");
