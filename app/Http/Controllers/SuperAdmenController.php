@@ -287,6 +287,11 @@ public function correct_errors(Request $request){
 
 
          if( !empty($errors_vehicles) || !empty($errors_products)){
+            Cache::forget($request->products_correction_key);
+            Cache::forget($request->vehicles_correction_key);
+            Cache::forget($request->import_job_key);
+            
+
          $import_key=Str::uuid();
          Cache::put($import_key,$import_job,now()->addMinutes(60));
          $product_key=Str::uuid();
@@ -309,6 +314,9 @@ $import_jop=Import_jop::create($import_job);
 
 
 importing_job::dispatch($import_jop,$validated_products,$validated_vehicles);
+Cache::forget($request->products_correction_key);
+Cache::forget($request->vehicles_correction_key);
+Cache::forget($request->import_job_key);
 
 return response()->json(["msg"=>"created","errors"=>$errors_products],201); 
       
