@@ -19,7 +19,6 @@ return new class extends Migration
 
             $table->string("img_path")->nullable();
 
-         
            
 
             $table->bigInteger("import_cycle")->nullable();

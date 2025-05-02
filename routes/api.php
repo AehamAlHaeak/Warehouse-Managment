@@ -20,12 +20,18 @@ Route::controller(SuperAdmenController::class)->group(function () {
     Route::post("create_new_supplier","create_new_supplier");
     Route::post("create_new_garage","create_new_garage");
     Route::post("create_new_product","create_new_product");
+
     
+
+
+   
+    Route::post("create_new_import_jop","create_new_import_jop");
+    Route::post("suppourt_new_product","suppourt_new_product");
 
     
 
 });
-//create_new_garage
+//suppourt_new_product
 
 Route::post("login_employe",[EmployeController::class,'login_employe']);
 Route::middleware('auth.api:employee')->group(function () {

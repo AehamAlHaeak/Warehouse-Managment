@@ -38,4 +38,8 @@ public function importing_details(){
     return $this-> hasMany(Supplier_Product::class,'product_id');
 
 }
+public function import_jobs_details(){
+    return $this->hasMany(Import_jop_product::class,"product_id");
+}
+
 }
