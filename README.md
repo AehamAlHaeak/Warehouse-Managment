@@ -15,5 +15,6 @@
 ### then activate: php artisan storage:link
 ### php artisan queue:table
 ### goto .env modefi the constant QUEUE_CONECTION=sync to database
+### evere start to the project activate php atisan queue:work 
 
 

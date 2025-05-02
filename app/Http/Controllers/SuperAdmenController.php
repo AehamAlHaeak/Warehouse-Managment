@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Bill;
 use App\Models\type;
-
+use App\Jobs\importing_job;
 use App\Models\User;
-use App\Models\Cargo;
+
 
 use App\Models\Garage;
 use App\Models\Employe;
@@ -28,7 +28,7 @@ use App\Models\Transfer_Vehicle;
 use App\Models\Werehouse_Product;
 use App\Models\DistributionCenter;
 use Tymon\JWTAuth\Facades\JWTAuth;
-use App\Http\Resources\TypeResource;
+
 use Illuminate\Support\Facades\Auth;
 use App\Models\Import_jop_product;
 use Illuminate\Support\Facades\Hash;
@@ -40,10 +40,12 @@ use Tymon\JWTAuth\Exceptions\JWTException;
 use App\Http\Requests\storeEmployeeRequest;
 use App\Models\distribution_center_Product;
 use App\Models\Import_jop;
+use App\Traits\AlgorithmsTrait;
 
 class SuperAdmenController extends Controller
 {
    use CRUDTrait;
+   use AlgorithmsTrait;
 
    //first create a type to imprt the products type and warehouse type an etc
    public function create_new_specification(Request $request)
@@ -189,98 +191,42 @@ class SuperAdmenController extends Controller
          "latitude"=>"required",
          "longitude"=>"required"
       ]);
-
-
-        $validated_products=null;
-        $validated_vehicles=null;
       
-        $errors_products=null;
-        $errors_vehicles=null;
-   
+            $Data=$this->valedate_and_build($request);
+            $validated_products=$Data["products"];
+            $validated_vehicles=$Data["vehicles"];
+            $errors_products=$Data["errors_products"];
+            $errors_vehicles=$Data["errors_vehicles"];
+echo "i am here";
+         if( !empty($errors_vehicles) || !empty($errors_products)){
+         $import_key=Str::uuid();
+    
+         Cache::put($import_key,$validated_values,now()->addMinutes(60));
+        
+         $product_key=Str::uuid();
+         Cache::put($product_key,$validated_products,now()->addMinutes(60));
+     
+         $vehicle_key=Str::uuid();
+         Cache::put($vehicle_key, $validated_vehicles,now()->addMinutes(60));
+         //add the arrays to the cash if i will correct the error $validated_products
 
-
-        foreach ($request->input('products', []) as $index => $product) {
-         echo "hellow";
-         $validator = Validator::make($product, [
-             "product_id"=>"required|integer",
-             "expiration"=> "required|date",
-             "producted_in"=>"required|date",
-             "unit"=>"required",
-             "price_unit"=>"required",
-            
-             
+         return response()->json(["msg"=>"the import isnot created there are errors",
+         "import_job_key"=>$import_key,
+         "products_correction_key"=>$product_key,
+         "product_errors"=>$errors_products,
+         "vehicles_correction_key"=>$vehicle_key,
+         "errors_vehicles"=>$errors_vehicles
          ]);
-         echo "hellow";
-         if ($validator->fails()) {
-            $errors_products[$index] = [
-               'at_product' => $product,
-               'errors' => $validator->errors()->all()
-              
-             ];
-      }else {
-         echo "hellow";
-             $validated_products[] = $product;
-         }
-     }
-
-     foreach ($request->input('vehicles', []) as $index => $vehicle) {
-      //we will not add the import_jop_id because we will send the object when there is no errors
-      //then the job in the queue will create the vehicle with the import_job location and with its id!
-      //we will not create the import jop else if there is nooo any error else 
-      //we will store the correct values in cach and request from admin to correct it!
-      //at the same consept we dont ask the import_jop_id for the product because if there are any errpr 
-      //the import job willnot be created!!
-      $validator = Validator::make($vehicle,[
-         "name" => "required",
-         "expiration" => "required|date",
-         "producted_in" => "required|date",
-         "readiness" => "required|numeric|min:0|max:1",
-         "max_load" => "required|numeric|min:1000",
-         "type_id" => "required"
-          
-      ]);
-  
-      if ($validator->fails()) {
-         $errors_vehicles[$index] = [
-            'at_vehicle' => $vehicle,
-            'errors' => $validator->errors()->all()
-           
-          ];
-   }else {
-      $validated_vehicles[] = $vehicle;
-      }
-  }
-
-  
-
-if( $errors_vehicles!=null || $errors_vehicles!=null){
-
-   $key=Str::uuid();
-   Cache::putt($key, $validated_vehicles,now()->addMinutes(60));
-  $key2=Str::uuid();
-  Cache::putt($key2, $validated_products,now()->addMinutes(60));
-//add the arrays to the cash if i will correct the errors
-
-return response()->json(["msg"=>"the import isnot created there are errors",
-"product_errors"=>$errors_products,
-"errors_vehicles"=>$errors_vehicles
-]);
 
 
 }
 
 $import_jop=Import_jop::create($validated_values);
-if(!empty($validated_products)){
-   foreach($validated_products as $index=>$product){
-     $product["import_jop_id"]=$import_jop->id;
-     print_r($import_jop);
-     //
-     print_r($validated_products);
-     Import_jop_product::create($product);  
-     
-   }
-}
-return response()->json(["msg"=>"created"],201);
+
+
+importing_job::dispatch($import_jop,$validated_products,$validated_vehicles);
+
+return response()->json(["msg"=>"created","errors"=>$errors_products,"products"=>$validated_products],201);
      }
 
      public function suppourt_new_product(Request $request){
@@ -303,7 +249,74 @@ return response()->json(["msg"=>"created"],201);
      }
     
 
+public function correct_errors(Request $request){
+     $request->validate([
+      "import_job_key"=>"required",
+     
+     ]);
+      
 
+
+        $validated_products=Cache::get($request->products_correction_key);
+        
+        $validated_vehicles=Cache::get($request->vehicles_correction_key);
+        $import_job=Cache::get($request->import_job_key);
+      
+        $errors_products=null;
+        $errors_vehicles=null;
+        
+        $Data=$this->valedate_and_build($request);
+       
+        $errors_products=$Data["errors_products"];
+        $errors_vehicles=$Data["errors_vehicles"];
+        $corrected_products=$Data["products"];
+        $corrected_vehicles=$Data["vehicles"];
+        print_r($corrected_products);  
+
+        $corrected_products = is_array($corrected_products) ? array_values($corrected_products) : [];
+        $corrected_vehicles = is_array($corrected_vehicles) ? array_values($corrected_vehicles) : [];
+         
+        $validated_products = is_array($validated_products) ? array_values($validated_products) : [];
+        $validated_vehicles = is_array($validated_vehicles) ? array_values($validated_vehicles) : [];
+         
+
+          $validated_products=array_merge($corrected_products,$validated_products);
+          $validated_vehicles=array_merge($corrected_vehicles,$validated_vehicles,);
+        print_r($validated_products);
+       
+
+
+         if( !empty($errors_vehicles) || !empty($errors_products)){
+         $import_key=Str::uuid();
+         Cache::put($import_key,$import_job,now()->addMinutes(60));
+         $product_key=Str::uuid();
+         Cache::put($product_key, $validated_products,now()->addMinutes(60));
+         $vehicle_key=Str::uuid();
+         Cache::put($vehicle_key, $validated_vehicles,now()->addMinutes(60));
+         //add the arrays to the cash if i will correct the error $validated_products
+
+         return response()->json(["msg"=>"the import isnot created there are errors",
+         "import_job_key"=>$import_key,
+         "products_correction_key"=>$product_key,
+         "product_errors"=>$errors_products,
+         "vehicles_correction_key"=>$vehicle_key,
+         "errors_vehicles"=>$errors_vehicles
+         ]);
+
+}
+
+$import_jop=Import_jop::create($import_job);
+
+
+importing_job::dispatch($import_jop,$validated_products,$validated_vehicles);
+
+return response()->json(["msg"=>"created","errors"=>$errors_products],201); 
+      
+
+
+
+
+}
 
         
       

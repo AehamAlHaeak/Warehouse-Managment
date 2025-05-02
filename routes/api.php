@@ -23,7 +23,7 @@ Route::controller(SuperAdmenController::class)->group(function () {
 
     
 
-
+    Route::post("correct_errors","correct_errors");
    
     Route::post("create_new_import_jop","create_new_import_jop");
     Route::post("suppourt_new_product","suppourt_new_product");
@@ -31,7 +31,7 @@ Route::controller(SuperAdmenController::class)->group(function () {
     
 
 });
-//suppourt_new_product
+//correct_errors
 
 Route::post("login_employe",[EmployeController::class,'login_employe']);
 Route::middleware('auth.api:employee')->group(function () {
