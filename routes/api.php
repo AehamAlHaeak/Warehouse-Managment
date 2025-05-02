@@ -35,7 +35,7 @@ Route::middleware('auth.api:employee')->group(function () {
 Route::controller(UserController::class)->group( function () {
     Route::post('register_user','register_user');
     Route::post('login_user','login_user');
-    Route::middleware('auth.api:user')->group(function () {
+    Route::middleware('auth.api')->group(function () {
         Route::post('logout_user','logout_user');
     });
 });
