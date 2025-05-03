@@ -14,34 +14,41 @@ use App\Http\Controllers\SuperAdmenController;
 Route::controller(SuperAdmenController::class)->group(function () {
     Route::post("create_new_warehouse", "create_new_warehouse");
     Route::post("create_new_specification", "create_new_specification");
-    Route::post("create_new_employe","create_new_employe");
-    Route::post("create_new_distribution_center","create_new_distribution_center");
-    Route::post("create_new_vehicle","create_new_vehicle");
-    Route::post("create_new_supplier","create_new_supplier");
-    Route::post("create_new_garage","create_new_garage");
-    Route::post("create_new_product","create_new_product");
 
-    
+    Route::post("create_new_employe", "create_new_employe");
+    Route::post("create_new_distribution_center", "create_new_distribution_center");
+    Route::post("create_new_vehicle", "create_new_vehicle");
+    Route::post("create_new_supplier", "create_new_supplier");
+    Route::post("create_new_garage", "create_new_garage");
+    Route::post("create_new_product", "create_new_product");
 
-    Route::post("correct_errors","correct_errors");
-   
-    Route::post("create_new_import_jop","create_new_import_jop");
-    Route::post("suppourt_new_product","suppourt_new_product");
 
-    
+
+
+
+    Route::post("correct_errors", "correct_errors");
+
+    Route::post("create_new_import_jop", "create_new_import_jop");
+    Route::post("suppourt_new_product", "suppourt_new_product");
+
+
 
 });
-//correct_errors
 
-Route::post("login_employe",[EmployeController::class,'login_employe']);
+
+Route::post("login_employe", [EmployeController::class, 'login_employe']);
 Route::middleware('auth.api:employee')->group(function () {
-    Route::post('logout_employe',[SuperAdmenController::class,'logout_employe']);
+    Route::post('logout_employe', [SuperAdmenController::class, 'logout_employe']);
 });
 
-Route::controller(UserController::class)->group( function () {
-    Route::post('register_user','register_user');
-    Route::post('login_user','login_user');
+
+Route::controller(UserController::class)->group(function () {
+    Route::post('register_user', 'register_user');
+    Route::post('login_user', 'login_user');
     Route::middleware('auth.api')->group(function () {
-        Route::post('logout_user','logout_user');
+        Route::post('logout_user', 'logout_user');
+        Route::post('updateUser', 'updateUser');
+
     });
 });
+
