@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
+use App\Models\User;
+use App\Traits\Token_user;
+use Illuminate\Http\Request;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\storeUserRequest;
 use App\Http\Requests\updateUserRequest;
-use App\Models\User;
-use Exception;
-use Hash;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Tymon\JWTAuth\Exceptions\JWTException;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use App\Traits\Token_user;
-use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -115,7 +115,7 @@ class UserController extends Controller
         }
         unset($data['image']);
 
-     
+
         $user_data->update(  $data);
         return response()->json(["msg"=> "updated seccessfully",'user'=>$user_data], 200);
     }catch (\Exception $e) {
