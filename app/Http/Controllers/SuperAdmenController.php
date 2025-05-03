@@ -271,7 +271,7 @@ public function correct_errors(Request $request){
         $errors_vehicles=$Data["errors_vehicles"];
         $corrected_products=$Data["products"];
         $corrected_vehicles=$Data["vehicles"];
-        print_r($corrected_products);  
+        
 
         $corrected_products = is_array($corrected_products) ? array_values($corrected_products) : [];
         $corrected_vehicles = is_array($corrected_vehicles) ? array_values($corrected_vehicles) : [];
@@ -282,7 +282,7 @@ public function correct_errors(Request $request){
 
           $validated_products=array_merge($corrected_products,$validated_products);
           $validated_vehicles=array_merge($corrected_vehicles,$validated_vehicles,);
-        print_r($validated_products);
+       
        
 
 
@@ -326,7 +326,19 @@ return response()->json(["msg"=>"created","errors"=>$errors_products],201);
 
 }
 
-        
+   /* why import job and correct errors??
+   import job require the supplier id and products info and vehicles info that mean you can add 
+   new products to your warehouses from the products you support them then you have pare example 
+   you support the red meat and more than supplier sell it for you with different expiration time and some detils
+   then the imported products refers to the public product which is red meat in warehouses or ditribution centers 
+   you have red meat but from different import job and with different details but the public product is constant
+    then you will sell the oldest first and know who is the
+   supplier who send it? and can to resive the problems from costumer and know the source and you earn real 
+   system well why correct errors??? because the data entry may forget some details or enter some problems
+   then i will save the correct in cache memore for a one houer and sned the errors
+    to correct it with the details then i will resive it and fetvh the correct values and continue the pocess
+    save the correct in cache and send the errors if ocure and wait the correction
+   */   
       
         
      
