@@ -14,6 +14,7 @@ use App\Http\Controllers\SuperAdmenController;
 Route::controller(SuperAdmenController::class)->group(function () {
     Route::post("create_new_warehouse", "create_new_warehouse");
     Route::post("create_new_specification", "create_new_specification");
+
     Route::post("create_new_employe", "create_new_employe");
     Route::post("create_new_distribution_center", "create_new_distribution_center");
     Route::post("create_new_vehicle", "create_new_vehicle");
@@ -24,13 +25,22 @@ Route::controller(SuperAdmenController::class)->group(function () {
 
 
 
+
+    Route::post("correct_errors", "correct_errors");
+
+    Route::post("create_new_import_jop", "create_new_import_jop");
+    Route::post("suppourt_new_product", "suppourt_new_product");
+
+
+
 });
-//create_new_garage
+
 
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
 Route::middleware('auth.api:employee')->group(function () {
     Route::post('logout_employe', [SuperAdmenController::class, 'logout_employe']);
 });
+
 
 Route::controller(UserController::class)->group(function () {
     Route::post('register_user', 'register_user');
@@ -39,3 +49,4 @@ Route::controller(UserController::class)->group(function () {
         Route::post('logout_user', 'logout_user');
     });
 });
+

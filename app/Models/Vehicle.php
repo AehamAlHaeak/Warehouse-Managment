@@ -26,9 +26,7 @@ class Vehicle extends Model
         return $this->belongsTo(type::class,"type_id");
     }
 
-    public function vehicleCargos(){
-        return $this->hasMany(Cargo::class);
-    }
+  
     public function import_jop(){
         return $this->belongsTo(Import_jop::class);
     }

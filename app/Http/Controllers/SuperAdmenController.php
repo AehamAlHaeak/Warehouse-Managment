@@ -2,15 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\storeProductRequest;
-use App\Http\Resources\ProductResource;
-
-use App\Http\Resources\TypeResource;
 use App\Models\Bill;
-
 use App\Models\type;
+use App\Jobs\importing_job;
 use App\Models\User;
-use App\Models\Cargo;
+
 
 use App\Models\Garage;
 use App\Models\Employe;
@@ -19,10 +15,12 @@ use App\Models\Product;
 use App\Models\Vehicle;
 use App\Models\Favorite;
 use App\Models\Supplier;
+
 use App\Models\Transfer;
 use App\Models\Warehouse;
 use App\Traits\CRUDTrait;
 use App\Models\Bill_Detail;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\Specialization;
 use App\Models\Supplier_Product;
@@ -30,15 +28,24 @@ use App\Models\Transfer_Vehicle;
 use App\Models\Werehouse_Product;
 use App\Models\DistributionCenter;
 use Tymon\JWTAuth\Facades\JWTAuth;
+
 use Illuminate\Support\Facades\Auth;
+use App\Models\Import_jop_product;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Cache;
+use App\Http\Resources\ProductResource;
+use Illuminate\Support\Facades\Validator;
+use App\Http\Requests\storeProductRequest;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use App\Http\Requests\storeEmployeeRequest;
 use App\Models\distribution_center_Product;
+use App\Models\Import_jop;
+use App\Traits\AlgorithmsTrait;
 
 class SuperAdmenController extends Controller
 {
    use CRUDTrait;
+   use AlgorithmsTrait;
 
    //first create a type to imprt the products type and warehouse type an etc
    public function create_new_specification(Request $request)
@@ -158,32 +165,7 @@ class SuperAdmenController extends Controller
 
 
 
-     public function create_new_cargo(Request $request){
-      $validated_values=$request->validate([
-         "name"=>"required",
-         "expiration"=>"required|date",
-         "producted_in"=>"required|date",
-         "readiness"=>"required|numeric|min:0|max:1",
-         "max_load"=>"required|numeric|min:1000",
-         "type_id"=>"required",
-         "vehicle_id"=>"required|integer",
-         "import_jop_id"=>"required|integer"
-              ]); 
-
-         $request->validate([
-            'image'=>'image|mimes:jpeg,png,jpg,gif|max:4096'
-         ]);
-
-         if ($request->image != null) {
-            $image = $request->file('image');
-            $image_path = $image->store('Cargos', 'public');
-            $validated_values["img_path"]= 'storage/' . $image_path;
-        }
-        $cargo=Cargo::creat($validated_values);
-
-        return response()->json(["msg"=>"cargo added","cargo_data"=>$cargo],201);
-
-     }
+    
        
      public function create_new_supplier(Request $request){
       $validated_values=$request->validate([
@@ -198,19 +180,151 @@ class SuperAdmenController extends Controller
 
       return response()->json(["msg" => "supplier added", "supplier_data" => $supplier], 201);
    }
+
   
 
    
      public function create_new_import_jop(Request $request){
+      $validated_values=$request->validate([
+         "supplier_id"=>"required|integer",
+         "location"=>"required",
+         "latitude"=>"required",
+         "longitude"=>"required"
+      ]);
+      
+            $Data=$this->valedate_and_build($request);
+            $validated_products=$Data["products"];
+            $validated_vehicles=$Data["vehicles"];
+            $errors_products=$Data["errors_products"];
+            $errors_vehicles=$Data["errors_vehicles"];
+echo "i am here";
+         if( !empty($errors_vehicles) || !empty($errors_products)){
+         $import_key=Str::uuid();
+    
+         Cache::put($import_key,$validated_values,now()->addMinutes(60));
+        
+         $product_key=Str::uuid();
+         Cache::put($product_key,$validated_products,now()->addMinutes(60));
+     
+         $vehicle_key=Str::uuid();
+         Cache::put($vehicle_key, $validated_vehicles,now()->addMinutes(60));
+         //add the arrays to the cash if i will correct the error $validated_products
+
+         return response()->json(["msg"=>"the import isnot created there are errors",
+         "import_job_key"=>$import_key,
+         "products_correction_key"=>$product_key,
+         "product_errors"=>$errors_products,
+         "vehicles_correction_key"=>$vehicle_key,
+         "errors_vehicles"=>$errors_vehicles
+         ]);
 
 
+}
+
+$import_jop=Import_jop::create($validated_values);
 
 
+importing_job::dispatch($import_jop,$validated_products,$validated_vehicles);
+
+return response()->json(["msg"=>"created","errors"=>$errors_products,"products"=>$validated_products],201);
      }
 
+     public function suppourt_new_product(Request $request){
+      
+             $validated_values=$request->validate([
+                 "name"=>"required",
+                 "description"=>"required",
+                 "import_cycle"=>"string",
+                 "average"=>"required",
+                 "variance"=>"required",
+                 "type_id"=>"required"
+
+             ]);
+             
+             $product=Product::create($validated_values);
+
+             return response()->json(["msg"=>"product created","product_data"=>$product],201);
+
+      
+     }
+    
+
+public function correct_errors(Request $request){
+     $request->validate([
+      "import_job_key"=>"required",
+     
+     ]);
+      
+
+
+        $validated_products=Cache::get($request->products_correction_key);
+        
+        $validated_vehicles=Cache::get($request->vehicles_correction_key);
+        $import_job=Cache::get($request->import_job_key);
+      
+        $errors_products=null;
+        $errors_vehicles=null;
+        
+        $Data=$this->valedate_and_build($request);
+       
+        $errors_products=$Data["errors_products"];
+        $errors_vehicles=$Data["errors_vehicles"];
+        $corrected_products=$Data["products"];
+        $corrected_vehicles=$Data["vehicles"];
+        print_r($corrected_products);  
+
+        $corrected_products = is_array($corrected_products) ? array_values($corrected_products) : [];
+        $corrected_vehicles = is_array($corrected_vehicles) ? array_values($corrected_vehicles) : [];
+         
+        $validated_products = is_array($validated_products) ? array_values($validated_products) : [];
+        $validated_vehicles = is_array($validated_vehicles) ? array_values($validated_vehicles) : [];
+         
+
+          $validated_products=array_merge($corrected_products,$validated_products);
+          $validated_vehicles=array_merge($corrected_vehicles,$validated_vehicles,);
+        print_r($validated_products);
+       
+
+
+         if( !empty($errors_vehicles) || !empty($errors_products)){
+            Cache::forget($request->products_correction_key);
+            Cache::forget($request->vehicles_correction_key);
+            Cache::forget($request->import_job_key);
+            
+
+         $import_key=Str::uuid();
+         Cache::put($import_key,$import_job,now()->addMinutes(60));
+         $product_key=Str::uuid();
+         Cache::put($product_key, $validated_products,now()->addMinutes(60));
+         $vehicle_key=Str::uuid();
+         Cache::put($vehicle_key, $validated_vehicles,now()->addMinutes(60));
+         //add the arrays to the cash if i will correct the error $validated_products
+
+         return response()->json(["msg"=>"the import isnot created there are errors",
+         "import_job_key"=>$import_key,
+         "products_correction_key"=>$product_key,
+         "product_errors"=>$errors_products,
+         "vehicles_correction_key"=>$vehicle_key,
+         "errors_vehicles"=>$errors_vehicles
+         ]);
+
+}
+
+$import_jop=Import_jop::create($import_job);
+
+
+importing_job::dispatch($import_jop,$validated_products,$validated_vehicles);
+Cache::forget($request->products_correction_key);
+Cache::forget($request->vehicles_correction_key);
+Cache::forget($request->import_job_key);
+
+return response()->json(["msg"=>"created","errors"=>$errors_products],201); 
+      
 
 
 
+
+}
 
         
       
@@ -220,18 +334,7 @@ class SuperAdmenController extends Controller
  
 
 
-   public function create_new_product(storeProductRequest $request)
-   {
-      $validated_values = $request->validated();
-
-      if ($request->hasFile('img_path')) {
-         $path = $request->file('img_path')->store('products', 'public'); // تخزين الصورة في مجلد المنتجات
-         $validated_data['img_path'] = $path;
-      }
-      $product = Product::create($validated_values);
-      return response()->json(['message' => 'Product added successfully', 'product_data' => new ProductResource($product)], 201);
-   }
-
+ 
 
   
    }

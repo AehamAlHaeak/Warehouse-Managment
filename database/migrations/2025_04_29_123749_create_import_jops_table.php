@@ -25,6 +25,9 @@ return new class extends Migration
             $table->unsignedBigInteger("supplier_id");
             $table->foreign("supplier_id")->references("id")->on("suppliers");
             $table->date("arrival_time")->nullable();
+            $table->string("location");
+            $table->double("latitude");
+            $table->double("longitude");
             
         });
     }
