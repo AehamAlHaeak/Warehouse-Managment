@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\storeUserRequest;
+use App\Http\Requests\updateUserRequest;
 use App\Models\User;
 use Exception;
 use Hash;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Traits\Token_user;
@@ -24,7 +26,7 @@ class UserController extends Controller
 
             if ($request->hasFile('image')) {
                 $imagePath = $request->file('image')->store('user_profile', 'public');
-                $validatedData['img_path'] = $imagePath;
+                $validatedData['img_path'] ="storage/".$imagePath;
             }
             unset($validatedData['image']);
             $user = User::create($validatedData);
@@ -97,4 +99,30 @@ class UserController extends Controller
             return response()->json(["msg" => "Failed to logout, please try again later"], 500);
         }
     }
+    public function updateUser(updateUserRequest $request){
+        $user=Auth()->user();
+        $user_data=User::find($user->id);
+        $data=$request->validated();
+        try {
+        if(!empty($data['password'])){
+            $data['password'] = Hash::make($data['password']);
+        }else{
+            unset($data['password']);
+        }
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('user_profile', 'public');
+            $data['img_path'] ='storage/'.$imagePath;
+        }
+        unset($data['image']);
+
+     
+        $user_data->update(  $data);
+        return response()->json(["msg"=> "updated seccessfully",'user'=>$user_data], 200);
+    }catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Something went wrong',
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+ }
 }

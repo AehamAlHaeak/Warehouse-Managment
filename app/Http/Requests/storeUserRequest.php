@@ -29,7 +29,7 @@ class storeUserRequest extends FormRequest
             'email' => 'nullable|email|unique:users,email',
             'phone_number' => 'nullable|string|unique:users,phone_number',
             'password' => 'required|string|min:6',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,bmp|max:4096',
             'creditCards' => 'nullable|json',
         ];
     }

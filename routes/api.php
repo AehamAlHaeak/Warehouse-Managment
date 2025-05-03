@@ -47,6 +47,8 @@ Route::controller(UserController::class)->group(function () {
     Route::post('login_user', 'login_user');
     Route::middleware('auth.api')->group(function () {
         Route::post('logout_user', 'logout_user');
+        Route::post('updateUser', 'updateUser');
+
     });
 });
 
