@@ -4,7 +4,7 @@ namespace App\Traits;
 
 use Tymon\JWTAuth\Facades\JWTAuth;
 
-trait Token_user
+trait TokenUser
 {
     public function token_user($object)
     {

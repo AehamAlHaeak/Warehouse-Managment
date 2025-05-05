@@ -45,10 +45,13 @@ Route::middleware('auth.api:employee')->group(function () {
 Route::controller(UserController::class)->group(function () {
     Route::post('register_user', 'register_user');
     Route::post('login_user', 'login_user');
+    Route::post('near_by_centers', 'near_by_centers');
     Route::middleware('auth.api')->group(function () {
         Route::post('logout_user', 'logout_user');
         Route::post('updateUser', 'updateUser');
 
+
     });
 });
 
+//near_by_centers
