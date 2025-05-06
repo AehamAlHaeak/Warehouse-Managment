@@ -19,8 +19,7 @@ return new class extends Migration
             $table->double("latitude");
             $table->double("longitude");
             $table->enum("status",["auto","reject","manual"]);
-            
-            
+           
 
         });
     }
