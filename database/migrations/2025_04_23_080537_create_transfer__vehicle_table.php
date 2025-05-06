@@ -19,11 +19,12 @@ return new class extends Migration
             $table->unsignedBigInteger("transfer_id");
             $table->foreign("vehicle_id")->references("id")->on("vehicles");
             $table->foreign("transfer_id")->references("id")->on("transfers");
-            $table->unsignedBigInteger("product_id");
-            $table->foreign("product_id")->references("id")->on("products");
-            $table->double("quantity_by_kg");
-            $table->date("arrival_time")->nullable();
+          
 
+            
+            $table->double("quantity_by_kg");
+            $table->enum("status",["under_work","finished","wait"]);
+             
         });
     }
 
@@ -35,3 +36,12 @@ return new class extends Migration
         Schema::dropIfExists('transfer__vehicle');
     }
 };
+/**status is a managment fild why???:
+ because when i will add transfer work i will see this table and decide who the vehicles can work?
+ when i add a new transfer and add a vehivle in it will send a notification for the driver you have
+ a task and send the details i will add the vehicle with the detils product_id quantity etc.. 
+ when i see there is no any conflicts
+ betwen the tasks and willnot reserve the vehicle while it can work another job !!! that is not regular
+ then i will reserve the vehicle without conflicts and without to high cost to buy new vehicles 
+ the vehicles are full time!!
+ */

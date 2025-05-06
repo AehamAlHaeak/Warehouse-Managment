@@ -23,7 +23,7 @@ use App\Models\Werehouse_Product;
 use App\Models\DistributionCenter;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Validator;
-use App\Models\distribution_center_Product;
+use App\Models\Distribution_center_Product;
 
 trait AlgorithmsTrait
 {
@@ -61,6 +61,7 @@ public function valedate_and_build(Request $request){
          "producted_in"=>"required|date",
          "unit"=>"required",
          "price_unit"=>"required",
+         "quantity"=>"required"
         
          
      ]);
@@ -115,5 +116,78 @@ $Data["errors_vehicles"]=$errors_vehicles;
 
 return $Data;
 
+}
+
+
+
+public static function calculate($lat1, $lon1, $lat2, $lon2, $unit = 'km')
+{
+    $theta = $lon1 - $lon2;
+    $dist = sin(deg2rad($lat1)) * sin(deg2rad($lat2)) +
+        cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+        cos(deg2rad($theta));
+
+    $dist = acos($dist);
+    $dist = rad2deg($dist);
+    $miles = $dist * 60 * 1.1515;
+
+    switch ($unit) {
+        case 'km':
+            return $miles * 1.609344;
+        case 'm':
+            return $miles * 1609.344;
+        case 'mi':
+            return $miles;
+        case 'nm':
+            return $miles * 0.8684;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+public function calculate_the_nearest_location($model, $latitude, $longitude)
+{
+
+    $items = $model::all();
+
+    $distances = [];
+    foreach ($items as $item) {
+
+        $item->distance = $this->calculate($item->latitude, $item->longitude, $latitude, $longitude);
+        $distances[] = $item;
+    }
+    $leastdistance = $distances[0];
+    foreach ($distances as $item) {
+
+        if ($item->distance <=  $leastdistance->distance) {
+
+            $leastdistance = $item;
+        }
+    }
+
+    return $leastdistance;
 }
 }

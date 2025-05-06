@@ -22,9 +22,9 @@ return new class extends Migration
            
 
             $table->bigInteger("import_cycle")->nullable();
-            $table->double("average");
+            $table->double("average")->default(0);
             //as a note we willnot store standard deviation because it sqrt(variance/n)
-            $table->double("variance");
+            $table->double("variance")->default(0);
 
         });
     }

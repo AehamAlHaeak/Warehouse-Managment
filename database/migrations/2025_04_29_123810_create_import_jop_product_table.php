@@ -21,6 +21,7 @@ return new class extends Migration
             $table->date("expiration");
             $table->date("producted_in");
             $table->string("unit");
+            $table->double("quantity");
             $table->double("price_unit");
         });
     }

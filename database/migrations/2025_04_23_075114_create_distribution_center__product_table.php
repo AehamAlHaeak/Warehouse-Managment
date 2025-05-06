@@ -19,12 +19,13 @@ return new class extends Migration
             $table->foreign("distribution_center_id")->references("id")->on("distribution_centers");
             $table->foreign("product_id")->references("id")->on("products");
             $table->double("max_load");
-            $table->double("actual_load");
-            $table->double("average");
+           //$table->double("actual_load");//actual load is not important
+            $table->double("average")->default(0);
             //as a note we willnot store standard deviation because it sqrt(variance/n)
-            $table->double("variance");
+            $table->double("variance")->default(0);
             //n is a unit in company is the import cycle time here is a week
             //in distrebution_center is a day 
+            $table->unique(['distribution_center_id', 'product_id']);
         });
     }
 

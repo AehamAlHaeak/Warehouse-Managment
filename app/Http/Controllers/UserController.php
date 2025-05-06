@@ -14,9 +14,13 @@ use App\Http\Requests\storeUserRequest;
 use App\Http\Requests\updateUserRequest;
 use Tymon\JWTAuth\Exceptions\JWTException;
 
+
+
+use App\Traits\AlgorithmsTrait;
+
 class UserController extends Controller
 {
-    use Token_user;
+    use Token_user,AlgorithmsTrait;
     public function register_user(storeUserRequest $request)
     {
 
@@ -26,7 +30,7 @@ class UserController extends Controller
 
             if ($request->hasFile('image')) {
                 $imagePath = $request->file('image')->store('user_profile', 'public');
-                $validatedData['img_path'] ="storage/".$imagePath;
+                $validatedData['img_path'] = "storage/" . $imagePath;
             }
             unset($validatedData['image']);
             $user = User::create($validatedData);
@@ -35,14 +39,12 @@ class UserController extends Controller
                 'msg' => 'Register user successfully',
                 'user' => $user
             ], 201);
-
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Something went wrong',
                 'message' => $e->getMessage(),
             ], 500);
         }
-
     }
 
 
@@ -99,21 +101,23 @@ class UserController extends Controller
             return response()->json(["msg" => "Failed to logout, please try again later"], 500);
         }
     }
-    public function updateUser(updateUserRequest $request){
-        $user=Auth()->user();
-        $user_data=User::find($user->id);
-        $data=$request->validated();
+    public function updateUser(updateUserRequest $request)
+    {
+        $user = Auth()->user();
+        $user_data = User::find($user->id);
+        $data = $request->validated();
         try {
-        if(!empty($data['password'])){
-            $data['password'] = Hash::make($data['password']);
-        }else{
-            unset($data['password']);
-        }
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('user_profile', 'public');
-            $data['img_path'] ='storage/'.$imagePath;
-        }
-        unset($data['image']);
+            if (!empty($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
+            } else {
+                unset($data['password']);
+            }
+            if ($request->hasFile('image')) {
+                $imagePath = $request->file('image')->store('user_profile', 'public');
+                $data['img_path'] = 'storage/' . $imagePath;
+            }
+            unset($data['image']);
+
 
 
         $user_data->update(  $data);
@@ -124,5 +128,23 @@ class UserController extends Controller
             'message' => $e->getMessage(),
         ], 500);
     }
- }
+
+            $user_data->update($data);
+            return response()->json(["msg" => "updated seccessfully", 'user' => $user_data], 200);
+        }
+
+
+
+    public function near_by_centers(Request $request){
+        $location=$request->validate([
+            'location'=>'required|string',
+            'latitude'=>'required',
+            'longitude'=>'required'
+        ]);
+
+
+$nearest_center=$this->calculate_the_nearest_location("App\Models\DistributionCenter",$request->latitude,$request->longitude);
+
+return response()->json(["nearest"=>$nearest_center], 200);
+    }
 }

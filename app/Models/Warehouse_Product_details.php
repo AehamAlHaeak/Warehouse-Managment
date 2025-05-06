@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 class Warehouse_Product_details extends Pivot
 {
    protected $guarded;
-   public function product(){
-    return $this->belongsTo(Product::class,"product_id");
-   }
+  public function all_details(){
+   return $this->belongsTo(Import_jop_product::class,"import_jop_product_id");
+  }
+   
 }
