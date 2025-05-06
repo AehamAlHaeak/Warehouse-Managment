@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Exception;
 use App\Models\User;
-use App\Traits\Token_user;
+use App\Traits\TokenUser;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Log;
@@ -20,7 +20,7 @@ use App\Traits\AlgorithmsTrait;
 
 class UserController extends Controller
 {
-    use Token_user,AlgorithmsTrait;
+    use TokenUser,AlgorithmsTrait;
     public function register_user(storeUserRequest $request)
     {
 
