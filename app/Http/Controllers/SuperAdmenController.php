@@ -38,7 +38,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\storeProductRequest;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use App\Http\Requests\storeEmployeeRequest;
-use App\Models\distribution_center_Product;
+use App\Models\Distribution_center_Product;
 use App\Models\Import_jop;
 use App\Traits\AlgorithmsTrait;
 
@@ -68,8 +68,8 @@ class SuperAdmenController extends Controller
          "name" => "required|max:128",
          "location" => "required",
          "latitude" => "required|numeric",
-         "longitude" => "required|numeric",
-         "type_id" => "required"
+         "longitude" => "required|numeric"
+        
 
       ]);
 
@@ -197,10 +197,10 @@ class SuperAdmenController extends Controller
             $validated_vehicles=$Data["vehicles"];
             $errors_products=$Data["errors_products"];
             $errors_vehicles=$Data["errors_vehicles"];
-echo "i am here";
+             
          if( !empty($errors_vehicles) || !empty($errors_products)){
          $import_key=Str::uuid();
-    
+          
          Cache::put($import_key,$validated_values,now()->addMinutes(60));
         
          $product_key=Str::uuid();
@@ -235,11 +235,10 @@ return response()->json(["msg"=>"created","errors"=>$errors_products,"products"=
                  "name"=>"required",
                  "description"=>"required",
                  "import_cycle"=>"string",
-                 "average"=>"required",
-                 "variance"=>"required",
                  "type_id"=>"required"
 
              ]);
+             $product=Product::where("name",$validated_values["name"])->get()->first();
              
              $product=Product::create($validated_values);
 
@@ -339,8 +338,32 @@ return response()->json(["msg"=>"created","errors"=>$errors_products],201);
     to correct it with the details then i will resive it and fetvh the correct values and continue the pocess
     save the correct in cache and send the errors if ocure and wait the correction
    */   
+      //place is distributuion_center or warehouse
+   public function support_new_product_in_place(Request $request){
+      $validated_values=$request->validate([
+         "place"=>"required|in:Warehouse,Distribution_center",
+         "place_id"=>"required|integer"
+         ]);
+
+         
+      $data=$request->validate([
       
-        
+      "product_id"=>"required|integer",
+      "max_load"=>"required|numeric",
+
+    ]);
+   
+     $table="App\Models\\".$validated_values["place"]."_Product";
+    
+     $correct_id=strtolower($validated_values["place"]."_id");
+     echo $correct_id;
+      $data[$correct_id]=$validated_values["place_id"];
+     
+     $prod=$table::create($data);
+     
+      return response()->json(["msg"=>"created"],200);
+
+      }
      
        
  
