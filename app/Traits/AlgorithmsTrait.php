@@ -118,6 +118,16 @@ trait AlgorithmsTrait
         return $Data;
     }
 
+
+
+
+
+
+
+
+
+
+    
     public static function calculate($lat1, $lon1, $lat2, $lon2, $unit = 'km')
     {
         $theta = $lon1 - $lon2;
@@ -140,6 +150,32 @@ trait AlgorithmsTrait
                 return $miles * 0.8684;
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     public function calculate_the_nearest_location($model, $latitude, $longitude)
     {
 
