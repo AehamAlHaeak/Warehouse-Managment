@@ -172,9 +172,12 @@ class SuperAdmenController extends Controller
        "comunication_way"=>"required",
        "identifier"=>"required",
        "country"=>"required"]);
-
+$supplier=Supplier::where("identifier",$validated_values["identifier"])->get();
+      if($supplier->isNotEmpty()){
+         return response()->json(["msg" => "supplier already exist", "supplier_data" => $supplier], 400);
+      }
          
-      
+        
       $supplier =Supplier::create($validated_values);
 
 
@@ -238,9 +241,13 @@ return response()->json(["msg"=>"created","errors"=>$errors_products,"products"=
                  "type_id"=>"required"
 
              ]);
-             $product=Product::where("name",$validated_values["name"])->get()->first();
-             
-             $product=Product::create($validated_values);
+             $product=Product::where("name",$validated_values["name"])->get();
+              
+
+         if ($product->isNotEmpty()) {
+            return response()->json(["msg"=>"product already exist","product_data"=>$product],400); 
+         } 
+            $product=Product::create($validated_values);
 
              return response()->json(["msg"=>"product created","product_data"=>$product],201);
 
@@ -356,12 +363,16 @@ return response()->json(["msg"=>"created","errors"=>$errors_products],201);
      $table="App\Models\\".$validated_values["place"]."_Product";
     
      $correct_id=strtolower($validated_values["place"]."_id");
-     echo $correct_id;
+     
       $data[$correct_id]=$validated_values["place_id"];
+      $prod=$table::where($correct_id,$validated_values["place_id"])->where("product_id",$data["product_id"])->exists();
+      if($prod){
+         return response()->json(["msg"=>"already supported"],400);
+
+      }
+      $table::create($data);
      
-     $prod=$table::create($data);
-     
-      return response()->json(["msg"=>"created"],200);
+      return response()->json(["msg"=>"supported"],201);
 
       }
      

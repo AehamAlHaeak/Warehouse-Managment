@@ -25,7 +25,7 @@ return new class extends Migration
             $table->double("variance")->default(0);
             //n is a unit in company is the import cycle time here is a week
             //in distrebution_center is a day 
-            
+            $table->unique(['warehouse_id', 'product_id']);
         });
     }
 
