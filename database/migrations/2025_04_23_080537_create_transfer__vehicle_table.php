@@ -19,8 +19,9 @@ return new class extends Migration
             $table->unsignedBigInteger("transfer_id");
             $table->foreign("vehicle_id")->references("id")->on("vehicles");
             $table->foreign("transfer_id")->references("id")->on("transfers");
-            $table->unsignedBigInteger("product_id");
-            $table->foreign("product_id")->references("id")->on("products");
+          
+
+            
             $table->double("quantity_by_kg");
             $table->enum("status",["under_work","finished","wait"]);
              
