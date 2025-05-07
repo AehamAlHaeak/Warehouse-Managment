@@ -10,7 +10,7 @@ class Warehouse_Product extends Pivot
     
     protected $guarded;
     public function product_details(){
-        return $this->hasMany(Warehouse_Product_details::class);
+        return $this->hasMany(Warehouse_Product_details::class,"warehouse_product_id");
     }
     public function product(){
         return $this->belongsTo(Product::class,"product_id");

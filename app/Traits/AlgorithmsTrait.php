@@ -190,4 +190,27 @@ public function calculate_the_nearest_location($model, $latitude, $longitude)
 
     return $leastdistance;
 }
+public function sort_the_near_by_location($model, $latitude, $longitude)
+{
+
+    $items = $model::all();
+
+    $distances = [];
+    foreach ($items as $item) {
+
+        $item->distance = $this->calculate($item->latitude, $item->longitude, $latitude, $longitude);
+        $distances[$item->id] = $item;
+    }
+    $leastdistance = $distances[0];
+    
+    foreach ($distances as $item) {
+
+        if ($item->distance <=  $leastdistance->distance) {
+
+            $leastdistance = $item;
+        }
+    }
+
+    return $leastdistance;
+}
 }

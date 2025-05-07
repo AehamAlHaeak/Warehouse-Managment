@@ -19,7 +19,7 @@ return new class extends Migration
             //the date is important for the vehicle tasks
             $table->date("date_of_resiving");
             $table->date("date_of_finishing");
-
+             
         });
     }
 
