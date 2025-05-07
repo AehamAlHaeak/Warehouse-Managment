@@ -1,12 +1,13 @@
 <?php
 
-use App\Http\Controllers\UserController;
+use api;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiController;
-use App\Http\Controllers\EmployeController;
 use App\Http\Controllers\IDUController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserContruller;
+use App\Http\Controllers\EmployeController;
 use App\Http\Controllers\SuperAdmenController;
 use App\Http\Controllers\Distribution_Center_controller;
 
@@ -58,17 +59,7 @@ Route::controller(UserController::class)->group(function () {
 
 
 Route::middleware("is_distrebution_center_manager")->controller(Distribution_Center_controller::class)->group(function () {
-   
+
    Route::get("show_my_suppurted_products","show_my_suppurted_products");
 
 });
-
-
-
-
-
-
-
-
-
-
