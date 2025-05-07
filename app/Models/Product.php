@@ -42,4 +42,12 @@ public function import_jobs_details(){
     return $this->hasMany(Import_jop_product::class,"product_id");
 }
 
+public function userMovables()
+{
+    return $this->belongsToMany(UserMovable::class, 'movable_product')
+                ->withPivot('quantity')
+                ->withTimestamps();
+}
+
+
 }

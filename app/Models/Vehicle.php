@@ -30,5 +30,8 @@ class Vehicle extends Model
     public function import_jop(){
         return $this->belongsTo(Import_jop::class);
     }
+public function transfer_products_of_type(){
+    return $this->belongsTo(type::class,"type_id");
+}
 
 }

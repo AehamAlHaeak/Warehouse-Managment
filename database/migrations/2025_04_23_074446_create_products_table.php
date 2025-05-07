@@ -18,7 +18,7 @@ return new class extends Migration
             $table->text("description"); 
 
             $table->string("img_path")->nullable();
-
+            $table->double('weight');//unit_sell
            
 
             $table->bigInteger("import_cycle")->nullable();
