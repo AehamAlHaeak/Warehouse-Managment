@@ -9,7 +9,7 @@ use App\Http\Controllers\IDUController;
 use App\Http\Controllers\UserContruller;
 use App\Http\Controllers\SuperAdmenController;
 use App\Http\Controllers\Distribution_Center_controller;
-
+use App\Models\DistributionCenter;
 
 Route::controller(SuperAdmenController::class)->group(function () {
     Route::post("create_new_warehouse", "create_new_warehouse");
@@ -32,11 +32,11 @@ Route::controller(SuperAdmenController::class)->group(function () {
     Route::post("suppourt_new_product", "suppourt_new_product");
     Route::post("support_new_product_in_place", "support_new_product_in_place");
     Route::get("show_products", "show_products");
-
+    Route::post("/orded_locations", "orded_locations");
 
 
 });
-//show_products
+//orded_locations
 
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
 Route::middleware('auth.api:employee')->group(function () {
