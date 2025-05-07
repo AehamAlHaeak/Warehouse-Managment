@@ -392,8 +392,12 @@ return response()->json(["msg"=>"created","errors"=>$errors_products],201);
        }
  
 
-
- 
+//this method to try the algorithm of location
+       public function orded_locations(Request $request){
+    //calculate($lat1, $lon1, $lat2, $lon2, $unit = 'km')
+        $sorted_places=$this->sort_the_near_by_location("App\Models\DistributionCenter",$request->latitude,$request->longitude);
+        return response()->json($sorted_places);
+       }
 
   
    }

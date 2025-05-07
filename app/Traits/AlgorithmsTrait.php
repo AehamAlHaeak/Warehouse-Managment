@@ -22,6 +22,7 @@ use App\Models\Transfer_Vehicle;
 use App\Models\Werehouse_Product;
 use App\Models\DistributionCenter;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Distribution_center_Product;
 
@@ -120,28 +121,32 @@ return $Data;
 
 
 
-public static function calculate($lat1, $lon1, $lat2, $lon2, $unit = 'km')
-{
-    $theta = $lon1 - $lon2;
-    $dist = sin(deg2rad($lat1)) * sin(deg2rad($lat2)) +
-        cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
-        cos(deg2rad($theta));
+public function calculate($latitude1,$longitude1, $latitude2,$longitude2) {
+    $apiKey = config('services.openrouteservice.key');
+//36.2765, 33.5138, 37.0, 35.0
+    $coordinates = [
+        [$longitude1, $latitude1],  // نقطة البداية
+        [$longitude2, $latitude2],  // نقطة النهاية
+    ];
 
-    $dist = acos($dist);
-    $dist = rad2deg($dist);
-    $miles = $dist * 60 * 1.1515;
+    $response = Http::withHeaders([
+        'Authorization' => $apiKey,
+        'Content-Type' => 'application/json',
+    ])->post('https://api.openrouteservice.org/v2/matrix/driving-hgv', [
+        'locations' => $coordinates,
+        'metrics' => ['distance', 'duration'],//the time is by seconds then we will change it
+        
+    ]);
+    //$data['distances'][0][1] the destance by meters
+    $data = $response->json();
 
-    switch ($unit) {
-        case 'km':
-            return $miles * 1.609344;
-        case 'm':
-            return $miles * 1609.344;
-        case 'mi':
-            return $miles;
-        case 'nm':
-            return $miles * 0.8684;
+    if (isset($data)) {
+        return $data; // المسافة بالأمتار
+    } else {
+        throw new \Exception('Failed to fetch distance: ' . json_encode($data));
     }
 }
+
 
 
 
@@ -175,8 +180,9 @@ public function calculate_the_nearest_location($model, $latitude, $longitude)
 
     $distances = [];
     foreach ($items as $item) {
-
-        $item->distance = $this->calculate($item->latitude, $item->longitude, $latitude, $longitude);
+          $data=$this->calculate($item->latitude, $item->longitude, $latitude, $longitude);
+        $item->distance =$data['distances'][0][1];//0 1 are from 0 to one form sourece to dest
+        $item->duration=$data["duration"][0][1];
         $distances[] = $item;
     }
     $leastdistance = $distances[0];
@@ -192,25 +198,21 @@ public function calculate_the_nearest_location($model, $latitude, $longitude)
 }
 public function sort_the_near_by_location($model, $latitude, $longitude)
 {
-
+    // جيب كل العناصر
     $items = $model::all();
 
-    $distances = [];
+    // أضف المسافة لكل عنصر
     foreach ($items as $item) {
-
-        $item->distance = $this->calculate($item->latitude, $item->longitude, $latitude, $longitude);
-        $distances[$item->id] = $item;
-    }
-    $leastdistance = $distances[0];
-    
-    foreach ($distances as $item) {
-
-        if ($item->distance <=  $leastdistance->distance) {
-
-            $leastdistance = $item;
-        }
+        $data=$this->calculate($item->latitude, $item->longitude, $latitude, $longitude);
+        
+        $item["distance"]=$data['distances'][0][1];//0 1 are from 0 to one form sourece to dest
+        $item->duration=$data['durations'][0][1]/3600;
     }
 
-    return $leastdistance;
+    // استخدم Laravel Collection sortBy لترتيب العناصر حسب المسافة
+    $sorted = $items->sortBy('distance')->values();
+
+    // رجّع النتيجة كـ Collection مرتبة
+    return $sorted;
 }
 }
