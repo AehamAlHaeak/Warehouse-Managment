@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('bill__details', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
-            $table->unsignedBigInteger("product_id");
+         
             $table->unsignedBigInteger("bill_id");
-            $table->foreign("product_id")->references("id")->on("products");
+           
             $table->foreign("bill_id")->references("id")->on("bills");
             $table->double("quantity");
             //we delete the table bill_vehicle because the details and this relation make the same task

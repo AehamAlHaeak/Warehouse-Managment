@@ -27,8 +27,11 @@ trait LoadingTrait
 {   
 
     public function calculate_actual_load($product_details){
+        
        $actual_load=0;
+      
        foreach($product_details as $item){
+     
         $actual_load+=$item->actual_load;
        }
    return $actual_load;

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         
-        Schema::create('transfer__vehicle', function (Blueprint $table) {
+        Schema::create('transfer__details', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
             $table->unsignedBigInteger("vehicle_id");
@@ -33,7 +33,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('transfer__vehicle');
+        Schema::dropIfExists('transfer__details');
     }
 };
 /**status is a managment fild why???:

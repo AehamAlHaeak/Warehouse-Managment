@@ -28,7 +28,7 @@ use App\Models\Transfer_Vehicle;
 use App\Models\Werehouse_Product;
 use App\Models\DistributionCenter;
 use Tymon\JWTAuth\Facades\JWTAuth;
-
+use App\Traits\LoadingTrait;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Import_jop_product;
 use Illuminate\Support\Facades\Hash;
@@ -46,7 +46,7 @@ class SuperAdmenController extends Controller
 {
    use CRUDTrait;
    use AlgorithmsTrait;
-
+   use LoadingTrait;
    //first create a type to imprt the products type and warehouse type an etc
    public function create_new_specification(Request $request)
    {
@@ -376,7 +376,20 @@ return response()->json(["msg"=>"created","errors"=>$errors_products],201);
 
       }
      
-       
+       public function show_products(Request $request){
+         $products=Product::all();
+
+          foreach($products as $product){
+           $product["deviation"]=sqrt($product->variance);
+           $product["actual_load"]=$this->calculate_actual_load($product->import_jobs_details);
+           
+          }
+
+
+         return response()->json(["msg"=>"sucessfull","products"=>$products],200);
+
+
+       }
  
 
 

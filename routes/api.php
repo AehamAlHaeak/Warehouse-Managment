@@ -31,11 +31,12 @@ Route::controller(SuperAdmenController::class)->group(function () {
     Route::post("create_new_import_jop", "create_new_import_jop");
     Route::post("suppourt_new_product", "suppourt_new_product");
     Route::post("support_new_product_in_place", "support_new_product_in_place");
+    Route::get("show_products", "show_products");
 
 
 
 });
-//support_new_products_in_place
+//show_products
 
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
 Route::middleware('auth.api:employee')->group(function () {
