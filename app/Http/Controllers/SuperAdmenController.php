@@ -28,7 +28,7 @@ use App\Models\Transfer_Vehicle;
 use App\Models\Werehouse_Product;
 use App\Models\DistributionCenter;
 use Tymon\JWTAuth\Facades\JWTAuth;
-
+use App\Traits\LoadingTrait;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Import_jop_product;
 use Illuminate\Support\Facades\Hash;
@@ -38,7 +38,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\storeProductRequest;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use App\Http\Requests\storeEmployeeRequest;
-use App\Models\distribution_center_Product;
+use App\Models\Distribution_center_Product;
 use App\Models\Import_jop;
 use App\Traits\AlgorithmsTrait;
 
@@ -46,7 +46,7 @@ class SuperAdmenController extends Controller
 {
    use CRUDTrait;
    use AlgorithmsTrait;
-
+   use LoadingTrait;
    //first create a type to imprt the products type and warehouse type an etc
    public function create_new_specification(Request $request)
    {
@@ -68,8 +68,8 @@ class SuperAdmenController extends Controller
          "name" => "required|max:128",
          "location" => "required",
          "latitude" => "required|numeric",
-         "longitude" => "required|numeric",
-         "type_id" => "required"
+         "longitude" => "required|numeric"
+        
 
       ]);
 
@@ -172,9 +172,12 @@ class SuperAdmenController extends Controller
        "comunication_way"=>"required",
        "identifier"=>"required",
        "country"=>"required"]);
-
+$supplier=Supplier::where("identifier",$validated_values["identifier"])->get();
+      if($supplier->isNotEmpty()){
+         return response()->json(["msg" => "supplier already exist", "supplier_data" => $supplier], 400);
+      }
          
-      
+        
       $supplier =Supplier::create($validated_values);
 
 
@@ -197,10 +200,10 @@ class SuperAdmenController extends Controller
             $validated_vehicles=$Data["vehicles"];
             $errors_products=$Data["errors_products"];
             $errors_vehicles=$Data["errors_vehicles"];
-echo "i am here";
+             
          if( !empty($errors_vehicles) || !empty($errors_products)){
          $import_key=Str::uuid();
-    
+          
          Cache::put($import_key,$validated_values,now()->addMinutes(60));
         
          $product_key=Str::uuid();
@@ -235,13 +238,16 @@ return response()->json(["msg"=>"created","errors"=>$errors_products,"products"=
                  "name"=>"required",
                  "description"=>"required",
                  "import_cycle"=>"string",
-                 "average"=>"required",
-                 "variance"=>"required",
                  "type_id"=>"required"
 
              ]);
-             
-             $product=Product::create($validated_values);
+             $product=Product::where("name",$validated_values["name"])->get();
+              
+
+         if ($product->isNotEmpty()) {
+            return response()->json(["msg"=>"product already exist","product_data"=>$product],400); 
+         } 
+            $product=Product::create($validated_values);
 
              return response()->json(["msg"=>"product created","product_data"=>$product],201);
 
@@ -339,14 +345,59 @@ return response()->json(["msg"=>"created","errors"=>$errors_products],201);
     to correct it with the details then i will resive it and fetvh the correct values and continue the pocess
     save the correct in cache and send the errors if ocure and wait the correction
    */   
+      //place is distributuion_center or warehouse
+   public function support_new_product_in_place(Request $request){
+      $validated_values=$request->validate([
+         "place"=>"required|in:Warehouse,Distribution_center",
+         "place_id"=>"required|integer"
+         ]);
+
+         
+      $data=$request->validate([
       
-        
+      "product_id"=>"required|integer",
+      "max_load"=>"required|numeric",
+
+    ]);
+   
+     $table="App\Models\\".$validated_values["place"]."_Product";
+    
+     $correct_id=strtolower($validated_values["place"]."_id");
      
-       
- 
+      $data[$correct_id]=$validated_values["place_id"];
+      $prod=$table::where($correct_id,$validated_values["place_id"])->where("product_id",$data["product_id"])->exists();
+      if($prod){
+         return response()->json(["msg"=>"already supported"],400);
+
+      }
+      $table::create($data);
+     
+      return response()->json(["msg"=>"supported"],201);
+
+      }
+     
+       public function show_products(Request $request){
+         $products=Product::all();
+
+          foreach($products as $product){
+           $product["deviation"]=sqrt($product->variance);
+           $product["actual_load"]=$this->calculate_actual_load($product->import_jobs_details);
+           
+          }
 
 
+         return response()->json(["msg"=>"sucessfull","products"=>$products],200);
+
+
+       }
  
+
+//this method to try the algorithm of location
+       public function orded_locations(Request $request){
+    //calculate($lat1, $lon1, $lat2, $lon2, $unit = 'km')
+        $sorted_places=$this->sort_the_near_by_location("App\Models\DistributionCenter",$request->latitude,$request->longitude);
+        return response()->json($sorted_places);
+       }
 
   
    }
