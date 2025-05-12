@@ -33,7 +33,8 @@ Route::controller(SuperAdmenController::class)->group(function () {
     Route::post("suppourt_new_product", "suppourt_new_product");
     Route::post("support_new_product_in_place", "support_new_product_in_place");
     Route::get("show_products", "show_products");
-    Route::post("/orded_locations", "orded_locations");
+    Route::post("orded_locations", "orded_locations");
+    Route::get("creeate_bill","creeate_bill");
 
 
 });
@@ -64,3 +65,6 @@ Route::middleware("is_distrebution_center_manager")->controller(Distribution_Cen
    Route::get("show_my_suppurted_products","show_my_suppurted_products");
 
 });
+
+
+//creeate_bil

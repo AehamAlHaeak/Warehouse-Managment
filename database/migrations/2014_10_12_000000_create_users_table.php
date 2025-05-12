@@ -21,25 +21,25 @@ return new class extends Migration
             $table->string('email')->unique()->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-          
+
             $table->string('phone_number')->unique()->nullable();
-            
+
             /*this step can alow us to make the app more sequre
-            id the user has been loged in rhe user can to enter to his account without recive the token 
+            id the user has been loged in rhe user can to enter to his account without recive the token
             and to enhance the authontication system
 
-           */ 
-            
+           */
+
            $table->string("img_path")->nullable();//images will be stored in storage and we will organize a file for the images
             $table->rememberToken();/*this step can alow us to make the app more sequre
-            id the user has been loged in rhe user can to enter to his account without recive the token 
+            id the user has been loged in rhe user can to enter to his account without recive the token
             and to enhance the authontication system
 
-           */ 
+           */
 
             $table->timestamps();
             $table->string('location');
-            $table->json('creditCards')->nullable();//the user may have more than one cridit card in several banks
+          //the user may have more than one cridit card in several banks
         });
 
     }

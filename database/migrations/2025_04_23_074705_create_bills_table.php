@@ -19,9 +19,9 @@ return new class extends Migration
             $table->foreign("user_id")->references("id")->on("users");
             $table->foreign("distribution_center_id")->references("id")->on("distribution_centers");
             //we remove the table distribution_center_id because it is not important and the relation here
-            //replace it the relation in real is one distribution center has many bills!! 
+            //replace it the relation in real is one distribution center has many bills!!
             $table->date("date_of_resiving");
-            $table->date("date_of_finishing");
+            $table->date("date_of_finishing")->nullable();
             $table->string("location");
             $table->double("latitude");
             $table->double("longitude");
