@@ -17,8 +17,11 @@ return new class extends Migration
             $table->morphs("sourceable");
             $table->morphs("destinationable");
             //the date is important for the vehicle tasks
-            $table->date("date_of_resiving");
+            $table->date("date_of_receiving");
             $table->date("date_of_finishing");
+            $table->string("location")->nullable();
+            $table->double("latitude")->nullable();
+            $table->double("longitude")->nullable();
              
         });
     }

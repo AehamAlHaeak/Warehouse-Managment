@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('transfer__details', function (Blueprint $table) {
             $table->unsignedBigInteger("import_product_id");
             //import_product_id is import_jop_product_id
-            $table->foreign("import_product_id")->references("id")->on("import_jop_product");
+            $table->foreign("import_product_id")->references("id")->on("import_operation_product");
         });
     }
 
@@ -24,7 +24,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('transfer__details', function (Blueprint $table) {
-            $table->dropColumn("import_product_id");
+            $table->dropColumn("import_operation_id");
         });
     }
 };

@@ -11,16 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('warehouses', function (Blueprint $table) {
+        Schema::create('storage_media', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
-            $table->string("name");
-            $table->string("location");
-            $table->double("latitude");
-            $table->double("longitude");
-            $table->enum("status",["auto","reject","manual"]);
-            $table->string("map_path")->nullable();
-
+            $table->string('name');
+            $table->unsignedBigInteger("container_id");
+            $table->foreign("container_id")->references("id")->on("containers_types");
+            //according to this container type , I'll know the products that'll be stored in it
+            
         });
     }
 
@@ -29,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('warehouses');
+        Schema::dropIfExists('storage_media');
     }
 };

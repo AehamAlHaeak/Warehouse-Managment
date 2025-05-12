@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('import_jops', function (Blueprint $table) {
+        Schema::create('import_operations', function (Blueprint $table) {
             //this table is ame the bill but we most know this related with th supplier 
             //this include time of create and supplier who make it 
             //thin wee will full the import_jop_product by the details as the date of expiration
@@ -37,6 +37,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('import_jops');
+        Schema::dropIfExists('import_operations');
     }
 };
