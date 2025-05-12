@@ -11,16 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('warehouses', function (Blueprint $table) {
+        Schema::create('requirements', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
             $table->string("name");
-            $table->string("location");
-            $table->double("latitude");
-            $table->double("longitude");
-            $table->enum("status",["auto","reject","manual"]);
-            $table->string("map_path")->nullable();
-
+            $table->unsignedBigInteger("type_id")->nullable();
+            $table->foreign("type_id")->references("id")->on("types");
+            
         });
     }
 
@@ -29,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('warehouses');
+        Schema::dropIfExists('requirements');
     }
 };
