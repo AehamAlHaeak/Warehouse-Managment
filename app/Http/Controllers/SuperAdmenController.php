@@ -40,6 +40,7 @@ use Tymon\JWTAuth\Exceptions\JWTException;
 use App\Http\Requests\storeEmployeeRequest;
 use App\Models\Distribution_center_Product;
 use App\Models\Import_jop;
+use App\Models\Import_operation;
 use App\Traits\AlgorithmsTrait;
 use App\Traits\TransferTrait;
 class SuperAdmenController extends Controller
@@ -224,7 +225,7 @@ $supplier=Supplier::where("identifier",$validated_values["identifier"])->get();
 
 }
 
-$import_jop=Import_jop::create($validated_values);
+$import_jop=Import_operation::create($validated_values);
 
 
 importing_job::dispatch($import_jop,$validated_products,$validated_vehicles);
@@ -316,7 +317,7 @@ public function correct_errors(Request $request){
 
 }
 
-$import_jop=Import_jop::create($import_job);
+$import_jop=Import_operation::create($import_job);
 
 
 importing_job::dispatch($import_jop,$validated_products,$validated_vehicles);
