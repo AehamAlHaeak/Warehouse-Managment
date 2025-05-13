@@ -22,15 +22,8 @@ return new class extends Migration
 
             $table->foreign("import_operation_id")->references("id")->on("import_operations");
             //required is external ones to let the storage media works
-            $table->double("required_temperature")->nullable();
 
-            $table->double("required_humidity")->nullable();
-            $table->double("required_light")->nullable();
-            $table->double("required_pressure")->nullable();
-            $table->double("required_ventilation")->nullable();
-
-            $table->morphs("existable");
-
+            
             $table->integer("columns");
             $table->integer("rows");
             $table->double("readyness");

@@ -15,13 +15,13 @@ return new class extends Migration
             $table->id();
             $table->timestamps();
             $table->string("name");
-            $table->double("temperature");
-            $table->double("humidity");
-            $table->double("light");
-            $table->double("pressure");
-            $table->double("ventilation");
-            $table->double("readyness");
+           
             $table->morphs("existable");
+            $table->unsignedBigInteger("product_id");
+            $table->foreign("product_id")->references("id")->on("products");
+            $table->integer("num_floors");
+            $table->integer("num_classes");//row
+            $table->integer("positions_on_class");//column
             // at emergency case , we'll move the products from the usual storage to the emeregeny section 
         });
     }

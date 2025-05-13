@@ -9,4 +9,5 @@ class Section extends Model
 {
     use HasFactory;
     protected $guarded;
+
 }
