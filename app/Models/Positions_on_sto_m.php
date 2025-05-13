@@ -16,5 +16,5 @@ class Positions_on_sto_m extends Model
     }
 }
 
-}
+
 
