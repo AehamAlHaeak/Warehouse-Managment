@@ -38,6 +38,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\storeProductRequest;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use App\Http\Requests\storeEmployeeRequest;
+use App\Models\Containers_type;
 use App\Models\Distribution_center_Product;
 use App\Models\Import_jop;
 use App\Models\Import_operation;
@@ -412,4 +413,17 @@ return response()->json(["msg"=>"created","errors"=>$errors_products],201);
   return response()->json(["trans"=>$transfer],201);
   }
 
+
+      public function create_container(Request $request){
+         $validated_values=request()->validate([
+             "name"=>"required",
+             "capacity"=>"required|numeric",
+             "product_id"=>"required|integer"
+         ]);
+
+         $container=Containers_type::create($validated_values);
+         return response()->json(["msg"=>"created","continer_data"=>$container],201);
+      }
+
+      
    }

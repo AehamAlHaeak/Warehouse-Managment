@@ -9,4 +9,8 @@ class Requirements extends Model
 {
     use HasFactory;
     protected $guarded;
+
+    public function requiredata(){
+        return $this->belongsTo(type::class);
+    }
 }
