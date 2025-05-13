@@ -18,8 +18,8 @@ return new class extends Migration
      
             $table->foreign("dist_center_prod_id")->references("id")->on("distribution_center__product");
            
-            $table->unsignedBigInteger("import_jop_prod_id");
-            $table->foreign("import_jop_prod_id")->references("id")->on("import_jop_product");
+            $table->unsignedBigInteger("import_op_prod_id");
+            $table->foreign("import_op_prod_id")->references("id")->on("import_operation_product");
             $table->double("actual_load");
                 });
     }

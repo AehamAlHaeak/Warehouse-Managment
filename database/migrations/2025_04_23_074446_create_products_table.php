@@ -26,6 +26,22 @@ return new class extends Migration
             //as a note we willnot store standard deviation because it sqrt(variance/n)
             $table->double("variance")->default(0);
 
+            $table->double("lowest_temperature");
+            $table->double("highest_temperature");
+
+            $table->double("lowest_humidity");
+            $table->double("highest_humidity");
+
+            $table->double("lowest_light");
+            $table->double("highest_light");
+
+            $table->double("lowest_pressure");
+            $table->double("highest_pressure");
+
+            $table->double("lowest_ventilation");
+            $table->double("highest_ventilation");
+            
+
         });
     }
 

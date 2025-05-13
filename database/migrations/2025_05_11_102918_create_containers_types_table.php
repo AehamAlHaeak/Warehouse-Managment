@@ -11,22 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('import_jop_product', function (Blueprint $table) {
+        Schema::create('containers_types', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
-            $table->unsignedBigInteger("import_jop_id");
-            $table->foreign("import_jop_id")->references("id")->on("import_jops");
+            $table->string("name");
+            
             $table->unsignedBigInteger("product_id");
             $table->foreign("product_id")->references("id")->on("products");
-            $table->date("expiration");
-            $table->date("producted_in");
-
-         //   $table->string("unit");
-
-            $table->string("unit");
-            $table->double("actual_load");
-
-            $table->double("price_unit");
+            $table->integer("capacity");
+            //contain by unit as example the thigh by unit the caocity is refers to number of it  
+            // the container is a general concept , then we'll specify it
+            // for an examplle : freezer , scaffold ,etc... 
+            //that depends on the products I'll support it
+            
         });
     }
 
@@ -35,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('import_jop_product');
+        Schema::dropIfExists('containers_types');
     }
 };
