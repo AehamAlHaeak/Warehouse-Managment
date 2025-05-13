@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('import_operation_product', function (Blueprint $table) {
-            //import_op_containers
+            //import_op_containers where the product exist which continer???
             $table->unsignedBigInteger("imp_op_contin_id");
-
+             
             $table->foreign("imp_op_contin_id")->references("id")->on("import_op_containers");
 
         });
