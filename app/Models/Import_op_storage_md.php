@@ -10,4 +10,8 @@ class Import_op_storage_md extends Pivot
 {
     use HasFactory;
     protected $guarded;
+
+    public function impo_container(){
+        return $this->belongsToMany(Import_op_container::class,"imp_op_conti_id");
+    }
 }

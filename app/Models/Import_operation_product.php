@@ -13,4 +13,9 @@ class Import_operation_product extends Pivot
     public function supllier(){
         return $this->belongsTo(Supplier::class,"supplier_id");
     }
+
+    public function container(){
+
+        return $this->belongsTo(import_op_container::class,"imp_op_contin_id");
+    }
 }
