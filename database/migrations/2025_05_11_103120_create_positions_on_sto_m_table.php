@@ -18,12 +18,13 @@ return new class extends Migration
             $table->unsignedBigInteger("imp_op_stor_id");
             $table->foreign("imp_op_stor_id")->references("id")->on("import_op_storage_mds");
 
+             $table->integer("floor");
             $table->integer("class");//row
             $table->integer("positions_on_class");//column
 
             //import_op_containers
-            $table->unsignedBigInteger("imp_op_conti_id")->nullable();
-            $table->foreign("imp_op_conti_id")->references("id")->on("import_op_containers");
+            $table->unsignedBigInteger("imp_op_contin_id")->nullable();
+            $table->foreign("imp_op_contin_id")->references("id")->on("import_op_containers");
         });
     }
 
