@@ -10,8 +10,14 @@ class Import_op_storage_md extends Pivot
 {
     use HasFactory;
     protected $guarded;
+    protected $primaryKey = 'id'; 
+    public $incrementing = true; 
+    protected $keyType = 'int';  
 
     public function impo_container(){
         return $this->belongsToMany(Import_op_container::class,"imp_op_conti_id");
+    }
+    public function parent_storage_media(){
+        return $this->belongsTo(Storage_media::class,"storage_media_id");
     }
 }

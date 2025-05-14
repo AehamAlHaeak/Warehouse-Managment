@@ -7,6 +7,11 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 class Import_operation_product extends Pivot
 {
     protected $guarded;
+
+    protected $primaryKey = 'id'; 
+    public $incrementing = true; 
+    protected $keyType = 'int';  
+
     public function products(){
         return $this->belongsTo(Product::class,"product_id");
     }

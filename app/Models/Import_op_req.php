@@ -10,4 +10,8 @@ class Import_op_req extends Pivot
 {
     use HasFactory;
     protected $guarded;
+    protected $primaryKey = 'id'; 
+    public $incrementing = true; 
+    protected $keyType = 'int';  
+
 }
