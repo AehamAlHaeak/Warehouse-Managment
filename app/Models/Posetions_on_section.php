@@ -8,4 +8,5 @@ use Illuminate\Database\Eloquent\Model;
 class Posetions_on_section extends Model
 {
     use HasFactory;
+     protected $guarded;
 }
