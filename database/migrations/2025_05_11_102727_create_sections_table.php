@@ -21,8 +21,12 @@ return new class extends Migration
             $table->foreign("product_id")->references("id")->on("products");
             $table->integer("num_floors");
             $table->integer("num_classes");//row
-            $table->integer("positions_on_class");//column
+            $table->integer("num_positions_on_class");//column
             // at emergency case , we'll move the products from the usual storage to the emeregeny section 
+             $table->double("average")->default(0);
+            //as a note we willnot store standard deviation because it sqrt(variance/n)
+            $table->double("variance")->default(0);
+
         });
     }
 
