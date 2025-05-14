@@ -19,9 +19,10 @@ return new class extends Migration
             $table->integer("floor");
             $table->integer("class");//row
             $table->integer("positions_on_class");//column
-            $table->unsignedBigInteger("stor_med_id")->nullable()->unique();//storage_media_id
-            $table->foreign("sto_med_id")->references("id")->on("storage_media");
-           
+            
+            $table->unsignedBigInteger("storage_media_id")->nullable()->unique();
+            $table->foreign("storage_media_id")->references("id")->on("storage_media");
+
         });
     }
 
