@@ -23,22 +23,20 @@ Route::controller(SuperAdmenController::class)->group(function () {
     Route::post("create_new_garage", "create_new_garage");
     Route::post("create_new_product", "create_new_product");
 
-
-
-
-
+    Route::post("create_new_imporet_op_storage_media","create_new_imporet_op_storage_media");
+    Route::post("suppurt_new_storage_media", "suppurt_new_storage_media");
+    Route::post("support_new_container", "support_new_container");
     Route::post("correct_errors", "correct_errors");
-
-    Route::post("create_new_import_jop", "create_new_import_jop");
+    Route::post("create_new_import_operation", "create_new_import_operation");
     Route::post("suppourt_new_product", "suppourt_new_product");
-    Route::post("support_new_product_in_place", "support_new_product_in_place");
+   
     Route::get("show_products", "show_products");
     Route::post("orded_locations", "orded_locations");
     Route::get("creeate_bill","creeate_bill");
-
+    Route::post("create_new_section","create_new_section");
 
 });
-//orded_locations
+//create_new_imporet_op_storage_media
 
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
 Route::middleware('auth.api:employee')->group(function () {

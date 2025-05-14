@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Traits;
-use app\Models\Positions_on_sto_m;
+use App\Models\Positions_on_sto_m;
 use App\Models\Bill;
 use App\Models\type;
 use App\Models\User;
@@ -216,18 +216,25 @@ public function sort_the_near_by_location($model, $latitude, $longitude)
     return $sorted;
 }
 
-public function create_psetions($model,$object){
+public function create_postions($model,$object,$foreignId_name){
 
     for($floor=0;$floor<=$object->num_floors;$floor++){
+        
              for($class=0;$class<=$object->num_classes;$class++){
+               
                for($positions_on_class=0;$positions_on_class<=$object->num_positions_on_class;$positions_on_class++){
+               try{
                 $model::create([
-                 "section_id"=>$object->id,
+                 $foreignId_name=>$object["id"],
                  "floor"=>$floor,
                  "class"=>$class,
                  "positions_on_class"=>$positions_on_class
              ]);
-             
+            }
+            catch (\Exception $e){
+            echo $e;
+            }
+            
            }
            }
            }
