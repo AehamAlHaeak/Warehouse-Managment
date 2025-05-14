@@ -16,7 +16,7 @@ return new class extends Migration
             $table->timestamps();
             //import_op_storage_md_id
             $table->unsignedBigInteger("imp_op_stor_id");
-            $table->foreign("imp_op_stor_id")->references("id")->on("import_op_storage_mds");
+            $table->foreign("imp_op_stor_id")->references("id")->on("import_op_storage_md");
 
              $table->integer("floor");
             $table->integer("class");//row

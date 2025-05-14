@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('import_op_storage_mds', function (Blueprint $table) {
+        Schema::create('import_op_storage_md', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
             $table->unsignedBigInteger("storage_media_id");
@@ -26,16 +26,16 @@ return new class extends Migration
             
             // $table->integer("columns");
             // $table->integer("rows");
-            $table->double("readyness");
+            $table->double("readyness")->default(1);
             // whatever was the readyness , when it became lower than 0.7 , we'll make a maintenance operation
             //and we'll take the products whatever they are .. on vehicles or storage media or section .. take them 
             // take them to the emergency section
 
-            $table->double("internal_temperature")->default(25);
-            $table->double("internal_humidity")->default(2);
-            $table->double("internal_light")->default(3);
-            $table->double("internal_pressure")->default(1);
-            $table->double("internal_ventilation")->default(1);
+            $table->double("internal_temperature")->default(25);//celicios normal 20-29
+            $table->double("internal_humidity")->default(2);//rate percent %
+            $table->double("internal_light")->default(100);//lux normal is 100 on closed rooms
+            $table->double("internal_pressure")->default(1);//atm default 1 atm
+            $table->double("internal_ventilation")->default(9);//letr/second default is 8-10
             
           
         });
@@ -46,6 +46,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('import_op_storage_mds');
+        Schema::dropIfExists('import_op_storage_md');
     }
 };
