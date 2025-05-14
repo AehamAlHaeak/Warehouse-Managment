@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Bill;
 use App\Models\type;
-use App\Jobs\importing_job;
+use App\Jobs\importing_operation;
 use App\Models\User;
-
+use App\Models\Posetions_on_section;
 
 use App\Models\Garage;
 use App\Models\Employe;
@@ -42,8 +42,13 @@ use App\Models\Containers_type;
 use App\Models\Distribution_center_Product;
 use App\Models\Import_jop;
 use App\Models\Import_operation;
+use App\Models\Section;
+use App\Models\Storage_media;
 use App\Traits\AlgorithmsTrait;
 use App\Traits\TransferTrait;
+use GuzzleHttp\Handler\Proxy;
+use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
+
 class SuperAdmenController extends Controller
 {  use TransferTrait;
    use CRUDTrait;
@@ -70,8 +75,9 @@ class SuperAdmenController extends Controller
          "name" => "required|max:128",
          "location" => "required",
          "latitude" => "required|numeric",
-         "longitude" => "required|numeric"
-
+         "longitude" => "required|numeric",
+         "type_id"=>"required|integer",
+         "num_sections"=>"required|integer"
 
       ]);
 
@@ -115,10 +121,11 @@ class SuperAdmenController extends Controller
          "location" => "required",
          "latitude" => "required|numeric",
          "longitude" => "required|numeric",
-         "warehouse_id" => "required|numeric"
-
+         "warehouse_id" => "required|numeric",
+         "type_id"=>"required|integer",
+         "num_sections"=>"required|integer"
       ]);
-
+      
 
       $center = DistributionCenter::create($validated_values);
       return response()->json(["msg" => " distribution_center added!", "center_data" => $center], 201);
@@ -147,7 +154,7 @@ class SuperAdmenController extends Controller
          "latitude" => "required|numeric",
          "longitude" => "required|numeric",
          "type_id" => "required",
-         "import_jop_id"=>"required|integer"
+         "import_operation_id"=>"required|integer"
       ]);
 
 
@@ -189,7 +196,7 @@ $supplier=Supplier::where("identifier",$validated_values["identifier"])->get();
 
 
 
-     public function create_new_import_jop(Request $request){
+     public function create_new_import_operation(Request $request){
       $validated_values=$request->validate([
          "supplier_id"=>"required|integer",
          "location"=>"required",
@@ -216,7 +223,7 @@ $supplier=Supplier::where("identifier",$validated_values["identifier"])->get();
          //add the arrays to the cash if i will correct the error $validated_products
 
          return response()->json(["msg"=>"the import isnot created there are errors",
-         "import_job_key"=>$import_key,
+         "import_operation_key"=>$import_key,
          "products_correction_key"=>$product_key,
          "product_errors"=>$errors_products,
          "vehicles_correction_key"=>$vehicle_key,
@@ -226,10 +233,10 @@ $supplier=Supplier::where("identifier",$validated_values["identifier"])->get();
 
 }
 
-$import_jop=Import_operation::create($validated_values);
+$import_operation=Import_operation::create($validated_values);
 
 
-importing_job::dispatch($import_jop,$validated_products,$validated_vehicles);
+importing_operation::dispatch($import_operation,$validated_products,$validated_vehicles);
 
 return response()->json(["msg"=>"created","errors"=>$errors_products,"products"=>$validated_products],201);
      }
@@ -259,7 +266,7 @@ return response()->json(["msg"=>"created","errors"=>$errors_products,"products"=
 
 public function correct_errors(Request $request){
      $request->validate([
-      "import_job_key"=>"required",
+      "import_operation_key"=>"required",
 
      ]);
 
@@ -268,7 +275,7 @@ public function correct_errors(Request $request){
         $validated_products=Cache::get($request->products_correction_key);
 
         $validated_vehicles=Cache::get($request->vehicles_correction_key);
-        $import_job=Cache::get($request->import_job_key);
+        $import_operation=Cache::get($request->import_operation_key);
 
         $errors_products=null;
         $errors_vehicles=null;
@@ -301,7 +308,7 @@ public function correct_errors(Request $request){
 
 
          $import_key=Str::uuid();
-         Cache::put($import_key,$import_job,now()->addMinutes(60));
+         Cache::put($import_key,$import_operation,now()->addMinutes(60));
          $product_key=Str::uuid();
          Cache::put($product_key, $validated_products,now()->addMinutes(60));
          $vehicle_key=Str::uuid();
@@ -309,7 +316,7 @@ public function correct_errors(Request $request){
          //add the arrays to the cash if i will correct the error $validated_products
 
          return response()->json(["msg"=>"the import isnot created there are errors",
-         "import_job_key"=>$import_key,
+         "import_operation_key"=>$import_key,
          "products_correction_key"=>$product_key,
          "product_errors"=>$errors_products,
          "vehicles_correction_key"=>$vehicle_key,
@@ -318,10 +325,10 @@ public function correct_errors(Request $request){
 
 }
 
-$import_jop=Import_operation::create($import_job);
+$import_operation=Import_operation::create($import_operation);
 
 
-importing_job::dispatch($import_jop,$validated_products,$validated_vehicles);
+importing_operation::dispatch($import_operation,$validated_products,$validated_vehicles);
 Cache::forget($request->products_correction_key);
 Cache::forget($request->vehicles_correction_key);
 Cache::forget($request->import_job_key);
@@ -348,46 +355,53 @@ return response()->json(["msg"=>"created","errors"=>$errors_products],201);
     save the correct in cache and send the errors if ocure and wait the correction
    */
       //place is distributuion_center or warehouse
-   public function support_new_product_in_place(Request $request){
-      $validated_values=$request->validate([
-         "place"=>"required|in:Warehouse,Distribution_center",
-         "place_id"=>"required|integer"
-         ]);
+   // public function support_new_product_in_place(Request $request){
+   //    $validated_values=$request->validate([
+   //       "place"=>"required|in:Warehouse,Distribution_center",
+   //       "place_id"=>"required|integer"
+   //       ]);
 
 
-      $data=$request->validate([
+   //    $data=$request->validate([
 
-      "product_id"=>"required|integer",
-      "max_load"=>"required|numeric",
+   //    "product_id"=>"required|integer",
+   //    "max_load"=>"required|numeric",
 
-    ]);
+   //  ]);
 
-     $table="App\Models\\".$validated_values["place"]."_Product";
+   //   $table="App\Models\\".$validated_values["place"]."_Product";
 
-     $correct_id=strtolower($validated_values["place"]."_id");
+   //   $correct_id=strtolower($validated_values["place"]."_id");
 
-      $data[$correct_id]=$validated_values["place_id"];
-      $prod=$table::where($correct_id,$validated_values["place_id"])->where("product_id",$data["product_id"])->exists();
-      if($prod){
-         return response()->json(["msg"=>"already supported"],400);
+   //    $data[$correct_id]=$validated_values["place_id"];
+   //    $prod=$table::where($correct_id,$validated_values["place_id"])->where("product_id",$data["product_id"])->exists();
+   //    if($prod){
+   //       return response()->json(["msg"=>"already supported"],400);
 
-      }
-      $table::create($data);
+   //    }
+   //    $table::create($data);
 
-      return response()->json(["msg"=>"supported"],201);
+   //    return response()->json(["msg"=>"supported"],201);
 
-      }
+   //    }
 
-       public function show_products(Request $request){
-         $products=Product::all();
+       public function show_products(){
+         $products = Product::all();
+         foreach($products as $product){
+        $totals = $product->sections()
+         ->selectRaw('SUM(average) as total_avg, SUM(variance) as total_variance')
+         ->first();
+           $product["total_exist_quantity"]=$product->import_operation_details->
+           where("status","accepted")->count();
+           $product["total_sold_quantity"]=$product->import_operation_details->
+           where("status","sold")->count();
+            $product["total_rejected_quantity"]=$product->import_operation_details->
+           where("status","rejected")->count();
+           
+           $product["avirage"] = $totals->total_avg;
+           $product["deviation"] =sqrt($totals->total_variance);
 
-          foreach($products as $product){
-           $product["deviation"]=sqrt($product->variance);
-           $product["actual_load"]=$this->calculate_actual_load($product->import_jobs_details);
-
-          }
-
-
+         }
          return response()->json(["msg"=>"sucessfull","products"=>$products],200);
 
 
@@ -414,7 +428,7 @@ return response()->json(["msg"=>"created","errors"=>$errors_products],201);
   }
 
 
-      public function create_container(Request $request){
+      public function support_new_container(Request $request){
          $validated_values=request()->validate([
              "name"=>"required",
              "capacity"=>"required|numeric",
@@ -424,6 +438,64 @@ return response()->json(["msg"=>"created","errors"=>$errors_products],201);
          $container=Containers_type::create($validated_values);
          return response()->json(["msg"=>"created","continer_data"=>$container],201);
       }
+    
 
-      
+
+      public function create_new_section(Request $request){
+           $validated_values=$request->validate([
+            "existable_type"=>"required|in:DistributionCenter,Warehouse",
+            "existable_id"=>"required",
+            "product_id"=>"required",
+            "num_floors"=>"required|integer",
+            "num_classes"=>"required|integer",
+            "num_positions_on_class"=>"required|integer",
+            "name"=>"required"
+           ]);
+           
+          $model="App\\Models\\".$validated_values["existable_type"];
+          
+         $place = $model::find($validated_values["existable_id"]);
+         
+          if(!$place){
+            return response()->json(["msg"=>"the place which you want isnot exist"],404);
+          }
+          
+          $num_of_sections_on_place = $place->sections->count();
+          
+               if($num_of_sections_on_place == $place->num_sections){
+                  return response()->json(["msg" => "the place is full"], 400);
+               }
+          $product=Product::find($validated_values["product_id"]);  
+          
+          if(!$product){
+           return response()->json(["msg"=>"the which you want isnot exist"],404);
+          }
+          
+          if($product->type->id != $place->type->id){
+            return response()->json(["msg"=>"the type is not smothe"],400);
+          }
+
+          $validated_values["existable_type"]=$model;
+          
+          $section=Section::create($validated_values);
+         
+         $this->create_psetions("App\\Models\\Posetions_on_section",$section);
+         
+           return response()->json(["msg"=>"section created succesfully","section"=>$section],201);
+
+      }
+      public function suppurt_new_storage_media(Request $request){
+       $validated_values=$request->validate([
+         "name"=>"required",
+         "container_id"=>"required|integer",
+         "num_floors"=>"required|integer",
+         "num_classes"=>"required|integer",
+         "num_positions_on_class"=>"required|integer",
+       ]);
+       
+       $storage_element=Storage_media::create($validated_values);
+
+        return response()->json(["msg"=>"storage_element created succesfully","sorage_element"=>$storage_element],201);
+
+      }
    }

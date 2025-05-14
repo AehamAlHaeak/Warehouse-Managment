@@ -1,11 +1,11 @@
 <?php
 
 namespace App\Traits;
-
+use app\Models\Positions_on_sto_m;
 use App\Models\Bill;
 use App\Models\type;
 use App\Models\User;
-use App\Models\Cargo;
+use App\Models\Storage_media;
 use App\Models\Garage;
 use App\Models\Employe;
 use App\Models\Product;
@@ -19,13 +19,13 @@ use Illuminate\Http\Request;
 use App\Models\Specialization;
 use App\Models\Supplier_Product;
 use App\Models\Transfer_Vehicle;
-use App\Models\Werehouse_Product;
+use App\Models\Section;
 use App\Models\DistributionCenter;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Distribution_center_Product;
-
+use App\Models\Posetions_on_section;
 trait AlgorithmsTrait
 {
 public function create_token($object){
@@ -214,5 +214,23 @@ public function sort_the_near_by_location($model, $latitude, $longitude)
 
     // رجّع النتيجة كـ Collection مرتبة
     return $sorted;
+}
+
+public function create_psetions($model,$object){
+
+    for($floor=0;$floor<=$object->num_floors;$floor++){
+             for($class=0;$class<=$object->num_classes;$class++){
+               for($positions_on_class=0;$positions_on_class<=$object->num_positions_on_class;$positions_on_class++){
+                $model::create([
+                 "section_id"=>$object->id,
+                 "floor"=>$floor,
+                 "class"=>$class,
+                 "positions_on_class"=>$positions_on_class
+             ]);
+             
+           }
+           }
+           }
+
 }
 }
