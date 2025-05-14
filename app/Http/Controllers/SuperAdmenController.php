@@ -7,11 +7,11 @@ use App\Models\type;
 use App\Jobs\importing_operation;
 use App\Models\User;
 use App\Models\Posetions_on_section;
-
+use App\Models\Import_op_storage_md;
 use App\Models\Garage;
 use App\Models\Employe;
 use App\Models\Product;
-
+use App\Jobs\import_storage_media;
 use App\Models\Vehicle;
 use App\Models\Favorite;
 use App\Models\Supplier;
@@ -468,7 +468,7 @@ return response()->json(["msg"=>"created","errors"=>$errors_products],201);
           $product=Product::find($validated_values["product_id"]);  
           
           if(!$product){
-           return response()->json(["msg"=>"the which you want isnot exist"],404);
+           return response()->json(["msg"=>"the product which you want isnot exist"],404);
           }
           
           if($product->type->id != $place->type->id){
@@ -479,7 +479,7 @@ return response()->json(["msg"=>"created","errors"=>$errors_products],201);
           
           $section=Section::create($validated_values);
          
-         $this->create_psetions("App\\Models\\Posetions_on_section",$section);
+         $this->create_postions("App\\Models\\Posetions_on_section",$section,"section_id");
          
            return response()->json(["msg"=>"section created succesfully","section"=>$section],201);
 
@@ -497,5 +497,50 @@ return response()->json(["msg"=>"created","errors"=>$errors_products],201);
 
         return response()->json(["msg"=>"storage_element created succesfully","sorage_element"=>$storage_element],201);
 
+      }
+
+      public function create_new_imporet_op_storage_media(Request $request){
+        $validated_values=$request->validate([
+         "supplier_id"=>"required|integer",
+         "location"=>"required",
+         "latitude"=>"required",
+         "longitude"=>"required"
+      ]);
+     
+         $validated_items = $request->validate([
+        'storage_media' => 'required|array|min:1',
+        'storage_media.*.storage_media_id' => 'required|integer',
+        'storage_media.*.quantity' => 'required|integer|min:1'
+     
+    ]);
+   
+         $storage_media=$validated_items["storage_media"];
+      
+          $import_operation=Import_operation::create($validated_values);
+        
+         // foreach($storage_media as $storage_element){
+          
+         //    for($count=0;$count<$storage_element["quantity"];$count++){
+             
+             
+         //      $storage_unit=Import_op_storage_md::create([
+         //       "storage_media_id"=>$storage_element["storage_media_id"],
+         //       "import_operation_id"=> $import_operation->id,
+                
+         //    ]);
+         
+        
+         //      $parent_storage_media=$storage_unit->parent_storage_media;
+         //       $storage_unit->num_floors=$parent_storage_media->num_floors;
+         //       $storage_unit->num_classes=$parent_storage_media->num_classes;
+         //       $storage_unit->num_positions_on_class=$parent_storage_media->num_positions_on_class;
+                
+         //    $this->create_postions("App\\Models\\Positions_on_sto_m",$storage_unit,"imp_op_stor_id");
+         //    }
+
+         // }
+         import_storage_media::dispatch($import_operation,$storage_media);
+
+     return response()->json(["msg"=>"created succesfuly"],201); 
       }
    }
