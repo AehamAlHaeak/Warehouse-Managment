@@ -20,7 +20,7 @@ return new class extends Migration
             $table->double("longitude");
             $table->unsignedBigInteger("warehouse_id");
             $table->foreign("warehouse_id")->references("id")->on('warehouses');
-          
+          $table->integer("num_sections");
             //we will not connect the center with the warehouse then the center will send a notifiction
             //to all warehouses then the warehouse who can send will send 
             //the center can recieve more than transfers in same time
