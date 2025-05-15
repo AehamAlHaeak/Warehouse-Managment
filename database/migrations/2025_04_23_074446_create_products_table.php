@@ -22,25 +22,25 @@ return new class extends Migration
            
 
             $table->bigInteger("import_cycle")->nullable();
-            $table->double("average")->default(0);
+          //  $table->double("average")->default(0);
             //as a note we willnot store standard deviation because it sqrt(variance/n)
-            $table->double("variance")->default(0);
+         //   $table->double("variance")->default(0);
+          //moved to sections if i want to take the total take the summs of them
+            $table->double("lowest_temperature")->nullable();
+            $table->double("highest_temperature")->nullable();
 
-            $table->double("lowest_temperature");
-            $table->double("highest_temperature");
+            $table->double("lowest_humidity")->nullable();
+            $table->double("highest_humidity")->nullable();
 
-            $table->double("lowest_humidity");
-            $table->double("highest_humidity");
+            $table->double("lowest_light")->nullable();
+            $table->double("highest_light")->nullable();
 
-            $table->double("lowest_light");
-            $table->double("highest_light");
+            $table->double("lowest_pressure")->nullable();
+            $table->double("highest_pressure")->nullable();
 
-            $table->double("lowest_pressure");
-            $table->double("highest_pressure");
-
-            $table->double("lowest_ventilation");
-            $table->double("highest_ventilation");
-            
+            $table->double("lowest_ventilation")->nullable();
+            $table->double("highest_ventilation")->nullable();
+            //where the fild is null then it isnot important or isnot a condition
 
         });
     }

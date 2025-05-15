@@ -18,8 +18,8 @@ return new class extends Migration
             $table->string("location");
             $table->double("latitude");
             $table->double("longitude");
-            $table->enum("status",["auto","reject","manual"]);
-            $table->string("map_path")->nullable();
+            $table->enum("status",["auto","reject","manual"])->default("auto");
+            $table->integer("num_sections");
 
         });
     }

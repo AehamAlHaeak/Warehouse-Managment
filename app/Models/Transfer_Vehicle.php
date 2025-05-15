@@ -8,4 +8,9 @@ class Transfer_Vehicle extends Pivot
 {
     //
     protected $guarded;
+
+    protected $primaryKey = 'id';
+    public $incrementing = true; 
+    protected $keyType = 'int';  
+
 }

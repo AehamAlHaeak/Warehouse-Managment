@@ -10,9 +10,9 @@ class Product extends Model
     use HasFactory;
     protected $guarded;
 
-    public function bill(){
-        return $this->hasMany(Bill::class);
-    }
+    // public function bill(){
+    //     return $this->hasMany(Bill::class);
+    // }
 
     public function favoriteByUser(){
         return $this->belongsToMany(User::class,'favorites');
@@ -38,9 +38,10 @@ public function importing_details(){
     return $this-> hasMany(Supplier_Product::class,'product_id');
 
 }
-public function import_jobs_details(){
-    return $this->hasMany(Import_jop_product::class,"product_id");
+public function import_operation_details(){
+    return $this->hasMany(Import_operation_product::class,"product_id");
 }
+
 
 public function userMovables()
 {
@@ -49,5 +50,10 @@ public function userMovables()
                 ->withTimestamps();
 }
 
+
+
+public function type() {
+        return $this->belongsTo(type::class,"type_id");
+    }
 
 }

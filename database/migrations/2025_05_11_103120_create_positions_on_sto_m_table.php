@@ -11,19 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('positions', function (Blueprint $table) {
+        Schema::create('positions_on_sto_m', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
             //import_op_storage_md_id
             $table->unsignedBigInteger("imp_op_stor_id");
-            $table->foreign("imp_op_stor_id")->references("id")->on("import_op_storage_mds");
+            $table->foreign("imp_op_stor_id")->references("id")->on("import_op_storage_md");
 
-            $table->integer("row");
-            $table->integer("column");
+             $table->integer("floor");
+            $table->integer("class");//row
+            $table->integer("positions_on_class");//column
 
             //import_op_containers
-            $table->unsignedBigInteger("imp_op_conti_id")->nullable();
-            $table->foreign("imp_op_conti_id")->references("id")->on("import_op_containers");
+            $table->unsignedBigInteger("imp_op_contin_id")->nullable();
+            $table->foreign("imp_op_contin_id")->references("id")->on("import_op_containers");
         });
     }
 
@@ -32,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('positions');
+        Schema::dropIfExists('positions_on_sto_m');
     }
 };

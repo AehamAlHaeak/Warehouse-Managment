@@ -21,4 +21,12 @@ class Import_operation extends Model
     public function Supplier(){
         return $this->belongsTo(Supplier::class,"supplier_id");
     }
+
+    public function container(){
+        return $this->belongsToMany(Containers_type::class,"container_id");
+    }
+
+    public function storage_md(){
+        return $this->belongsToMany(Storage_media::class,"storage_media_id");
+    }
 }

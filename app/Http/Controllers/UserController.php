@@ -128,10 +128,7 @@ class UserController extends Controller
             'message' => $e->getMessage(),
         ], 500);
     }
-
-            $user_data->update($data);
-            return response()->json(["msg" => "updated seccessfully", 'user' => $user_data], 200);
-        }
+     }
 
 
 

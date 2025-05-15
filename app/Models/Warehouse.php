@@ -19,11 +19,17 @@ class Warehouse extends Model
     }
 
 
-    public function public_details_about_products(){
-        return $this->hasMany(Warehouse_Product::class);
-    }
+    
     public function employees(){
     return $this->morphMany(Employe::class,"workable");
+    }
+
+    public function sections(){
+       return $this->morphMany(Section::class,"existable");
+    }
+     
+    public function type() {
+        return $this->belongsTo(type::class,"type_id");
     }
 
 }

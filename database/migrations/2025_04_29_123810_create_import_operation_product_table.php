@@ -21,12 +21,22 @@ return new class extends Migration
             $table->date("expiration");
             $table->date("producted_in");
 
+
          //   $table->string("unit");
 
             $table->string("unit");
             $table->double("actual_load");
 
+
+            $table->string("unit");
+            $table->double("actual_load");
+
             $table->double("price_unit");
+
+            // $table->string("unit");
+            // $table->double("actual_load");not important we take a unit way only
+            $table->double("price_unit");//price of buy 
+   
         });
     }
 
