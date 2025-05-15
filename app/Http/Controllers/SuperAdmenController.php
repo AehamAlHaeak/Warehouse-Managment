@@ -453,18 +453,22 @@ return response()->json(["msg"=>"created","errors"=>$errors_products],201);
            ]);
            
           $model="App\\Models\\".$validated_values["existable_type"];
-          
+     
          $place = $model::find($validated_values["existable_id"]);
          
           if(!$place){
             return response()->json(["msg"=>"the place which you want isnot exist"],404);
           }
-          
+          try{
           $num_of_sections_on_place = $place->sections->count();
           
                if($num_of_sections_on_place == $place->num_sections){
                   return response()->json(["msg" => "the place is full"], 400);
                }
+            }
+            catch(\Exception $e){
+               
+            }
           $product=Product::find($validated_values["product_id"]);  
           
           if(!$product){
@@ -478,7 +482,7 @@ return response()->json(["msg"=>"created","errors"=>$errors_products],201);
           $validated_values["existable_type"]=$model;
           
           $section=Section::create($validated_values);
-         
+     
          $this->create_postions("App\\Models\\Posetions_on_section",$section,"section_id");
          
            return response()->json(["msg"=>"section created succesfully","section"=>$section],201);
@@ -518,28 +522,9 @@ return response()->json(["msg"=>"created","errors"=>$errors_products],201);
       
           $import_operation=Import_operation::create($validated_values);
         
-         // foreach($storage_media as $storage_element){
-          
-         //    for($count=0;$count<$storage_element["quantity"];$count++){
-             
-             
-         //      $storage_unit=Import_op_storage_md::create([
-         //       "storage_media_id"=>$storage_element["storage_media_id"],
-         //       "import_operation_id"=> $import_operation->id,
-                
-         //    ]);
+       
          
-        
-         //      $parent_storage_media=$storage_unit->parent_storage_media;
-         //       $storage_unit->num_floors=$parent_storage_media->num_floors;
-         //       $storage_unit->num_classes=$parent_storage_media->num_classes;
-         //       $storage_unit->num_positions_on_class=$parent_storage_media->num_positions_on_class;
-                
-         //    $this->create_postions("App\\Models\\Positions_on_sto_m",$storage_unit,"imp_op_stor_id");
-         //    }
-
-         // }
-         import_storage_media::dispatch($import_operation,$storage_media);
+         import_storage_media::dispatch($import_operation->id,$storage_media);
 
      return response()->json(["msg"=>"created succesfuly"],201); 
       }
