@@ -7,11 +7,12 @@ use App\Models\Storage_media;
 use App\Models\TransferDetails;
 use App\Models\Vehicle;
 use App\Traits\MoveTrait;
+use App\Traits\TransferTrait;
 use Illuminate\Http\Request;
 
 class Movecontroller extends Controller
 {
-    use MoveTrait;
+    use MoveTrait,TransferTrait;
 
     public function transferExample($vehicleId, $storage_md_id)
     {

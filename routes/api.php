@@ -1,6 +1,7 @@
 <?php
 
 
+use App\Http\Controllers\Movecontroller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiController;
@@ -65,5 +66,6 @@ Route::middleware("is_distrebution_center_manager")->controller(Distribution_Cen
 
 });
 
-
 //creeate_bil
+//mean that the products recievd successfully 
+Route::get('confirmReception',[Movecontroller::class,'confirmReception']);
