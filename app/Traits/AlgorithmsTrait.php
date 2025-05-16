@@ -218,22 +218,20 @@ public function sort_the_near_by_location($model, $latitude, $longitude)
 
 public function create_postions($model,$object,$foreignId_name){
 
-    for($floor=0;$floor<=$object->num_floors;$floor++){
+    for($floor=0;$floor<$object->num_floors;$floor++){
         
-             for($class=0;$class<=$object->num_classes;$class++){
+             for($class=0;$class<$object->num_classes;$class++){
                
-               for($positions_on_class=0;$positions_on_class<=$object->num_positions_on_class;$positions_on_class++){
-               try{
+               for($positions_on_class=0;$positions_on_class<$object->num_positions_on_class;$positions_on_class++){
+            
                 $model::create([
                  $foreignId_name=>$object["id"],
                  "floor"=>$floor,
                  "class"=>$class,
                  "positions_on_class"=>$positions_on_class
              ]);
-            }
-            catch (\Exception $e){
-            echo $e;
-            }
+            
+           
             
            }
            }

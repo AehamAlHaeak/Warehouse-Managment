@@ -17,11 +17,11 @@ class import_storage_media implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
     use AlgorithmsTrait;
-   protected $import_operation;
+   protected $import_operation_id;
     protected $storage_media;
-    public function __construct($import_operation,$storage_media)
+    public function __construct($import_operation_id,$storage_media)
     {
-        $this->import_operation=$import_operation;
+        $this->import_operation_id=$import_operation_id;
         $this->storage_media=$storage_media;
     }
 
@@ -37,7 +37,7 @@ class import_storage_media implements ShouldQueue
              
               $storage_unit=Import_op_storage_md::create([
                "storage_media_id"=>$storage_element["storage_media_id"],
-               "import_operation_id"=> $this->import_operation->id,
+               "import_operation_id"=> $this->import_operation_id,
                 
             ]);
          
@@ -46,8 +46,9 @@ class import_storage_media implements ShouldQueue
                $storage_unit->num_floors=$parent_storage_media->num_floors;
                $storage_unit->num_classes=$parent_storage_media->num_classes;
                $storage_unit->num_positions_on_class=$parent_storage_media->num_positions_on_class;
-                
-            $this->create_postions("App\\Models\\Positions_on_sto_m",$storage_unit,"imp_op_stor_id");
+               
+        
+           $this->create_postions("App\\Models\\Positions_on_sto_m",$storage_unit,"imp_op_stor_id");
             }
 
          }
