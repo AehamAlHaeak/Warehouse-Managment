@@ -6,6 +6,7 @@ use App\Models\Bill;
 use App\Models\type;
 use App\Jobs\importing_operation;
 use App\Jobs\importing_op_prod;
+use App\Jobs\StoreVehiclesJob;
 use App\Models\User;
 use App\Models\Posetions_on_section;
 use App\Models\Import_op_storage_md;
@@ -547,5 +548,17 @@ class SuperAdmenController extends Controller
         importing_op_prod::dispatch($import_operation, $products);
 
         return response()->json(["msg" => "Products are being processed and added successfully."], 202);
+    }
+
+
+    public function storeVehicles(Request $request)
+    {
+        $vehicles = $request->input('vehicles');  // array of vehicles
+        $supplierId = $request->input('supplier_id');  // the supplier
+
+        // send the job to the queue
+        StoreVehiclesJob::dispatch($vehicles, $supplierId);
+
+        return response()->json(['message' => 'Vehicles are being processed.']);
     }
 }
