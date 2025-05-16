@@ -12,4 +12,11 @@ class TransferDetails extends Model
   public function tranfer(){
     return $this->belongsToMany(Transfer::class,'transfer_id');
   }
-}
+  
+      public function vehicle()
+      {
+          return $this->belongsTo(Vehicle::class);
+      }
+  }
+   
+

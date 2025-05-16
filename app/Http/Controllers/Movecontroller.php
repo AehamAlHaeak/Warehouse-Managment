@@ -33,7 +33,7 @@ class Movecontroller extends Controller
         $transferDetail->markAsReceived();
         return response()->json([
 'message'=>'Receipt confirmed',
-'date_of_finished' =>  $transferDetail->tranfer->date_of_finished
+'date_of_finished' =>  $transferDetail->transfer->date_of_finished
         ]);
     }
 }
