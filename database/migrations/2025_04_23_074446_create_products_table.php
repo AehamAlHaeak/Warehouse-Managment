@@ -18,14 +18,16 @@ return new class extends Migration
             $table->text("description"); 
 
             $table->string("img_path")->nullable();
-            $table->double('weight');//unit_sell
+
+
+
            
 
+            $table->double("actual_sell_price");//for all methods i will take the price from here
+            $table->string("unit"); //piece may have more than once unit then 
+            //we determine sell that descripe the price of unit and calcualte final price of the piece
             $table->bigInteger("import_cycle")->nullable();
-          //  $table->double("average")->default(0);
-            //as a note we willnot store standard deviation because it sqrt(variance/n)
-         //   $table->double("variance")->default(0);
-          //moved to sections if i want to take the total take the summs of them
+         
             $table->double("lowest_temperature")->nullable();
             $table->double("highest_temperature")->nullable();
 
