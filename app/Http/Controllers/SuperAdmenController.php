@@ -4,35 +4,44 @@ namespace App\Http\Controllers;
 
 use App\Models\Bill;
 use App\Models\type;
-use App\Jobs\importing_operation;
-use App\Jobs\importing_op_prod;
-use App\Jobs\StoreVehiclesJob;
 use App\Models\User;
-use App\Models\Posetions_on_section;
-use App\Models\Import_op_storage_md;
 use App\Models\Garage;
 use App\Models\Employe;
 use App\Models\Product;
-use App\Jobs\import_storage_media;
+use App\Models\Section;
 use App\Models\Vehicle;
 use App\Models\Favorite;
 use App\Models\Supplier;
-
 use App\Models\Transfer;
 use App\Models\Warehouse;
 use App\Traits\CRUDTrait;
+use App\Models\Import_jop;
 use App\Models\Bill_Detail;
+
 use Illuminate\Support\Str;
+use App\Traits\LoadingTrait;
 use Illuminate\Http\Request;
+use App\Models\Storage_media;
+use App\Traits\TransferTrait;
+use GuzzleHttp\Handler\Proxy;
+use App\Jobs\StoreVehiclesJob;
 use App\Models\Specialization;
+use App\Jobs\importing_op_prod;
+use App\Models\Containers_type;
+use App\Traits\AlgorithmsTrait;
+use Illuminate\Validation\Rule;
+use App\Models\Import_operation;
 use App\Models\Supplier_Product;
 use App\Models\Transfer_Vehicle;
+use App\Jobs\importing_operation;
 use App\Models\Werehouse_Product;
+use App\Jobs\import_storage_media;
 use App\Models\DistributionCenter;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use App\Traits\LoadingTrait;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Import_jop_product;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Models\Import_op_storage_md;
+use App\Models\Posetions_on_section;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Resources\ProductResource;
@@ -40,15 +49,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\storeProductRequest;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use App\Http\Requests\storeEmployeeRequest;
-use App\Models\Containers_type;
 use App\Models\Distribution_center_Product;
-use App\Models\Import_jop;
-use App\Models\Import_operation;
-use App\Models\Section;
-use App\Models\Storage_media;
-use App\Traits\AlgorithmsTrait;
-use App\Traits\TransferTrait;
-use GuzzleHttp\Handler\Proxy;
 use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
 
 class SuperAdmenController extends Controller
@@ -251,8 +252,9 @@ class SuperAdmenController extends Controller
             "name" => "required",
             "description" => "required",
             "import_cycle" => "string",
-            "type_id" => "required"
-
+            "type_id" => "required",
+            "actual_sell_price"=>"required|numeric",
+            "unit"=>"required"
         ]);
         $product = Product::where("name", $validated_values["name"])->get();
 
@@ -528,21 +530,28 @@ class SuperAdmenController extends Controller
     {
         // verify the inputs
         $validated_values = $request->validate([
-            'import_operation_id' => 'required|integer|exists:import_operations,id',
+            "supplier_id" => "required|integer",
+            "location" => "required",
+            "latitude" => "required",
+            "longitude" => "required"
         ]);
 
-        $validated_products = $request->validate([
-            'products' => 'required|array|min:1',
-            'products.*.product_id' => 'required|integer|exists:products,id',
-            'products.*.expiration' => 'required|date',
-            'products.*.producted_in' => 'required|date',
-            'products.*.price_unit' => 'required|numeric|min:0'
-        ]);
-
+       $validated_products = $request->validate([
+    'products' => 'required|array|min:1',
+    'products.*.product_id' => 'required|integer|exists:products,id',
+    'products.*.expiration' => 'required|date',
+    'products.*.producted_in' => 'required|date',
+    'products.*.price_unit' => 'required|numeric|min:0',
+    'products.*.quantity' => 'required|numeric|min:0',
+    'products.*.special_description' =>'string',
+     'products.*.imported_load' => 'required|numeric|min:0',
+    
+]);
+//"imported_load"
         $products = $validated_products["products"];
 
         // getting import operation
-        $import_operation = Import_operation::findOrFail($validated_values['import_operation_id']);
+        $import_operation = Import_operation::create($validated_values);
 
         // use the job for proceeding adding the products
         importing_op_prod::dispatch($import_operation, $products);
@@ -551,13 +560,21 @@ class SuperAdmenController extends Controller
     }
 
 
-    public function storeVehicles(Request $request)
+    public function create_import_op_vehicles(Request $request)
     {
-        $vehicles = $request->input('vehicles');  // array of vehicles
-        $supplierId = $request->input('supplier_id');  // the supplier
+        $validated_values = $request->validate([
+            "supplier_id" => "required|integer",
+            "location" => "required",
+            "latitude" => "required",
+            "longitude" => "required"
+        ]);
 
-        // send the job to the queue
-        StoreVehiclesJob::dispatch($vehicles, $supplierId);
+         $import_operation = Import_operation::create($validated_values);
+        $vehicles = $request->input('vehicles');  // array of vehicles
+       
+
+   
+        StoreVehiclesJob::dispatch($vehicles,$import_operation->id,$import_operation->location,$import_operation->longitude,$import_operation->latitude);
 
         return response()->json(['message' => 'Vehicles are being processed.']);
     }

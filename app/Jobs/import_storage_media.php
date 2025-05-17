@@ -24,12 +24,22 @@ class import_storage_media implements ShouldQueue
         $this->import_operation_id=$import_operation_id;
         $this->storage_media=$storage_media;
     }
+    public function fetch_sections($related_storage_media){
+    //  $sections=$related_storage_media
+    }
 
-    /**
-     * Execute the job.
-     */
+    public function ord_sections(){
+
+    }
+
+     public function distribute_storage_media(){
+
+     }
+
+
     public function handle(): void
     {
+        $created_storage_units=[];
          foreach($this->storage_media as $storage_element){
           
             for($count=0;$count<$storage_element["quantity"];$count++){
@@ -41,13 +51,13 @@ class import_storage_media implements ShouldQueue
                 
             ]);
          
-        
-              $parent_storage_media=$storage_unit->parent_storage_media;
+            
+               $parent_storage_media=$storage_unit->parent_storage_media;
                $storage_unit->num_floors=$parent_storage_media->num_floors;
                $storage_unit->num_classes=$parent_storage_media->num_classes;
                $storage_unit->num_positions_on_class=$parent_storage_media->num_positions_on_class;
                
-        
+                $created_storage_units[$storage_unit->id] = $storage_unit;
            $this->create_postions("App\\Models\\Positions_on_sto_m",$storage_unit,"imp_op_stor_id");
             }
 

@@ -22,12 +22,12 @@ return new class extends Migration
             $table->date("producted_in");
 
             $table->integer("quantity")->default(1);//refers to num of units on one price
-            $table->double("actual_load");//refers to the load of this feature
+            $table->double("imported_load")->default(1);//refers to the load of this feature
 
 
        
 
-            $table->string("special_description")->nullable();
+            $table->string("special_description")->nullable();//if it exist then the load mostnot exist
             $table->double("price_unit");//price of buy 
    
         });
