@@ -36,6 +36,7 @@ return new class extends Migration
             // $table->string("unit");
             // $table->double("actual_load");not important we take a unit way only
             $table->double("price_unit");//price of buy 
+            $table->enum('status',['accepted','rejected'])->default('accepted');
    
         });
     }
