@@ -20,10 +20,16 @@ return new class extends Migration
             $table->foreign("product_id")->references("id")->on("products");
             $table->date("expiration");
             $table->date("producted_in");
-            $table->integer("quantity");//refers to num of units on one price
+
+            $table->integer("quantity")->default(1);//refers to num of units on one price
             $table->double("actual_load");//refers to the load of this feature
+
+
+       
+
+            $table->string("special_description")->nullable();
             $table->double("price_unit");//price of buy 
-            
+   
         });
     }
 
