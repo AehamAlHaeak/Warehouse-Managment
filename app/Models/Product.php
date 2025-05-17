@@ -41,7 +41,19 @@ public function importing_details(){
 public function import_operation_details(){
     return $this->hasMany(Import_operation_product::class,"product_id");
 }
+
+
+public function userMovables()
+{
+    return $this->belongsToMany(UserMovable::class, 'movable_product')
+                ->withPivot('quantity')
+                ->withTimestamps();
+}
+
+
+
 public function type() {
         return $this->belongsTo(type::class,"type_id");
     }
+
 }

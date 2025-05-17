@@ -18,7 +18,7 @@ return new class extends Migration
             $table->text("description"); 
 
             $table->string("img_path")->nullable();
-
+           
            
 
             $table->double("actual_sell_price");//for all methods i will take the price from here

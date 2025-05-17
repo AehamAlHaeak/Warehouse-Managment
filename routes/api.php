@@ -1,6 +1,7 @@
 <?php
 
 
+use App\Http\Controllers\Movecontroller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiController;
@@ -50,7 +51,8 @@ Route::controller(UserController::class)->group(function () {
     Route::post('near_by_centers', 'near_by_centers');
     Route::middleware('auth.api')->group(function () {
         Route::post('logout_user', 'logout_user');
-        Route::post('updateUser', 'updateUser');
+        Route::post('updateUser', 'updateUser
+        ');
 
     });
 });
@@ -64,5 +66,6 @@ Route::middleware("is_distrebution_center_manager")->controller(Distribution_Cen
 
 });
 
-
 //creeate_bil
+//mean that the products recievd successfully 
+Route::get('confirmReception',[Movecontroller::class,'confirmReception']);

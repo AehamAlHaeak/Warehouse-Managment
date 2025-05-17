@@ -20,10 +20,10 @@ return new class extends Migration
             $table->foreign("product_id")->references("id")->on("products");
             $table->date("expiration");
             $table->date("producted_in");
-            $table->integer("quantity");//this is quantity in one piece
-            $table->double("imported_load")->default(1);//descripe the load of units
+            $table->integer("quantity");//refers to num of units on one price
+            $table->double("actual_load");//refers to the load of this feature
             $table->double("price_unit");//price of buy 
-            $table->string("identifier")->nullable();//important to piece method
+            
         });
     }
 

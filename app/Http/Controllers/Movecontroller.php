@@ -4,13 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Containers_type;
 use App\Models\Storage_media;
+use App\Models\TransferDetails;
 use App\Models\Vehicle;
 use App\Traits\MoveTrait;
+use App\Traits\TransferTrait;
 use Illuminate\Http\Request;
 
 class Movecontroller extends Controller
 {
-    use MoveTrait;
+    use MoveTrait,TransferTrait;
 
     public function transferExample($vehicleId, $storage_md_id)
     {
@@ -25,5 +27,13 @@ class Movecontroller extends Controller
         $this->transferContainers($containers, $source, $destination);
 
         return response()->json(['message' => 'تم نقل الحاويات بنجاح.']);
+    }
+    public function  confirmReception($id){
+        $transferDetail=TransferDetails::find($id);
+        $transferDetail->markAsReceived();
+        return response()->json([
+'message'=>'Receipt confirmed',
+'date_of_finished' =>  $transferDetail->transfer->date_of_finished
+        ]);
     }
 }
