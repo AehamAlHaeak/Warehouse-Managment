@@ -9,5 +9,7 @@ class Section extends Model
 {
     use HasFactory;
     protected $guarded;
-
+    public function posetions(){
+        return $this->hasMany(Posetions_on_section::class,"section_id");
+    }
 }

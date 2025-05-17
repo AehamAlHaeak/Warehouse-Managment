@@ -511,8 +511,8 @@ class SuperAdmenController extends Controller
         $validated_items = $request->validate([
             'storage_media' => 'required|array|min:1',
             'storage_media.*.storage_media_id' => 'required|integer',
-            'storage_media.*.quantity' => 'required|integer|min:1'
-
+            'storage_media.*.quantity' => 'required|integer|min:1',
+            'storage_media.*.section_id' => 'required|integer|min:1'
         ]);
 
         $storage_media = $validated_items["storage_media"];

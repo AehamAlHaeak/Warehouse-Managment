@@ -21,7 +21,7 @@ return new class extends Migration
             $table->integer("positions_on_class");//column
             
             $table->unsignedBigInteger("storage_media_id")->nullable()->unique();
-            $table->foreign("storage_media_id")->references("id")->on("storage_media");
+            $table->foreign("storage_media_id")->references("id")->on("import_op_storage_md");
 
         });
     }
