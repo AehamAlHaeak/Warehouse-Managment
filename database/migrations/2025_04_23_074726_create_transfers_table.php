@@ -18,8 +18,8 @@ return new class extends Migration
             $table->morphs("destinationable");
             //the date is important for the vehicle tasks
 
-            $table->timestamp("date_of_resiving");
-            $table->timestamp("date_of_finishing")->nullable();
+            $table->date("date_of_resiving");
+            $table->date("date_of_finishing")->nullable();
 
             $table->string("location")->nullable();
             $table->double("latitude")->nullable();
