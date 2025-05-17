@@ -69,3 +69,4 @@ Route::middleware("is_distrebution_center_manager")->controller(Distribution_Cen
 //creeate_bil
 //mean that the products recievd successfully 
 Route::get('confirmReception',[Movecontroller::class,'confirmReception']);
+Route::post('statusTheProduct',[Movecontroller::class,'statusTheProduct'])->Route::middleware('auth.api:employee');
