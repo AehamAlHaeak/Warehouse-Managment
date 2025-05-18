@@ -37,7 +37,7 @@ use App\Jobs\importing_operation;
 use App\Models\Werehouse_Product;
 use App\Jobs\import_storage_media;
 use App\Models\DistributionCenter;
-use App\Models\Import_jop_product;
+
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Models\Import_op_storage_md;
 use App\Models\Posetions_on_section;
@@ -50,7 +50,11 @@ use App\Http\Requests\storeProductRequest;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use App\Http\Requests\storeEmployeeRequest;
 use App\Models\Distribution_center_Product;
+use App\Models\Supplier_Details;
+use Faker\Core\Uuid;
 use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
+
+use function PHPUnit\Framework\isEmpty;
 
 class SuperAdmenController extends Controller
 {
@@ -143,36 +147,7 @@ class SuperAdmenController extends Controller
 
 
 
-    public function create_new_vehicle(Request $request)
-    {
-
-        $validated_values = $request->validate([
-            "name" => "required",
-            "expiration" => "required|date",
-            "producted_in" => "required|date",
-            "readiness" => "required|numeric|min:0|max:1",
-            "max_load" => "required|numeric|min:1000",
-            "location" => "required",
-            "latitude" => "required|numeric",
-            "longitude" => "required|numeric",
-            "type_id" => "required",
-            "import_operation_id" => "required|integer"
-        ]);
-
-
-        $request->validate([
-            'image' => 'image|mimes:jpeg,png,jpg,gif|max:4096'
-        ]);
-        if ($request->image != null) {
-            $image = $request->file('image');
-            $image_path = $image->store('Vehicles', 'public');
-
-            $validated_values["img_path"] = 'storage/' . $image_path;
-        }
-        $vehicle = Vehicle::create($validated_values);
-
-        return response()->json(["msg" => "vehicle added", "vehicle_data" => $vehicle], 201);
-    }
+   
 
 
 
@@ -200,50 +175,7 @@ class SuperAdmenController extends Controller
 
 
 
-    public function create_new_import_operation(Request $request)
-    {
-        $validated_values = $request->validate([
-            "supplier_id" => "required|integer",
-            "location" => "required",
-            "latitude" => "required",
-            "longitude" => "required"
-        ]);
-
-        $Data = $this->valedate_and_build($request);
-        $validated_products = $Data["products"];
-        $validated_vehicles = $Data["vehicles"];
-        $errors_products = $Data["errors_products"];
-        $errors_vehicles = $Data["errors_vehicles"];
-
-        if (!empty($errors_vehicles) || !empty($errors_products)) {
-            $import_key = Str::uuid();
-
-            Cache::put($import_key, $validated_values, now()->addMinutes(60));
-
-            $product_key = Str::uuid();
-            Cache::put($product_key, $validated_products, now()->addMinutes(60));
-
-            $vehicle_key = Str::uuid();
-            Cache::put($vehicle_key, $validated_vehicles, now()->addMinutes(60));
-            //add the arrays to the cash if i will correct the error $validated_products
-
-            return response()->json([
-                "msg" => "the import isnot created there are errors",
-                "import_operation_key" => $import_key,
-                "products_correction_key" => $product_key,
-                "product_errors" => $errors_products,
-                "vehicles_correction_key" => $vehicle_key,
-                "errors_vehicles" => $errors_vehicles
-            ]);
-        }
-
-        $import_operation = Import_operation::create($validated_values);
-
-
-        importing_operation::dispatch($import_operation, $validated_products, $validated_vehicles);
-
-        return response()->json(["msg" => "created", "errors" => $errors_products, "products" => $validated_products], 201);
-    }
+    
 
     public function suppourt_new_product(Request $request)
     {
@@ -268,122 +200,7 @@ class SuperAdmenController extends Controller
     }
 
 
-    public function correct_errors(Request $request)
-    {
-        $request->validate([
-            "import_operation_key" => "required",
-
-        ]);
-
-
-
-        $validated_products = Cache::get($request->products_correction_key);
-
-        $validated_vehicles = Cache::get($request->vehicles_correction_key);
-        $import_operation = Cache::get($request->import_operation_key);
-
-        $errors_products = null;
-        $errors_vehicles = null;
-
-        $Data = $this->valedate_and_build($request);
-
-        $errors_products = $Data["errors_products"];
-        $errors_vehicles = $Data["errors_vehicles"];
-        $corrected_products = $Data["products"];
-        $corrected_vehicles = $Data["vehicles"];
-
-
-        $corrected_products = is_array($corrected_products) ? array_values($corrected_products) : [];
-        $corrected_vehicles = is_array($corrected_vehicles) ? array_values($corrected_vehicles) : [];
-
-        $validated_products = is_array($validated_products) ? array_values($validated_products) : [];
-        $validated_vehicles = is_array($validated_vehicles) ? array_values($validated_vehicles) : [];
-
-
-        $validated_products = array_merge($corrected_products, $validated_products);
-        $validated_vehicles = array_merge($corrected_vehicles, $validated_vehicles,);
-
-
-
-
-        if (!empty($errors_vehicles) || !empty($errors_products)) {
-            Cache::forget($request->products_correction_key);
-            Cache::forget($request->vehicles_correction_key);
-            Cache::forget($request->import_job_key);
-
-
-            $import_key = Str::uuid();
-            Cache::put($import_key, $import_operation, now()->addMinutes(60));
-            $product_key = Str::uuid();
-            Cache::put($product_key, $validated_products, now()->addMinutes(60));
-            $vehicle_key = Str::uuid();
-            Cache::put($vehicle_key, $validated_vehicles, now()->addMinutes(60));
-            //add the arrays to the cash if i will correct the error $validated_products
-
-            return response()->json([
-                "msg" => "the import isnot created there are errors",
-                "import_operation_key" => $import_key,
-                "products_correction_key" => $product_key,
-                "product_errors" => $errors_products,
-                "vehicles_correction_key" => $vehicle_key,
-                "errors_vehicles" => $errors_vehicles
-            ]);
-        }
-
-        $import_operation = Import_operation::create($import_operation);
-
-
-        importing_operation::dispatch($import_operation, $validated_products, $validated_vehicles);
-        Cache::forget($request->products_correction_key);
-        Cache::forget($request->vehicles_correction_key);
-        Cache::forget($request->import_job_key);
-
-        return response()->json(["msg" => "created", "errors" => $errors_products], 201);
-    }
-
-    /* why import job and correct errors??
-   import job require the supplier id and products info and vehicles info that mean you can add
-   new products to your warehouses from the products you support them then you have pare example
-   you support the red meat and more than supplier sell it for you with different expiration time and some detils
-   then the imported products refers to the public product which is red meat in warehouses or ditribution centers
-   you have red meat but from different import job and with different details but the public product is constant
-    then you will sell the oldest first and know who is the
-   supplier who send it? and can to resive the problems from costumer and know the source and you earn real
-   system well why correct errors??? because the data entry may forget some details or enter some problems
-   then i will save the correct in cache memore for a one houer and sned the errors
-    to correct it with the details then i will resive it and fetvh the correct values and continue the pocess
-    save the correct in cache and send the errors if ocure and wait the correction
-   */
-    //place is distributuion_center or warehouse
-    // public function support_new_product_in_place(Request $request){
-    //    $validated_values=$request->validate([
-    //       "place"=>"required|in:Warehouse,Distribution_center",
-    //       "place_id"=>"required|integer"
-    //       ]);
-
-
-    //    $data=$request->validate([
-
-    //    "product_id"=>"required|integer",
-    //    "max_load"=>"required|numeric",
-
-    //  ]);
-
-    //   $table="App\Models\\".$validated_values["place"]."_Product";
-
-    //   $correct_id=strtolower($validated_values["place"]."_id");
-
-    //    $data[$correct_id]=$validated_values["place_id"];
-    //    $prod=$table::where($correct_id,$validated_values["place_id"])->where("product_id",$data["product_id"])->exists();
-    //    if($prod){
-    //       return response()->json(["msg"=>"already supported"],400);
-
-    //    }
-    //    $table::create($data);
-
-    //    return response()->json(["msg"=>"supported"],201);
-
-    //    }
+   
 
     public function show_products()
     {
@@ -484,6 +301,10 @@ class SuperAdmenController extends Controller
 
         return response()->json(["msg" => "section created succesfully", "section" => $section], 201);
     }
+
+
+
+
     public function suppurt_new_storage_media(Request $request)
     {
         $validated_values = $request->validate([
@@ -499,8 +320,18 @@ class SuperAdmenController extends Controller
         return response()->json(["msg" => "storage_element created succesfully", "sorage_element" => $storage_element], 201);
     }
 
+
+
+
+
     public function create_new_imporet_op_storage_media(Request $request)
-    {
+    {    
+         $keys=$request->validate([
+        "import_operation_key"=>"string",
+        "storage_media_key"=>"string"
+         ]);
+
+
         $validated_values = $request->validate([
             "supplier_id" => "required|integer",
             "location" => "required",
@@ -517,14 +348,102 @@ class SuperAdmenController extends Controller
 
         $storage_media = $validated_items["storage_media"];
 
-        $import_operation = Import_operation::create($validated_values);
+   
+        $storage_media_key=null;
+        $import_operation_key=null;
+         
+        Cache::put("import_op_storage_media_keys",[],now()->addMinutes(60));
+        $import_op_storage_media_keys=Cache::get("import_op_storage_media_keys");
+        if(empty($keys["storage_media_key"]) || empty($keys["import_operation_key"])  )
+         {
+            
+            $time=now();
+        $storage_media_key="storage_media".$time;
+        $import_operation_key="import_operation".  $time;
+         
+        Cache::put($storage_media_key,$storage_media,now()->addMinutes(60));
+        Cache::put($import_operation_key,$validated_values,now()->addMinutes(60));
+         
+         }
+         
+        else{
+         Cache::forget($keys["storage_media_key"]);
+         Cache::forget($keys["import_operation_key"]);
+
+      
+        $storage_media_key=$keys["storage_media_key"];
+        $import_operation_key=$keys["import_operation_key"];
+
+        $import_op_storage_media_keys=Cache::get("import_op_storage_media_keys");
+        $import_op_storage_media_keys[$keys["import_operation_key"]]["import_operation_key"]=$keys["import_operation_key"];
+        $import_op_storage_media_keys[$keys["import_operation_key"]]["storage_media_key"]=$keys["storage_media_key"];
+        Cache::forget("import_op_storage_media_keys");
+
+        Cache::put("import_op_storage_media_keys",$import_op_storage_media_keys,now()->addMinutes(60)); 
+         
+        Cache::put($storage_media_key,$storage_media,now()->addMinutes(60));
+        Cache::put($import_operation_key,$validated_values,now()->addMinutes(60));
+
+        }
 
 
-
-        import_storage_media::dispatch($import_operation->id, $storage_media);
-
-        return response()->json(["msg" => "created succesfuly"], 201);
+        return response()->json([
+        "msg" => "saved for one hour conferm it or edit or after it will be lost",
+        "storage_media_key"=>$storage_media_key,
+        "import_operation_key"=>$import_operation_key,
+         "supplier_id" => $validated_values["supplier_id"],
+            "location" => $validated_values["location"],
+            "latitude" =>  $validated_values["latitude"],
+            "longitude" =>  $validated_values["longitude"],
+        "storage_media"=>$storage_media], 201);
     }
+
+
+    
+    public function accept_import_op_storage_media(Request $request){
+     
+    $storage_media=Cache::get($request->storage_media_key);
+    $import_operation=Cache::get($request->import_operation_key);
+    $import_operation=Import_operation::create($import_operation);
+    Cache::forget( $request->import_operation_key);
+    Cache::forget( $request->storage_media_key);
+
+    import_storage_media::dispatch($import_operation->id, $storage_media);
+  
+return response()->json(["msg"=>"storage_media under creating"],202);
+
+}
+   
+
+public function reject_import_op_storage_media(Request $request){
+
+    Cache::forget( $request->import_operation_key);
+    Cache::forget( $request->storage_media_key);
+
+    return response()->json(["msg"=>"import opertation rejected successfuly"],200);
+}
+ 
+public function show_latest_import_op_storage_media(){
+    $import_op_storage_media_keys=Cache::get("import_op_storage_media_keys");
+    $import_operations=[];
+    $i=0;
+     foreach($import_op_storage_media_keys as $element){
+       $import_operation=Cache::get($element["import_operation_key"]);
+       $storage_media=Cache::get($element["storage_media_key"]);
+       $element["supplier_id"]=$import_operation["supplier_id"];
+        $element["location"]=$import_operation["location"];
+         $element["latitude"]=$import_operation["latitude"];
+          $element["longitude"]=$import_operation["longitude"];
+           $element["storage_media"]=$storage_media;
+             $import_operations[$i]= $element;
+     }
+
+     return response()->json(["import_operations"=>$import_operations]);
+}
+
+
+
+
 
     public function create_new_import_operation_product(Request $request)
     {
@@ -544,7 +463,7 @@ class SuperAdmenController extends Controller
     'products.*.price_unit' => 'required|numeric|min:0',
     'products.*.quantity' => 'required|numeric|min:0',
     'products.*.special_description' =>'string',
-     'products.*.imported_load' => 'required|numeric|min:0',
+     'products.*.imported_load' => 'numeric|min:0',
     
 ]);
 //"imported_load"
@@ -558,6 +477,9 @@ class SuperAdmenController extends Controller
 
         return response()->json(["msg" => "Products are being processed and added successfully."], 202);
     }
+
+
+
 
 
     public function create_import_op_vehicles(Request $request)
@@ -578,4 +500,95 @@ class SuperAdmenController extends Controller
 
         return response()->json(['message' => 'Vehicles are being processed.']);
     }
+
+
+   public function add_new_supplies_to_supplier(Request $request){
+     $validated_values=$request->validate([
+         "supplier_id"=>"required",
+         "suppliesable_type"=>"required|in:Product,Storage_media",
+         "suppliesable_id"=>"required",
+         "max_delivery_time_by_days"=>"required|numeric"
+
+     ]);
+    
+      $supplier=Supplier::find($validated_values["supplier_id"]);
+      
+      if(!$supplier){
+        return response()->json(["msg"=>"supplier is not exist!"],404);
+      }
+      $model="App\\Models\\".$validated_values["suppliesable_type"];
+      
+      $supplies=$model::find($validated_values["suppliesable_id"]);
+     
+      if(!$supplies){
+
+         return response()->json(["msg"=>"supplies is not exist!"],404);
+      }
+      $validated_values["suppliesable_type"]=$model;
+       $supplies_info=Supplier_Details::where("supplier_id",$validated_values["supplier_id"])->
+       where("suppliesable_type",$validated_values["suppliesable_type"])->
+       where("suppliesable_id",$validated_values["suppliesable_id"])->get();
+  
+       if(!$supplies_info->isEmpty()){
+        
+           return response()->json(["msg"=>"supplier already suport that!??"],400);
+       }
+    
+    
+      
+      Supplier_Details::create($validated_values);
+
+      return response()->json(["msg"=>"now the supplier support that","supplies"=>$supplies],201);
+       
+
+   }
+
+ public function show_suppliers(){
+   $suppliers=Supplier::all();
+   return response()->json(["suppliers"=>$suppliers]);
+
+ }
+
+public function show_products_of_supplier($id){
+   $supplier=Supplier::find($id);
+   if(!$supplier){
+    return response()->json(["msg"=>"supplier is npt exist"],400);
+   }
+   
+   $supplier_product=$supplier->supplier_products;
+     
+   
+    return response()->json(["supplier_products"=>$supplier_product],200);
+ }
+
+
+ public function show_storage_media_of_supplier($id){
+   $supplier=Supplier::find($id);
+   if(!$supplier){
+    return response()->json(["msg"=>"supplier is npt exist"],400);
+   }
+   
+   $supplier_storage_media=$supplier->supplier_storage_media;
+     
+   
+    return response()->json(["supplier_storage_media"=>$supplier_storage_media],200);
+ }
+   
+ 
+
+public function show_suppliers_of_product($id){
+  
+    $product=Product::find($id);
+   if(!$product){
+    return response()->json(["msg"=>"the product not exist"],404);
+   }
+    $supplier_of_product=$product->supplier;
+    return response()->json(["suppliers_of_product"=>$supplier_of_product]);
+
+}
+     
+
+
+   
+
 }

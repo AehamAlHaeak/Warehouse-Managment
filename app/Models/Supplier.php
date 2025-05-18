@@ -10,12 +10,20 @@ class Supplier extends Model
     use HasFactory;
     protected $guarded;
 
-    public function supplierProduct(){
-        return $this->belongsToMany(Product::class,'supplier__product');
-    }
-    public function importing_details(){
-        return $this-> hasMany(Supplier_Product::class,'supplier_id');
-    
-    
-    }
+   public function supplier_products()
+{
+   
+    return $this->morphedByMany(Product::class, 'suppliesable', 'supplier__details')
+                ->withPivot('max_delivery_time_by_days')->
+                as("details");
+                
+}
+
+public function supplier_storage_media()
+{
+    return $this->morphedByMany(Storage_media::class, 'suppliesable', 'supplier__details')
+                ->withPivot('max_delivery_time_by_days')
+                ->as('details');
+}
+   
 }

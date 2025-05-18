@@ -39,7 +39,9 @@ class importing_op_prod implements ShouldQueue
                 // إضافة import_operation_id إلى المنتج
                 $product['import_operation_id'] = $this->import_operation->id;
 
-                // إنشاء السجل الجديد في جدول import_operation_product
+                if(!empty($product["special_description"])){
+                  $product['imported_load']=1;
+                }
                 Import_operation_product::create($product);
                 Log::info("Product added to import_operation_product: " . json_encode($product));
             }
