@@ -352,15 +352,27 @@ class SuperAdmenController extends Controller
         $storage_media_key=null;
         $import_operation_key=null;
          
-        Cache::put("import_op_storage_media_keys",[],now()->addMinutes(60));
-        $import_op_storage_media_keys=Cache::get("import_op_storage_media_keys");
-        if(empty($keys["storage_media_key"]) || empty($keys["import_operation_key"])  )
+      
+         if(empty($keys["storage_media_key"]) || empty($keys["import_operation_key"])  )
          {
             
             $time=now();
-        $storage_media_key="storage_media".$time;
-        $import_operation_key="import_operation".  $time;
-         
+                $storage_media_key="storage_media".$time;
+                $import_operation_key="import_operation".  $time;
+                 $import_op_storage_media_keys = [];
+                if (Cache::has("import_op_storage_media_keys")) {
+                 
+                 $import_op_storage_media_keys = Cache::get("import_op_storage_media_keys");
+                 Cache::forget("import_op_storage_media_keys");
+                  }
+
+                $import_op_storage_media_keys[$import_operation_key] = [
+                 "import_operation_key" => $import_operation_key,
+                 "storage_media_key" => $storage_media_key,
+                    ];
+Cache::put("import_op_storage_media_keys", $import_op_storage_media_keys, now()->addMinutes(60));
+
+
         Cache::put($storage_media_key,$storage_media,now()->addMinutes(60));
         Cache::put($import_operation_key,$validated_values,now()->addMinutes(60));
          
@@ -433,10 +445,14 @@ $storage_media=Cache::get($request->storage_media_key);
 public function show_latest_import_op_storage_media(){
     $import_op_storage_media_keys=Cache::get("import_op_storage_media_keys");
     $import_operations=[];
-    $i=0;
+    $i=1;
+    
      foreach($import_op_storage_media_keys as $element){
        $import_operation=Cache::get($element["import_operation_key"]);
        $storage_media=Cache::get($element["storage_media_key"]);
+       if(!$import_operation || !$storage_media ){
+      continue;
+        }
        $element["supplier_id"]=$import_operation["supplier_id"];
        $element["supplier"]=Supplier::find($import_operation["supplier_id"]);
         $element["location"]=$import_operation["location"];
@@ -453,6 +469,7 @@ public function show_latest_import_op_storage_media(){
            }
            $element["storage_media"]=$storage_media;
              $import_operations[$i]= $element;
+             $i++;
      }
 
      return response()->json(["import_operations"=>$import_operations]);
