@@ -446,6 +446,9 @@ public function show_latest_import_op_storage_media(){
     $import_op_storage_media_keys=Cache::get("import_op_storage_media_keys");
     $import_operations=[];
     $i=1;
+    if(!$import_op_storage_media_keys){
+         return response()->json(["no operation"]);
+}
     
      foreach($import_op_storage_media_keys as $element){
        $import_operation=Cache::get($element["import_operation_key"]);
