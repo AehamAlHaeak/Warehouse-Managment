@@ -431,9 +431,19 @@ public function show_latest_import_op_storage_media(){
        $import_operation=Cache::get($element["import_operation_key"]);
        $storage_media=Cache::get($element["storage_media_key"]);
        $element["supplier_id"]=$import_operation["supplier_id"];
+       $element["supplier"]=Supplier::find($import_operation["supplier_id"]);
         $element["location"]=$import_operation["location"];
          $element["latitude"]=$import_operation["latitude"];
           $element["longitude"]=$import_operation["longitude"];
+           $j=1;
+           foreach($storage_media as $storage_element){
+              
+            $section=Section::find($storage_element["section_id"]);
+            $section_empty_posetions = $section->posetions()->whereNull('storage_media_id')->get();
+            $storage_media[$j]["empty_capacity"]=$section_empty_posetions->count();
+           
+             $j++;
+           }
            $element["storage_media"]=$storage_media;
              $import_operations[$i]= $element;
      }
