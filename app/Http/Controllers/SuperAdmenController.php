@@ -404,6 +404,9 @@ class SuperAdmenController extends Controller
      
     $storage_media=Cache::get($request->storage_media_key);
     $import_operation=Cache::get($request->import_operation_key);
+    if( !$storage_media || !$import_operation){
+     return response()->json(["msg"=>"already accepted or deleted"],400);
+    }
     $import_operation=Import_operation::create($import_operation);
     Cache::forget( $request->import_operation_key);
     Cache::forget( $request->storage_media_key);
@@ -416,7 +419,11 @@ return response()->json(["msg"=>"storage_media under creating"],202);
    
 
 public function reject_import_op_storage_media(Request $request){
-
+$storage_media=Cache::get($request->storage_media_key);
+    $import_operation=Cache::get($request->import_operation_key);
+    if( !$storage_media || !$import_operation){
+     return response()->json(["msg"=>"already accepted or deleted"],400);
+    }
     Cache::forget( $request->import_operation_key);
     Cache::forget( $request->storage_media_key);
 
