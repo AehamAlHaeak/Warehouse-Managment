@@ -18,7 +18,9 @@ class Distribution_Center_controller extends Controller
     use LoadingTrait;
     public function show_my_suppurted_products(Request $request)
     {
+         
 
+        
         $token = $request->bearerToken();
 
 

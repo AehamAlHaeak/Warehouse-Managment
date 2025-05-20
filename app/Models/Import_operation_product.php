@@ -12,9 +12,7 @@ class Import_operation_product extends Pivot
     public $incrementing = true; 
     protected $keyType = 'int';  
 
-    public function products(){
-        return $this->belongsTo(Product::class,"product_id");
-    }
+    
     public function supllier(){
         return $this->belongsTo(Supplier::class,"supplier_id");
     }
@@ -22,5 +20,8 @@ class Import_operation_product extends Pivot
     public function container(){
 
         return $this->belongsTo(import_op_container::class,"imp_op_contin_id");
+    }
+    public function parent_product(){
+        return $this->belongsTo(Product::class,"product_id");
     }
 }

@@ -185,8 +185,9 @@ class SuperAdmenController extends Controller
             "description" => "required",
             "import_cycle" => "string",
             "type_id" => "required",
-            "actual_sell_price"=>"required|numeric",
-            "unit"=>"required"
+            "actual_piece_price"=>"required|numeric",
+            "unit"=>"required",
+            "quantity"=>"required"
         ]);
         $product = Product::where("name", $validated_values["name"])->get();
 
@@ -498,21 +499,24 @@ public function show_latest_import_op_storage_media(){
     'products.*.expiration' => 'required|date',
     'products.*.producted_in' => 'required|date',
     'products.*.price_unit' => 'required|numeric|min:0',
-    'products.*.quantity' => 'required|numeric|min:0',
     'products.*.special_description' =>'string',
-     'products.*.imported_load' => 'numeric|min:0',
+    'products.*.imported_load' => 'numeric|min:0',
+    "products.*.distribution" => "required|array",
+    "products.*.distribution.*.warehouse_id" => "required|integer",
+    "products.*.distribution.*.load" => "required|min:1"
     
 ]);
-//"imported_load"
-        $products = $validated_products["products"];
 
+
+        $products = $validated_products["products"];
+         
         // getting import operation
         $import_operation = Import_operation::create($validated_values);
 
         // use the job for proceeding adding the products
         importing_op_prod::dispatch($import_operation, $products);
 
-        return response()->json(["msg" => "Products are being processed and added successfully."], 202);
+        return response()->json(["msg" => "Products are being processed and added successfully.","products"=>$validated_products], 202);
     }
 
 
@@ -598,6 +602,26 @@ public function show_products_of_supplier($id){
     return response()->json(["supplier_products"=>$supplier_product],200);
  }
 
+ public function show_warehouses_of_product($id){
+    $product=Product::find($id);
+    $type=$product->type;
+    $warehouses=$type->warehouses;
+    $continer=$product->continer;
+    $storage_media=$continer->storage_media;
+    foreach( $warehouses as $warehouse){
+         $avilable_area=0;
+         $max_capacity=0;
+         
+    $sections_of_the_product_in_warehouse=$warehouse->sections->where("product_id",$id)->get();
+          $storage_elements_on_section=[];
+          foreach($sections_of_the_product_in_warehouse as $section){
+             $storage_elements_on_section=array_push($section->storage_elements);
+             
+          }
+        
+       }
+     
+ }
 
  public function show_storage_media_of_supplier($id){
    $supplier=Supplier::find($id);

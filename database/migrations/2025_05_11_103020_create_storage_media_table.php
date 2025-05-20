@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('name');
             $table->unsignedBigInteger("container_id");
             $table->foreign("container_id")->references("id")->on("containers_types");
-             $table->integer("num_floors");
+             $table->integer("num_floors")->default(1);
             $table->integer("num_classes");//row
             $table->integer("num_positions_on_class");//column
             //according to this container type , I'll know the products that'll be stored in it

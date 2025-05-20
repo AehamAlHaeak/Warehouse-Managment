@@ -16,7 +16,7 @@ return new class extends Migration
             $table->timestamps();
             $table->string("name");
             
-            $table->unsignedBigInteger("product_id");
+            $table->unsignedBigInteger("product_id")->unique();
             $table->foreign("product_id")->references("id")->on("products");
             $table->integer("capacity");
             //contain by unit as example the thigh by unit the caocity is refers to number of it  

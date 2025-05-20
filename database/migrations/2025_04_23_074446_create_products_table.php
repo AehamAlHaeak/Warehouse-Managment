@@ -18,14 +18,13 @@ return new class extends Migration
             $table->text("description"); 
 
             $table->string("img_path")->nullable();
-
-
-
+             
+             $table->integer("quantity")->default(1);
+             $table->string("unit");
            
 
-            $table->double("actual_sell_price");//for all methods i will take the price from here
-            $table->string("unit"); //piece may have more than once unit then 
-            //we determine sell that descripe the price of unit and calcualte final price of the piece
+            $table->double("actual_piece_price");//for all methods i will take the price from here
+           
             $table->bigInteger("import_cycle")->nullable();
          
             $table->double("lowest_temperature")->nullable();

@@ -21,7 +21,7 @@ return new class extends Migration
             $table->date("expiration");
             $table->date("producted_in");
 
-            $table->integer("quantity")->default(1);//refers to num of units on one price
+           
             $table->double("imported_load")->default(1);//refers to the load of this feature
 
 

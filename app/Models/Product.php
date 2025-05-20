@@ -56,6 +56,9 @@ public function type() {
                 ->as('details');
     }
    
+    public function continer(){
+        return $this->hasOne(Containers_type::class,"product_id");
+    }
 
 
 }
