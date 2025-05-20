@@ -16,4 +16,9 @@ class Section extends Model
     public function storage_elements(){
 return $this->belongsToMany(Import_op_storage_md::class,"posetions_on_sections","section_id","storage_media_id");
     }
+
+    public function product(){
+
+        return $this->belongsTo(Product::class,"product_id");
+    }
 }

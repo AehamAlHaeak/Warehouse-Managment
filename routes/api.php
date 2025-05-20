@@ -28,13 +28,19 @@ Route::controller(SuperAdmenController::class)->group(function () {
     
     Route::post("accept_import_op_storage_media", "accept_import_op_storage_media");
     
-    Route::post("reject_import_op_storage_media", "reject_import_op_storage_media");
+   
     
     Route::post("support_new_container", "support_new_container");
   
      Route::get("show_latest_import_op_storage_media","show_latest_import_op_storage_media");
 
     Route::post("create_new_import_operation_product", "create_new_import_operation_product");
+
+     Route::post("accept_import_op_products", "accept_import_op_products");
+      Route::post("reject_import_op", "reject_import_op");
+      Route::get("show_warehouses_of_product/{id}", "show_warehouses_of_product");
+
+
     Route::post("suppourt_new_product", "suppourt_new_product");
     Route::post("create_import_op_vehicles", "create_import_op_vehicles");
     Route::get("show_products", "show_products");
@@ -48,7 +54,7 @@ Route::controller(SuperAdmenController::class)->group(function () {
     Route::get("show_storage_media_of_supplier/{id}", "show_storage_media_of_supplier");
 
 });
-//show_latest_import_op_storage_media
+//reject_import_op
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
 Route::middleware('auth.api:employee')->group(function () {
     Route::post('logout_employe', [SuperAdmenController::class, 'logout_employe']);

@@ -66,7 +66,7 @@ public function handle(): void
 
         foreach ($distribution as $distrebute) {
             $number_continers = ceil($distrebute['load'] / $parent_continer->capacity);
-
+            
             for ($count = 0; $count < $number_continers; $count++) {
                
                 $continer = Import_op_container::create([
@@ -80,12 +80,15 @@ public function handle(): void
                     $load = 1;
                 }
 
-               
+               if($distrebute["load"]<=$load){
+               $load=$distrebute["load"];
+               }
                 Imp_continer_product::create([
                     "imp_op_cont_id" => $continer->id,
                     "imp_op_product_id" => $imported_product->id,
                     "load" => $load
                 ]);
+                $distrebute["load"]-=$load;
             }
         }
     }

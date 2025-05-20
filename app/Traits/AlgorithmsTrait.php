@@ -145,6 +145,9 @@ public function calculate($latitude1,$longitude1, $latitude2,$longitude2) {
     } else {
         throw new \Exception('Failed to fetch distance: ' . json_encode($data));
     }
+
+
+   
 }
 
 
@@ -238,4 +241,55 @@ public function create_postions($model,$object,$foreignId_name){
            }
 
 }
+
+
+
+
+ public function calculate_areas($section){
+        $avilable_area=0;
+         $max_capacity=0;
+         $product=$section->product;
+         $continer=$product->continer;
+         $storage_media=$continer->storage_media;
+         $storage_elements=$section->storage_elements;
+             
+             $max_capacity= $storage_elements->count();
+            $max_capacity=$max_capacity*$storage_media->num_floors*$storage_media->num_classes*$storage_media->num_positions_on_class*$continer->capacity;
+             
+            foreach($storage_elements as $storage_element){
+
+                 $avilable_area+=$storage_element->posetions->whereNull("imp_op_contin_id")->count();
+          
+            }
+            $avilable_area=$avilable_area*$continer->capacity;
+
+            $areas=[
+                "avilable_area"=>$avilable_area,
+               "max_capacity"=>$max_capacity
+            ];
+            return $areas;
+
+    }
+
+    public function calcute_areas_on_place_for_a_specific_product($object,$product_id){
+       $avilable_area=0;
+       $max_capacity=0;
+         
+    
+        $sections_of_the_product_in_object=$object->sections->where("product_id",$product_id);
+   
+          
+          foreach($sections_of_the_product_in_object as $section){
+          
+    
+             $areas=$this->calculate_areas( $section);
+              $avilable_area+=$areas["avilable_area"];
+              $max_capacity+=$areas["max_capacity"];
+          }
+       
+        $object->max_capacity=$max_capacity;
+        $object->avilable_area=$avilable_area;
+       unset($object["sections"]);
+       return $object;
+    }
 }

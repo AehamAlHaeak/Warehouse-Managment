@@ -20,4 +20,8 @@ class Import_op_storage_md extends Pivot
     public function parent_storage_media(){
         return $this->belongsTo(Storage_media::class,"storage_media_id");
     }
+    public function posetions(){
+
+        return $this->hasMany(Positions_on_sto_m::class,"imp_op_stor_id");
+    }
 }
