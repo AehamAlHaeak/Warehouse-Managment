@@ -577,7 +577,7 @@ public function accept_import_op_products(Request $request){
     $import_operation=Import_operation::create($import_operation);
     Cache::forget( $request->import_operation_key);
     Cache::forget( $request->storage_media_key);
-
+    
     importing_op_prod::dispatch($import_operation, $products);
   
 return response()->json(["msg"=>"storage_media under creating"],202);
@@ -597,7 +597,60 @@ $import_operation=Cache::get($request->import_operation_key);
     return response()->json(["msg"=>"import opertation rejected successfuly"],200);
 }
  
+public function show_latest_import_op_products(){
+     $import_op_products_keys=Cache::get("import_op_products_keys");
+    $import_operations=[];
+    
+    $i=0;
+    if(!$import_op_products_keys){
+         return response()->json(["no operation"]);
+}
+    
+     foreach($import_op_products_keys as $element){
+       
+       $import_operation=Cache::get($element["import_operation_key"]);
+       $products=Cache::get($element["products_key"]);
+       if(!$import_operation || !$products){
+       
+      continue;
+        }
+       $element["supplier_id"]=$import_operation["supplier_id"];
+       $element["supplier"]=Supplier::find($import_operation["supplier_id"]);
+        $element["location"]=$import_operation["location"];
+         $element["latitude"]=$import_operation["latitude"];
+          $element["longitude"]=$import_operation["longitude"];
 
+             $element["products"]=$products;
+             $i=0;
+            foreach($element["products"] as $product){
+                $element["products"][$i]["product"]=Product::find($product["product_id"]);
+                $j=0;
+                
+                foreach($element["products"][$i]["distribution"] as  $dist){
+                   
+                 $warehouse=Warehouse::find($dist["warehouse_id"]);
+
+                
+                 $dist["warehouse"]=$this->calcute_areas_on_place_for_a_specific_product($warehouse,$element["products"][$i]["product_id"]);
+                $element["products"][$i]["distribution"][$j]["warehouse"]=$dist["warehouse"];
+                 $j++;
+                }
+                $i++;
+            }
+
+
+             $import_operations[$i]= $element;
+             
+     }
+
+     return response()->json(["import_operations"=>$import_operations]);
+
+
+
+
+
+
+}
 
     public function create_import_op_vehicles(Request $request)
     {
