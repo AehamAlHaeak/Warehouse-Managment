@@ -9,4 +9,6 @@ class Garage extends Model
 {
     use HasFactory;
     protected $guarded;
+
+     
 }
