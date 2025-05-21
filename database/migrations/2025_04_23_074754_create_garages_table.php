@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('garages', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
-            $table->foreignId("vehicle_id")->constrained("vehicles")->cascadeOnDelete();
+           
             $table->enum("type",["big","medium"]);
             $table->nullableMorphs("existable");//existable_type,existable_id
             //can be null only if the company decide to make undepended garage as a reserve
