@@ -18,20 +18,20 @@ return new class extends Migration
             $table->date("expiration");
             $table->date("producted_in");
             $table->double("readiness");
-           
+
             $table->string("location");
             $table->double("latitude");
             $table->double("longitude");
 
             $table->string("img_path")->nullable();
 
-           
-            
+
+
 
             $table->integer("capacity");
-            //capacity reffers to the max number of the continers which it can load it 
+            //capacity reffers to the max number of the continers which it can load it
 
-            
+
         });
     }
 

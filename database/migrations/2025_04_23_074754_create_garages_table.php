@@ -14,14 +14,15 @@ return new class extends Migration
         Schema::create('garages', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
+            $table->foreignId("vehicle_id")->constrained("vehicles")->cascadeOnDelete();
             $table->enum("type",["big","medium"]);
             $table->nullableMorphs("existable");//existable_type,existable_id
             //can be null only if the company decide to make undepended garage as a reserve
-            //garage 
+            //garage
             $table->string("location")->nullable();
             $table->double("latitude")->nullable();
             $table->double("longitude")->nullable();
-           
+
             $table->bigInteger("max_capacity");
             /*we willnot add number of the vehicles to the garage we will take it
              from the realtions with the vehicles*/
