@@ -36,14 +36,6 @@ class Warehouse extends Model
         return $this->belongsTo(type::class,"type_id");
     }
 
-        public function garages()
-    {
-        return $this->hasOne(Garage::class);
-    }
-
-        public function vehicles()
-    {
-        return $this->hasMany(Vehicle::class);
-    }
+       
 
 }
