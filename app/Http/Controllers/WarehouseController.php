@@ -48,7 +48,7 @@ class WarehouseController extends Controller
 
         return response()->json([
             'warehouse' => $warehouse->only('id', 'name', 'location'),
-            'storage_medias' => $storageMedias,
+             
         ]);
     }
 
@@ -58,7 +58,7 @@ class WarehouseController extends Controller
 
         return response()->json([
             'warehouse' => $warehouse->name,
-            'employees' => $warehouse->employees,
+
         ]);
     }
 
@@ -78,7 +78,7 @@ class WarehouseController extends Controller
 
         return response()->json([
             'warehouse' => $warehouse->name,
-            'sections' => $warehouse->sections,
+
         ]);
     }
 }
