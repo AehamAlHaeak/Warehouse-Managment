@@ -45,6 +45,13 @@ Route::controller(SuperAdmenController::class)->group(function () {
 
     Route::post("suppourt_new_product", "suppourt_new_product");
     Route::post("create_import_op_vehicles", "create_import_op_vehicles");
+
+
+     Route::post("accept_import_op_vehicles", "accept_import_op_vehicles");
+
+
+
+
     Route::get("show_products", "show_products");
     Route::post("orded_locations", "orded_locations");
     Route::get("creeate_bill","creeate_bill");
@@ -56,7 +63,7 @@ Route::controller(SuperAdmenController::class)->group(function () {
     Route::get("show_storage_media_of_supplier/{id}", "show_storage_media_of_supplier");
 
 });
-//show_latest_import_op_products
+//accept_import_op_vehicles
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
 Route::middleware('auth.api:employee')->group(function () {
     Route::post('logout_employe', [SuperAdmenController::class, 'logout_employe']);

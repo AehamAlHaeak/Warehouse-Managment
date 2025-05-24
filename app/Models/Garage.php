@@ -14,7 +14,7 @@ class Garage extends Model
 
         public function vehicles()
     {
-        return $this->belongsToMany(Vehicle::class);
+        return $this->hasMany(Vehicle::class,"garage_id");
     }
 
         public function warehouse()

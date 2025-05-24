@@ -35,7 +35,9 @@ class Warehouse extends Model
     public function type() {
         return $this->belongsTo(type::class,"type_id");
     }
-
+   public function garages(){
+    return $this->morphMany(Garage::class,"existable");
+   }
        
 
 }
