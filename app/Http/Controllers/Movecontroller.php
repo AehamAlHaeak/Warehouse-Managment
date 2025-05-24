@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Containers_type;
+use App\Models\Import_operation_product;
 use App\Models\Storage_media;
+use App\Models\TheProductRejected;
 use App\Models\TransferDetails;
 use App\Models\Vehicle;
 use App\Traits\MoveTrait;
@@ -36,4 +38,30 @@ class Movecontroller extends Controller
 'date_of_finished' =>  $transferDetail->transfer->date_of_finished
         ]);
     }
+    
+    public function statusTheProduct(Request $request)
+{
+    $validated = $request->validate([
+        'import_operation_id' => 'required|exists:import_operations,id',
+        'product_id' => 'required|exists:products,id',
+    ]);
+
+    $productOperation = Import_operation_product::where('import_operation_id', $request->import_operation_id)
+                        ->where('product_id', $request->product_id)
+                        ->first();
+
+    if (!$productOperation) {
+        return response()->json(['message' => 'Product not found in import operation'], 404);
+    }
+
+    $productOperation->status = 'rejected';
+    $productOperation->save(); 
+
+    TheProductRejected::create([
+        'impo_ope_prod_id' => $productOperation->id
+    ]);
+
+    return response()->json(['message' => 'Product rejected successfully'], 200);
+}
+
 }

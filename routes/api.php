@@ -69,8 +69,13 @@ Route::controller(UserController::class)->group(function () {
     Route::post('near_by_centers', 'near_by_centers');
     Route::middleware('auth.api')->group(function () {
         Route::post('logout_user', 'logout_user');
+
         Route::post('updateUser', 'updateUser
         ');
+
+        Route::post('updateUser', 'updateUser');
+
+
     });
 });
 
@@ -83,6 +88,7 @@ Route::middleware("is_distrebution_center_manager")->controller(Distribution_Cen
 });
 
 //creeate_bil
+
 //mean that the products recievd successfully
 Route::get('confirmReception', [Movecontroller::class, 'confirmReception']);
 
@@ -95,3 +101,8 @@ Route::prefix('warehouses')->group(function () {
     Route::get('{id}/vehOnGar', [WarehouseController::class, 'showVehicles_OnGarage']);
      Route::get('{id}/storage-media', [WarehouseController::class, 'show_Storage_Md']);
 });
+
+//mean that the products recievd successfully 
+Route::get('confirmReception',[Movecontroller::class,'confirmReception']);
+Route::post('statusTheProduct', [Movecontroller::class, 'statusTheProduct'])->middleware('auth.api:employee');
+
