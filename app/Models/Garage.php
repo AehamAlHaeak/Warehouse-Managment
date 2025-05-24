@@ -10,6 +10,10 @@ class Garage extends Model
     use HasFactory;
     protected $guarded;
 
+
+     
+
+
     //  protected $fillable = ['name', 'available_space', 'vehicle_type', 'warehouse_id'];
 
         public function vehicles()
@@ -27,3 +31,4 @@ class Garage extends Model
 
 
 }
+
