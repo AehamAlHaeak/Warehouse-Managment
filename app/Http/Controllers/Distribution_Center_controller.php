@@ -14,64 +14,56 @@ use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
 
 class Distribution_Center_controller extends Controller
 {
-    use TransferTrait;
-    use LoadingTrait;
-    public function show_my_suppurted_products(Request $request)
+     public function showEmployees($id)
     {
-         
+        $distemployee = DistributionCenter::with('employees')->findOrFail($id);
 
-        
-        $token = $request->bearerToken();
-
-
-        $payload = JWTAuth::getPayload($token);
-
-
-        $manager = JWTAuth::parseToken()->authenticate('employe');
-        $manager = Employe::find($payload->get("id"));
-
-
-        //place is a warehouse or ditribution center
-        $place = $manager->workable;
-
-        $public_details = $place->public_details_about_products;
-
-        $i = 0;
-        $my_products = [];
-        foreach ($public_details as $details) {
-
-            $product = $details->product->only(["name", "description", "img_path"]);
-
-            $product["actual_load"] = $this->calculate_actual_load($details->product_details);
-
-            $product["average"] = $details->average;
-            //we most store the variance devided into n or devide it when we will use it
-            $product["deviation"] = sqrt($details->variance);
-
-            $my_products[$i] = $product;
-            $i++;
-        }
-        return response()->json(["msg" => "i am happy", "your_products" => $my_products], 202);
-    }
-
-    public function ask_product(Request $request)
-    {
-        $validated_values = $request->validate([
-            "product_id" => "required|integer",
-            "requested_quantity" => "required|numeric",
+        return response()->json([
+            'DistributionCenter' =>  $distemployee->name,
         ]);
-        $token = $request->bearerToken();
-
-        $payload = JWTAuth::getPayload($token);
-
-        $manager = JWTAuth::parseToken()->authenticate('employe');
-
-        $manager = Employe::find($payload->get("id"));
-
-        //place is a warehouse or ditribution center
-
-        $place = $manager->workable;
     }
+
+
+        public function showprod_In_Dist($id)
+    {
+        $dist_prod = DistributionCenter::find($id)->supported_product;
+        return  $dist_prod;
+    }
+
+
+     public function showSections($id)
+    {
+        $dist_section =DistributionCenter::with('sections')->findOrFail($id);
+
+        return response()->json([
+            'DistributionCenter' => $dist_section->name,
+
+        ]);
+    }
+
+
+     public function showType($id)
+    {
+        $dist_type= DistributionCenter::with('type')->findOrFail($id);
+
+        return response()->json([
+            'DistributionCenter' => $dist_type->name,
+            'type' => $dist_type->type,
+        ]);
+    }
+
+
+    
+
+
+
+
+
+
+
+
+
+
 
 
 }

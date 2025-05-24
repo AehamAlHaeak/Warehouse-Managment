@@ -671,21 +671,102 @@ public function show_latest_import_op_products(){
 
     public function create_import_op_vehicles(Request $request)
     {
+    $keys = [
+        "import_operation_key" => $request->import_operation_key,
+        "vehicles_key" => $request->vehicles_key
+    ];
+
         $validated_values = $request->validate([
-            "supplier_id" => "required|integer",
-            "location" => "required",
-            "latitude" => "required",
-            "longitude" => "required"
-        ]);
+        "supplier_id" => "required|integer",
+        "location" => "required",
+        "latitude" => "required",
+        "longitude" => "required"
+    ]);
 
-         $import_operation = Import_operation::create($validated_values);
-        $vehicles = $request->input('vehicles');  // array of vehicles
-       
+        $validated_vehicles = $request->validate([
+        'vehicles' => 'required|array|min:1',
+    
+        'vehicles.*.name' => 'required|string',
+        'vehicles.*.expiration' => 'required|date',
+        'vehicles.*.producted_in' => 'required|date',
+        'vehicles.*.readiness' => 'required|numeric|min:0',
+        'vehicles.*.location' => 'string',
+        'vehicles.*.latitude' => 'numeric',
+        'vehicles.*.longitude' => 'numeric',
+        'vehicles.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif,bmp|max:4096',
+        'vehicles.*.capacity' => 'required|integer',
+        'vehicles.*.type_id' => 'required|integer|exists:types,id',
+        'vehicles.*.place_type' => 'required|in:Warehouse,DistributionCenter',
+        'vehicles.*.place_id' => 'required|integer'
+    ]);
 
-   
-        StoreVehiclesJob::dispatch($vehicles,$import_operation->id,$import_operation->location,$import_operation->longitude,$import_operation->latitude);
+    $vehicles = $validated_vehicles["vehicles"];
+    $vehicles_key = null;
+    $import_operation_key = null;
 
-        return response()->json(['message' => 'Vehicles are being processed.']);
+        if (empty($keys["vehicles_key"]) || empty($keys["import_operation_key"])) {
+
+            $time = now()->timestamp; 
+        $vehicles_key = "vehicles_" . $time;
+        $import_operation_key = "import_operation_" . $time;
+
+            $import_op_vehicles_keys = [];
+
+            if (Cache::has("import_op_vehicles_keys")) {
+            $import_op_vehicles_keys = Cache::get("import_op_vehicles_keys");
+            Cache::forget("import_op_vehicles_keys");
+        }
+
+            $import_op_vehicles_keys[$import_operation_key] = [
+            "import_operation_key" => $import_operation_key,
+            "vehicles_key" => $vehicles_key,
+        ];
+
+            Cache::put("import_op_vehicles_keys", $import_op_vehicles_keys, now()->addMinutes(60));
+        Cache::put($vehicles_key, $vehicles, now()->addMinutes(60));
+        Cache::put($import_operation_key, $validated_values, now()->addMinutes(60));
+
+        } else {
+
+            $vehicles_key = $keys["vehicles_key"];
+        $import_operation_key = $keys["import_operation_key"];
+
+            Cache::forget($vehicles_key);
+        Cache::forget($import_operation_key);
+
+            Cache::put($vehicles_key, $vehicles, now()->addMinutes(60));
+        Cache::put($import_operation_key, $validated_values, now()->addMinutes(60));
+    }
+
+
+    
+        return response()->json([
+        "msg" => "Saved for one hour. Confirm or edit it before it expires.",
+        "vehicles_key" => $vehicles_key,
+        "import_operation_key" => $import_operation_key,
+        "supplier_id" => $validated_values["supplier_id"],
+        "location" => $validated_values["location"],
+        "latitude" => $validated_values["latitude"],
+        "longitude" => $validated_values["longitude"],
+        "vehicles" => $vehicles
+    ], 201);
+}
+
+public function accept_import_op_vehicles(Request $request)
+    {
+
+        $vehicles = Cache::get($request->vehicles_key);
+        $import_operation = Cache::get($request->import_operation_key);
+        if (!$vehicles || !$import_operation) {
+            return response()->json(["msg" => "already accepted or deleted"], 400);
+        }
+        $import_operation = Import_operation::create($import_operation);
+        Cache::forget($request->import_operation_key);
+
+       StoreVehiclesJob::dispatch($vehicles,$import_operation->id,$import_operation->location,$import_operation->longitude,$import_operation->latitude );
+
+        return response()->json(["msg" => "vehicles under creating"], 202);
+
     }
 
 
