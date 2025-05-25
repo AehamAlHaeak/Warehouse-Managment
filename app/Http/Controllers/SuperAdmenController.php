@@ -151,7 +151,7 @@ public function create_new_garage(Request $request){
     "max_capacity"=>"required|integer"
 
  ]);
-
+  $validated_values["existable_type"]="App\\Models\\".$validated_values["existable_type"];
  $garage=Garage::create($validated_values);
 
  return response()->json(["msg"=>"created","garage"=>$garage],201);
