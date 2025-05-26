@@ -226,11 +226,11 @@ public function create_new_garage(Request $request){
        
             foreach ($products as $product) {
              $actual_load_in_warehouses=0;
-             $actual_load_in_dictrebution_centers=0;
+             $actual_load_in_distribution_centers=0;
              $max_load_in_warehouses=0;
-             $max_load_in_dictrebution_centers=0;
+             $max_load_in_distribution_centers=0;
              $avilable_load_in_warehouses=0;
-             $avilable_load_in_dictrebution_centers=0;
+             $$max_load_in_distribution_centers=0;
              $average_in_warehouses=0;
              $deviation_in_warehouses=0;
              $sections=$product->sections;
@@ -253,22 +253,22 @@ public function create_new_garage(Request $request){
 
                }
                if($section->existable_type=="App\\Models\\DistributionCenter"){
-                 $actual_load_in_dictrebution_centers+=$areas_on_section["max_capacity"]-$areas_on_section["avilable_area"];
-                 $max_load_in_dictrebution_centers+=$areas_on_section["max_capacity"];
-                 $avilable_load_in_dictrebution_centers+=$areas_on_section["avilable_area"];
+                 $actual_load_in_distribution_centers+=$areas_on_section["max_capacity"]-$areas_on_section["avilable_area"];
+                 $max_load_in_distribution_centers+=$areas_on_section["max_capacity"];
+                 $$max_load_in_distribution_centers+=$areas_on_section["avilable_area"];
                }
 
              }
              $product->avilable_load_on_warehouses=$avilable_load_in_warehouses;
-             $product->avilable_load_on_dictrebution_centers=$avilable_load_in_dictrebution_centers;
+             $product->avilable_load_on_dictrebution_centers=$$max_load_in_distribution_centers;
              $product->max_load_on_warehouse=$max_load_in_warehouses;
-             $product->max_load_in_dictrebution_centers=$max_load_in_dictrebution_centers;
+             $product->max_load_in_dictrebution_centers=$max_load_in_distribution_centers;
              $product->actual_load_in_warehouses=$actual_load_in_warehouses;
-             $product->actual_load_in_dictrebution_centers=$actual_load_in_dictrebution_centers;
+             $product->actual_load_in_distribution_centers=$actual_load_in_distribution_centers;
              $product->average= $average_in_warehouses;
              $product->deviation=$deviation_in_warehouses;
-             $product->max_load_on_company=$max_load_in_warehouses+$max_load_in_dictrebution_centers;
-             $product->load_on_company==$actual_load_in_warehouses+$actual_load_in_dictrebution_centers;
+             $product->max_load_on_company=$max_load_in_warehouses+$max_load_in_distribution_centers;
+             $product->load_on_company==$actual_load_in_warehouses+$actual_load_in_distribution_centers;
               unset($product["sections"]);
         }
         return response()->json(["msg" => "sucessfull", "products" => $products], 200);
