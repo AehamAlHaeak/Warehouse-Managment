@@ -11,9 +11,7 @@ class Product extends Model
     use HasFactory;
     protected $guarded;
 
-    // public function bill(){
-    //     return $this->hasMany(Bill::class);
-    // }
+    
 
     public function favoriteByUser(){
         return $this->belongsToMany(User::class,'favorites');
@@ -23,10 +21,7 @@ class Product extends Model
 
     
 
-    public function productTransfer(){
-        return $this->belongsToMany(Transfer::class,'transfer__vehicle');
-    }
-
+  
     public function productType(){
         return $this->belongsTo(type::class);
     }
@@ -59,6 +54,8 @@ public function type() {
     public function continer(){
         return $this->hasOne(Containers_type::class,"product_id");
     }
-
+    public function sections(){
+        return $this->hasMany(Section::class,"product_id");
+    }
 
 }

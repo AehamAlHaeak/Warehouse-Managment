@@ -17,7 +17,7 @@ use App\Models\Warehouse;
 use App\Traits\CRUDTrait;
 use App\Models\Import_jop;
 use App\Models\Bill_Detail;
-
+use Carbon\Carbon;
 use Illuminate\Support\Str;
 use App\Traits\LoadingTrait;
 use Illuminate\Http\Request;
@@ -223,16 +223,53 @@ public function create_new_garage(Request $request){
     public function show_products()
     {
         $products = Product::all();
-        foreach ($products as $product) {
-            $totals = $product->sections()
-                ->selectRaw('SUM(average) as total_avg, SUM(variance) as total_variance')
-                ->first();
-            $product["total_exist_quantity"] = $product->import_operation_details->where("status", "accepted")->count();
-            $product["total_sold_quantity"] = $product->import_operation_details->where("status", "sold")->count();
-            $product["total_rejected_quantity"] = $product->import_operation_details->where("status", "rejected")->count();
+       
+            foreach ($products as $product) {
+             $actual_load_in_warehouses=0;
+             $actual_load_in_dictrebution_centers=0;
+             $max_load_in_warehouses=0;
+             $max_load_in_dictrebution_centers=0;
+             $avilable_load_in_warehouses=0;
+             $avilable_load_in_dictrebution_centers=0;
+             $average_in_warehouses=0;
+             $deviation_in_warehouses=0;
+             $sections=$product->sections;
+             foreach($sections as $section ){
+              $areas_on_section=$this->calculate_areas($section);
+               if($section->existable_type=="App\\Models\\Warehouse"){
+                 $actual_load_in_warehouses+=$areas_on_section["max_capacity"]-$areas_on_section["avilable_area"];
+                 $max_load_in_warehouses+=$areas_on_section["max_capacity"];
+                 $avilable_load_in_warehouses+=$areas_on_section["avilable_area"];
+                 $date = Carbon::parse($section->created_at);
+                 
+                 $now = Carbon::now();
+                 $weeksPassed = $date->diffInWeeks($now);
+                 if( $weeksPassed!=0){
+              
+                    $deviation_in_warehouses+=sqrt($product->import_cycle/7)*sqrt($section->variance/$weeksPassed);
+                 }
 
-            $product["avirage"] = $totals->total_avg;
-            $product["deviation"] = sqrt($totals->total_variance);
+                    $average_in_warehouses+=($product->import_cycle/7)*$section->average;
+
+               }
+               if($section->existable_type=="App\\Models\\DistributionCenter"){
+                 $actual_load_in_dictrebution_centers+=$areas_on_section["max_capacity"]-$areas_on_section["avilable_area"];
+                 $max_load_in_dictrebution_centers+=$areas_on_section["max_capacity"];
+                 $avilable_load_in_dictrebution_centers+=$areas_on_section["avilable_area"];
+               }
+
+             }
+             $product->avilable_load_on_warehouses=$avilable_load_in_warehouses;
+             $product->avilable_load_on_dictrebution_centers=$avilable_load_in_dictrebution_centers;
+             $product->max_load_on_warehouse=$max_load_in_warehouses;
+             $product->max_load_in_dictrebution_centers=$max_load_in_dictrebution_centers;
+             $product->actual_load_in_warehouses=$actual_load_in_warehouses;
+             $product->actual_load_in_dictrebution_centers=$actual_load_in_dictrebution_centers;
+             $product->average= $average_in_warehouses;
+             $product->deviation=$deviation_in_warehouses;
+             $product->max_load_on_company=$max_load_in_warehouses+$max_load_in_dictrebution_centers;
+             $product->load_on_company==$actual_load_in_warehouses+$actual_load_in_dictrebution_centers;
+              unset($product["sections"]);
         }
         return response()->json(["msg" => "sucessfull", "products" => $products], 200);
     }
