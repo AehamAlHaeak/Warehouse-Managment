@@ -50,7 +50,9 @@ Route::controller(SuperAdmenController::class)->group(function () {
 
      Route::post("accept_import_op_vehicles", "accept_import_op_vehicles");
 
-
+    Route::post("edit_product", "edit_product");
+    Route::get("show_places_of_products/{product_id}", "show_places_of_products");
+    Route::get("delete_product/{product_id}", "delete_product");
 
 
     Route::get("show_products", "show_products");

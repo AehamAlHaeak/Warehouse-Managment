@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Models\Bill;
 use App\Models\type;
 use App\Models\User;
+use Faker\Core\Uuid;
 use App\Models\Garage;
 use App\Models\Employe;
 use App\Models\Product;
@@ -17,7 +19,6 @@ use App\Models\Warehouse;
 use App\Traits\CRUDTrait;
 use App\Models\Import_jop;
 use App\Models\Bill_Detail;
-use Carbon\Carbon;
 use Illuminate\Support\Str;
 use App\Traits\LoadingTrait;
 use Illuminate\Http\Request;
@@ -31,13 +32,14 @@ use App\Models\Containers_type;
 use App\Traits\AlgorithmsTrait;
 use Illuminate\Validation\Rule;
 use App\Models\Import_operation;
+use App\Models\Supplier_Details;
 use App\Models\Supplier_Product;
 use App\Models\Transfer_Vehicle;
 use App\Jobs\importing_operation;
 use App\Models\Werehouse_Product;
+
 use App\Jobs\import_storage_media;
 use App\Models\DistributionCenter;
-
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Models\Import_op_storage_md;
 use App\Models\Posetions_on_section;
@@ -45,16 +47,15 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Resources\ProductResource;
+use function PHPUnit\Framework\isEmpty;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\storeProductRequest;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use App\Http\Requests\storeEmployeeRequest;
-use App\Models\Distribution_center_Product;
-use App\Models\Supplier_Details;
-use Faker\Core\Uuid;
-use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
 
-use function PHPUnit\Framework\isEmpty;
+use App\Models\Distribution_center_Product;
+use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
 
 class SuperAdmenController extends Controller
 {
@@ -274,7 +275,110 @@ public function create_new_garage(Request $request){
         return response()->json(["msg" => "sucessfull", "products" => $products], 200);
     }
 
+    
+public function show_places_of_products($product_id){
+  $warehouses=[];
+  $distribution_centers=[];
+  $product=Product::find($product_id);
+   $sections=$product->sections;
+   foreach($sections as $section){
+    $place=$section->existable;
+    if($section->existable_type=="App\\Models\\DistributionCenter"){
+      $distribution_centers[$place->id]=$place;
+     }
+     
+     if($section->existable_type=="App\\Models\\Warehouse"){
+      $warehouses[$place->id]=$place;  
+     }
+ 
+   }
+ return response()->json(["msg"=>"here the places!","warehouses"=>$warehouses,"distribution_centers"=>$distribution_centers]);
 
+}
+
+public function delete_product($product_id){
+ $product=Product::find($product_id);
+ 
+if (!$product) {
+        return response()->json(['error' => 'Product not found.'], 404);
+    }
+
+    $threshold = Carbon::now()->subMinutes(30);
+
+    if ($product->created_at >= $threshold) {
+        $product->delete();
+        return response()->json(['message' => 'Product deleted successfully.']);
+    } else {
+        return response()->json(['error' => 'Cannot delete: product is older than 30 minutes.'], 403);
+    }  
+
+
+}
+
+
+public function edit_product(Request $request)
+{
+    $product = Product::find($request->product_id);
+
+    if (!$product) {
+        return response()->json(['error' => 'Product not found.'], 404);
+    }
+
+    $now = Carbon::now();
+    $createdAt = Carbon::parse($product->created_at);
+    $isOlderThan30Min = $createdAt->diffInMinutes($now) > 30;
+
+    $alwaysUpdatable = [
+        'quantity',
+        'unit',
+        'actual_piece_price',
+        'import_cycle',
+        'lowest_temperature',
+        'highest_temperature',
+        'lowest_humidity',
+        'highest_humidity',
+        'lowest_light',
+        'highest_light',
+        'lowest_pressure',
+        'highest_pressure',
+        'lowest_ventilation',
+        'highest_ventilation',
+        'description'
+    ];
+
+    if (!$isOlderThan30Min) {
+        // إذا لسا بأول 30 دقيقة، اسم و وصف و نوع كمان بيتحدثو
+        $alwaysUpdatable = array_merge($alwaysUpdatable, ['name', 'type_id']);
+    } else {
+        if ($request->hasAny(['name', 'type_id'])) {
+            return response()->json([
+                'error' => 'You can\'t edit name, description, or type after 30 minutes.'
+            ], 403);
+        }
+    }
+
+   
+    $updateData = $request->only($alwaysUpdatable);
+
+    
+    if ($request->hasFile('img_path')) {
+        
+        if ($product->img_path && Storage::exists($product->img_path)) {
+            Storage::delete($product->img_path);
+        }
+
+       
+        $path = $request->file('img_path')->store('product_images', 'public');
+        $updateData['img_path'] = $path;
+    }
+
+    $product->update($updateData);
+
+    return response()->json([
+        'message' => 'Product updated successfully.',
+        'product' => $product
+    ]);
+}
     //this method to try the algorithm of location
     public function orded_locations(Request $request)
     {
