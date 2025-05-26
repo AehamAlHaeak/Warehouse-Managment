@@ -260,9 +260,9 @@ public function create_new_garage(Request $request){
 
              }
              $product->avilable_load_on_warehouses=$avilable_load_in_warehouses;
-             $product->avilable_load_on_dictrebution_centers=$max_load_in_distribution_centers;
+             $product->avilable_load_on_distribution_centers=$max_load_in_distribution_centers;
              $product->max_load_on_warehouse=$max_load_in_warehouses;
-             $product->max_load_in_dictrebution_centers=$max_load_in_distribution_centers;
+             $product->max_load_in_distribution_centers=$max_load_in_distribution_centers;
              $product->actual_load_in_warehouses=$actual_load_in_warehouses;
              $product->actual_load_in_distribution_centers=$actual_load_in_distribution_centers;
              $product->average= $average_in_warehouses;
