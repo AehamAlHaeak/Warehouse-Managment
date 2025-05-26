@@ -230,7 +230,7 @@ public function create_new_garage(Request $request){
              $max_load_in_warehouses=0;
              $max_load_in_distribution_centers=0;
              $avilable_load_in_warehouses=0;
-             $$max_load_in_distribution_centers=0;
+             $max_load_in_distribution_centers=0;
              $average_in_warehouses=0;
              $deviation_in_warehouses=0;
              $sections=$product->sections;
@@ -255,12 +255,12 @@ public function create_new_garage(Request $request){
                if($section->existable_type=="App\\Models\\DistributionCenter"){
                  $actual_load_in_distribution_centers+=$areas_on_section["max_capacity"]-$areas_on_section["avilable_area"];
                  $max_load_in_distribution_centers+=$areas_on_section["max_capacity"];
-                 $$max_load_in_distribution_centers+=$areas_on_section["avilable_area"];
+                 $max_load_in_distribution_centers+=$areas_on_section["avilable_area"];
                }
 
              }
              $product->avilable_load_on_warehouses=$avilable_load_in_warehouses;
-             $product->avilable_load_on_dictrebution_centers=$$max_load_in_distribution_centers;
+             $product->avilable_load_on_dictrebution_centers=$max_load_in_distribution_centers;
              $product->max_load_on_warehouse=$max_load_in_warehouses;
              $product->max_load_in_dictrebution_centers=$max_load_in_distribution_centers;
              $product->actual_load_in_warehouses=$actual_load_in_warehouses;
