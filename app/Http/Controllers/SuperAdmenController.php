@@ -140,24 +140,23 @@ class SuperAdmenController extends Controller
 
 
 
-public function create_new_garage(Request $request){
- $validated_values=$request->validate([
-    "existable_type"=>"string|in:Warehouse,DistributionCenter",
-    "existable_id"=>"integer",
-    "type"=>"required|in:big,medium",
-    "location"=>"string",
-    "latitude"=>"numeric",
-    "longitude"=>"numeric",
-    "max_capacity"=>"required|integer"
+    public function create_new_garage(Request $request)
+    {
+        $validated_values = $request->validate([
+            "existable_type" => "string|in:Warehouse,DistributionCenter",
+            "existable_id" => "integer",
+            "type" => "required|in:big,medium",
+            "location" => "string",
+            "latitude" => "numeric",
+            "longitude" => "numeric",
+            "max_capacity" => "required|integer"
 
- ]);
+        ]);
 
- $garage=Garage::create($validated_values);
+        $garage = Garage::create($validated_values);
 
- return response()->json(["msg"=>"created","garage"=>$garage],201);
-
-
-}
+        return response()->json(["msg" => "created", "garage" => $garage], 201);
+    }
 
 
 

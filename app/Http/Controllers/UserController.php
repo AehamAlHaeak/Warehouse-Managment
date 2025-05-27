@@ -20,7 +20,7 @@ use App\Traits\AlgorithmsTrait;
 
 class UserController extends Controller
 {
-    use TokenUser,AlgorithmsTrait;
+    use TokenUser, AlgorithmsTrait;
     public function register_user(storeUserRequest $request)
     {
 
@@ -120,28 +120,29 @@ class UserController extends Controller
 
 
 
-        $user_data->update(  $data);
-        return response()->json(["msg"=> "updated seccessfully",'user'=>$user_data], 200);
-    }catch (\Exception $e) {
-        return response()->json([
-            'error' => 'Something went wrong',
-            'message' => $e->getMessage(),
-        ], 500);
+            $user_data->update($data);
+            return response()->json(["msg" => "updated seccessfully", 'user' => $user_data], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Something went wrong',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
-     }
 
 
 
-    public function near_by_centers(Request $request){
-        $location=$request->validate([
-            'location'=>'required|string',
-            'latitude'=>'required',
-            'longitude'=>'required'
+    public function near_by_centers(Request $request)
+    {
+        $location = $request->validate([
+            'location' => 'required|string',
+            'latitude' => 'required',
+            'longitude' => 'required'
         ]);
 
 
-$nearest_center=$this->calculate_the_nearest_location("App\Models\DistributionCenter",$request->latitude,$request->longitude);
+        $nearest_center = $this->calculate_the_nearest_location("App\Models\DistributionCenter", $request->latitude, $request->longitude);
 
-return response()->json(["nearest"=>$nearest_center], 200);
+        return response()->json(["nearest" => $nearest_center], 200);
     }
 }
