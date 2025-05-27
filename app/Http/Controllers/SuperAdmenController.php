@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Models\Bill;
 use App\Models\type;
 use App\Models\User;
+use Faker\Core\Uuid;
 use App\Models\Garage;
 use App\Models\Employe;
 use App\Models\Product;
@@ -17,7 +19,6 @@ use App\Models\Warehouse;
 use App\Traits\CRUDTrait;
 use App\Models\Import_jop;
 use App\Models\Bill_Detail;
-
 use Illuminate\Support\Str;
 use App\Traits\LoadingTrait;
 use Illuminate\Http\Request;
@@ -31,13 +32,14 @@ use App\Models\Containers_type;
 use App\Traits\AlgorithmsTrait;
 use Illuminate\Validation\Rule;
 use App\Models\Import_operation;
+use App\Models\Supplier_Details;
 use App\Models\Supplier_Product;
 use App\Models\Transfer_Vehicle;
 use App\Jobs\importing_operation;
 use App\Models\Werehouse_Product;
+
 use App\Jobs\import_storage_media;
 use App\Models\DistributionCenter;
-
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Models\Import_op_storage_md;
 use App\Models\Posetions_on_section;
@@ -45,16 +47,15 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Resources\ProductResource;
+use function PHPUnit\Framework\isEmpty;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\storeProductRequest;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use App\Http\Requests\storeEmployeeRequest;
-use App\Models\Distribution_center_Product;
-use App\Models\Supplier_Details;
-use Faker\Core\Uuid;
-use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
 
-use function PHPUnit\Framework\isEmpty;
+use App\Models\Distribution_center_Product;
+use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
 
 class SuperAdmenController extends Controller
 {
@@ -151,9 +152,9 @@ class SuperAdmenController extends Controller
             "longitude" => "numeric",
             "max_capacity" => "required|integer"
 
-        ]);
+ ]);
 
-        $garage = Garage::create($validated_values);
+ $garage=Garage::create($validated_values);
 
         return response()->json(["msg" => "created", "garage" => $garage], 201);
     }
@@ -201,9 +202,9 @@ class SuperAdmenController extends Controller
             "description" => "required",
             "import_cycle" => "string",
             "type_id" => "required",
-            "actual_piece_price" => "required|numeric",
-            "unit" => "required",
-            "quantity" => "required"
+            "actual_piece_price"=>"required|numeric",
+            "unit"=>"required",
+            "quantity"=>"required"
         ]);
         $product = Product::where("name", $validated_values["name"])->get();
 
@@ -222,21 +223,161 @@ class SuperAdmenController extends Controller
     public function show_products()
     {
         $products = Product::all();
-        foreach ($products as $product) {
-            $totals = $product->sections()
-                ->selectRaw('SUM(average) as total_avg, SUM(variance) as total_variance')
-                ->first();
-            $product["total_exist_quantity"] = $product->import_operation_details->where("status", "accepted")->count();
-            $product["total_sold_quantity"] = $product->import_operation_details->where("status", "sold")->count();
-            $product["total_rejected_quantity"] = $product->import_operation_details->where("status", "rejected")->count();
 
-            $product["avirage"] = $totals->total_avg;
-            $product["deviation"] = sqrt($totals->total_variance);
+            foreach ($products as $product) {
+             $actual_load_in_warehouses=0;
+             $actual_load_in_distribution_centers=0;
+             $max_load_in_warehouses=0;
+             $max_load_in_distribution_centers=0;
+             $avilable_load_in_warehouses=0;
+             $max_load_in_distribution_centers=0;
+             $average_in_warehouses=0;
+             $deviation_in_warehouses=0;
+             $sections=$product->sections;
+             foreach($sections as $section ){
+              $areas_on_section=$this->calculate_areas($section);
+               if($section->existable_type=="App\\Models\\Warehouse"){
+                 $actual_load_in_warehouses+=$areas_on_section["max_capacity"]-$areas_on_section["avilable_area"];
+                 $max_load_in_warehouses+=$areas_on_section["max_capacity"];
+                 $avilable_load_in_warehouses+=$areas_on_section["avilable_area"];
+                 $date = Carbon::parse($section->created_at);
+
+                 $now = Carbon::now();
+                 $weeksPassed = $date->diffInWeeks($now);
+                 if( $weeksPassed!=0){
+
+                    $deviation_in_warehouses+=sqrt($product->import_cycle/7)*sqrt($section->variance/$weeksPassed);
+                 }
+
+                    $average_in_warehouses+=($product->import_cycle/7)*$section->average;
+
+               }
+               if($section->existable_type=="App\\Models\\DistributionCenter"){
+                 $actual_load_in_distribution_centers+=$areas_on_section["max_capacity"]-$areas_on_section["avilable_area"];
+                 $max_load_in_distribution_centers+=$areas_on_section["max_capacity"];
+                 $max_load_in_distribution_centers+=$areas_on_section["avilable_area"];
+               }
+
+             }
+             $product->avilable_load_on_warehouses=$avilable_load_in_warehouses;
+             $product->avilable_load_on_distribution_centers=$max_load_in_distribution_centers;
+             $product->max_load_on_warehouse=$max_load_in_warehouses;
+             $product->max_load_in_distribution_centers=$max_load_in_distribution_centers;
+             $product->actual_load_in_warehouses=$actual_load_in_warehouses;
+             $product->actual_load_in_distribution_centers=$actual_load_in_distribution_centers;
+             $product->average= $average_in_warehouses;
+             $product->deviation=$deviation_in_warehouses;
+             $product->max_load_on_company=$max_load_in_warehouses+$max_load_in_distribution_centers;
+             $product->load_on_company==$actual_load_in_warehouses+$actual_load_in_distribution_centers;
+              unset($product["sections"]);
         }
         return response()->json(["msg" => "sucessfull", "products" => $products], 200);
     }
 
 
+public function show_places_of_products($product_id){
+  $warehouses=[];
+  $distribution_centers=[];
+  $product=Product::find($product_id);
+   $sections=$product->sections;
+   foreach($sections as $section){
+    $place=$section->existable;
+    if($section->existable_type=="App\\Models\\DistributionCenter"){
+      $distribution_centers[$place->id]=$place;
+     }
+
+     if($section->existable_type=="App\\Models\\Warehouse"){
+      $warehouses[$place->id]=$place;
+     }
+
+   }
+ return response()->json(["msg"=>"here the places!","warehouses"=>$warehouses,"distribution_centers"=>$distribution_centers]);
+
+}
+
+public function delete_product($product_id){
+ $product=Product::find($product_id);
+
+if (!$product) {
+        return response()->json(['error' => 'Product not found.'], 404);
+    }
+
+    $threshold = Carbon::now()->subMinutes(30);
+
+    if ($product->created_at >= $threshold) {
+        $product->delete();
+        return response()->json(['message' => 'Product deleted successfully.']);
+    } else {
+        return response()->json(['error' => 'Cannot delete: product is older than 30 minutes.'], 403);
+    }
+
+
+}
+
+
+public function edit_product(Request $request)
+{
+    $product = Product::find($request->product_id);
+
+    if (!$product) {
+        return response()->json(['error' => 'Product not found.'], 404);
+    }
+
+    $now = Carbon::now();
+    $createdAt = Carbon::parse($product->created_at);
+    $isOlderThan30Min = $createdAt->diffInMinutes($now) > 30;
+
+    $alwaysUpdatable = [
+        'quantity',
+        'unit',
+        'actual_piece_price',
+        'import_cycle',
+        'lowest_temperature',
+        'highest_temperature',
+        'lowest_humidity',
+        'highest_humidity',
+        'lowest_light',
+        'highest_light',
+        'lowest_pressure',
+        'highest_pressure',
+        'lowest_ventilation',
+        'highest_ventilation',
+        'description'
+    ];
+
+    if (!$isOlderThan30Min) {
+        // إذا لسا بأول 30 دقيقة، اسم و وصف و نوع كمان بيتحدثو
+        $alwaysUpdatable = array_merge($alwaysUpdatable, ['name', 'type_id']);
+    } else {
+        if ($request->hasAny(['name', 'type_id'])) {
+            return response()->json([
+                'error' => 'You can\'t edit name, description, or type after 30 minutes.'
+            ], 403);
+        }
+    }
+
+
+    $updateData = $request->only($alwaysUpdatable);
+
+
+    if ($request->hasFile('img_path')) {
+
+        if ($product->img_path && Storage::exists($product->img_path)) {
+            Storage::delete($product->img_path);
+        }
+
+
+        $path = $request->file('img_path')->store('product_images', 'public');
+        $updateData['img_path'] = $path;
+    }
+
+    $product->update($updateData);
+
+    return response()->json([
+        'message' => 'Product updated successfully.',
+        'product' => $product
+    ]);
+}
     //this method to try the algorithm of location
     public function orded_locations(Request $request)
     {
@@ -343,10 +484,10 @@ class SuperAdmenController extends Controller
 
     public function create_new_imporet_op_storage_media(Request $request)
     {
-        $keys = $request->validate([
-            "import_operation_key" => "string",
-            "storage_media_key" => "string"
-        ]);
+         $keys=$request->validate([
+        "import_operation_key"=>"string",
+        "storage_media_key"=>"string"
+         ]);
 
 
         $validated_values = $request->validate([
@@ -366,121 +507,124 @@ class SuperAdmenController extends Controller
         $storage_media = $validated_items["storage_media"];
 
 
-        $storage_media_key = null;
-        $import_operation_key = null;
+        $storage_media_key=null;
+        $import_operation_key=null;
 
 
-        if (empty($keys["storage_media_key"]) || empty($keys["import_operation_key"])) {
+         if(empty($keys["storage_media_key"]) || empty($keys["import_operation_key"])  )
+         {
 
-            $time = now();
-            $storage_media_key = "storage_media" . $time;
-            $import_operation_key = "import_operation" .  $time;
-            $import_op_storage_media_keys = [];
-            if (Cache::has("import_op_storage_media_keys")) {
+            $time=now();
+                $storage_media_key="storage_media".$time;
+                $import_operation_key="import_operation".  $time;
+                 $import_op_storage_media_keys = [];
+                if (Cache::has("import_op_storage_media_keys")) {
 
-                $import_op_storage_media_keys = Cache::get("import_op_storage_media_keys");
-                Cache::forget("import_op_storage_media_keys");
-            }
+                 $import_op_storage_media_keys = Cache::get("import_op_storage_media_keys");
+                 Cache::forget("import_op_storage_media_keys");
+                  }
 
-            $import_op_storage_media_keys[$import_operation_key] = [
-                "import_operation_key" => $import_operation_key,
-                "storage_media_key" => $storage_media_key,
-            ];
-            Cache::put("import_op_storage_media_keys", $import_op_storage_media_keys, now()->addMinutes(60));
-
-
-            Cache::put($storage_media_key, $storage_media, now()->addMinutes(60));
-            Cache::put($import_operation_key, $validated_values, now()->addMinutes(60));
-        } else {
-            Cache::forget($keys["storage_media_key"]);
-            Cache::forget($keys["import_operation_key"]);
+                $import_op_storage_media_keys[$import_operation_key] = [
+                 "import_operation_key" => $import_operation_key,
+                 "storage_media_key" => $storage_media_key,
+                    ];
+Cache::put("import_op_storage_media_keys", $import_op_storage_media_keys, now()->addMinutes(60));
 
 
-            $storage_media_key = $keys["storage_media_key"];
-            $import_operation_key = $keys["import_operation_key"];
+        Cache::put($storage_media_key,$storage_media,now()->addMinutes(60));
+        Cache::put($import_operation_key,$validated_values,now()->addMinutes(60));
 
-            $import_op_storage_media_keys = Cache::get("import_op_storage_media_keys");
-            $import_op_storage_media_keys[$keys["import_operation_key"]]["import_operation_key"] = $keys["import_operation_key"];
-            $import_op_storage_media_keys[$keys["import_operation_key"]]["storage_media_key"] = $keys["storage_media_key"];
-            Cache::forget("import_op_storage_media_keys");
+         }
 
-            Cache::put("import_op_storage_media_keys", $import_op_storage_media_keys, now()->addMinutes(60));
+        else{
+         Cache::forget($keys["storage_media_key"]);
+         Cache::forget($keys["import_operation_key"]);
 
-            Cache::put($storage_media_key, $storage_media, now()->addMinutes(60));
-            Cache::put($import_operation_key, $validated_values, now()->addMinutes(60));
+
+        $storage_media_key=$keys["storage_media_key"];
+        $import_operation_key=$keys["import_operation_key"];
+
+        $import_op_storage_media_keys=Cache::get("import_op_storage_media_keys");
+        $import_op_storage_media_keys[$keys["import_operation_key"]]["import_operation_key"]=$keys["import_operation_key"];
+        $import_op_storage_media_keys[$keys["import_operation_key"]]["storage_media_key"]=$keys["storage_media_key"];
+        Cache::forget("import_op_storage_media_keys");
+
+        Cache::put("import_op_storage_media_keys",$import_op_storage_media_keys,now()->addMinutes(60));
+
+        Cache::put($storage_media_key,$storage_media,now()->addMinutes(60));
+        Cache::put($import_operation_key,$validated_values,now()->addMinutes(60));
+
         }
 
 
         return response()->json([
-            "msg" => "saved for one hour conferm it or edit or after it will be lost",
-            "storage_media_key" => $storage_media_key,
-            "import_operation_key" => $import_operation_key,
-            "supplier_id" => $validated_values["supplier_id"],
+        "msg" => "saved for one hour conferm it or edit or after it will be lost",
+        "storage_media_key"=>$storage_media_key,
+        "import_operation_key"=>$import_operation_key,
+         "supplier_id" => $validated_values["supplier_id"],
             "location" => $validated_values["location"],
             "latitude" =>  $validated_values["latitude"],
             "longitude" =>  $validated_values["longitude"],
-            "storage_media" => $storage_media
-        ], 201);
+        "storage_media"=>$storage_media], 201);
     }
 
 
 
-    public function accept_import_op_storage_media(Request $request)
-    {
+    public function accept_import_op_storage_media(Request $request){
 
-        $storage_media = Cache::get($request->storage_media_key);
-        $import_operation = Cache::get($request->import_operation_key);
-        if (!$storage_media || !$import_operation) {
-            return response()->json(["msg" => "already accepted or deleted"], 400);
-        }
-        $import_operation = Import_operation::create($import_operation);
-        Cache::forget($request->import_operation_key);
-        Cache::forget($request->storage_media_key);
-
-        import_storage_media::dispatch($import_operation->id, $storage_media);
-
-        return response()->json(["msg" => "storage_media under creating"], 202);
+    $storage_media=Cache::get($request->storage_media_key);
+    $import_operation=Cache::get($request->import_operation_key);
+    if( !$storage_media || !$import_operation){
+     return response()->json(["msg"=>"already accepted or deleted"],400);
     }
+    $import_operation=Import_operation::create($import_operation);
+    Cache::forget( $request->import_operation_key);
+    Cache::forget( $request->storage_media_key);
+
+    import_storage_media::dispatch($import_operation->id, $storage_media);
+
+return response()->json(["msg"=>"storage_media under creating"],202);
+
+}
 
 
 
 
-    public function show_latest_import_op_storage_media()
-    {
-        $import_op_storage_media_keys = Cache::get("import_op_storage_media_keys");
-        $import_operations = [];
-        $i = 1;
-        if (!$import_op_storage_media_keys) {
-            return response()->json(["no operation"]);
+public function show_latest_import_op_storage_media(){
+    $import_op_storage_media_keys=Cache::get("import_op_storage_media_keys");
+    $import_operations=[];
+    $i=1;
+    if(!$import_op_storage_media_keys){
+         return response()->json(["no operation"]);
+}
+
+     foreach($import_op_storage_media_keys as $element){
+       $import_operation=Cache::get($element["import_operation_key"]);
+       $storage_media=Cache::get($element["storage_media_key"]);
+       if(!$import_operation || !$storage_media ){
+      continue;
         }
+       $element["supplier_id"]=$import_operation["supplier_id"];
+       $element["supplier"]=Supplier::find($import_operation["supplier_id"]);
+        $element["location"]=$import_operation["location"];
+         $element["latitude"]=$import_operation["latitude"];
+          $element["longitude"]=$import_operation["longitude"];
+           $j=1;
+           foreach($storage_media as $storage_element){
 
-        foreach ($import_op_storage_media_keys as $element) {
-            $import_operation = Cache::get($element["import_operation_key"]);
-            $storage_media = Cache::get($element["storage_media_key"]);
-            if (!$import_operation || !$storage_media) {
-                continue;
-            }
-            $element["supplier_id"] = $import_operation["supplier_id"];
-            $element["supplier"] = Supplier::find($import_operation["supplier_id"]);
-            $element["location"] = $import_operation["location"];
-            $element["latitude"] = $import_operation["latitude"];
-            $element["longitude"] = $import_operation["longitude"];
-            $j = 1;
-            foreach ($storage_media as $storage_element) {
+            $section=Section::find($storage_element["section_id"]);
+            $section_empty_posetions = $section->posetions()->whereNull('storage_media_id')->get();
+            $storage_media[$j]["empty_capacity"]=$section_empty_posetions->count();
 
-                $section = Section::find($storage_element["section_id"]);
-                $section_empty_posetions = $section->posetions()->whereNull('storage_media_id')->get();
-                $storage_media[$j]["empty_capacity"] = $section_empty_posetions->count();
+             $j++;
+           }
+           $element["storage_media"]=$storage_media;
+             $import_operations[$i]= $element;
+             $i++;
+     }
 
-                $j++;
-            }
-            $element["storage_media"] = $storage_media;
-            $import_operations[$i] = $element;
-            $i++;
-        }
-
-        return response()->json(["import_operations" => $import_operations]);
-    }
+     return response()->json(["import_operations"=>$import_operations]);
+}
 
 
 
@@ -489,10 +633,10 @@ class SuperAdmenController extends Controller
     public function create_new_import_operation_product(Request $request)
     {
 
-        $keys = [
-            "import_operation_key" => $request->import_operation_key,
-            "products_key" => $request->products_key
-        ];
+            $keys=[
+            "import_operation_key"=> $request-> import_operation_key,
+            "products_key"=>$request->products_key
+            ];
 
         $validated_values = $request->validate([
             "supplier_id" => "required|integer",
@@ -501,261 +645,351 @@ class SuperAdmenController extends Controller
             "longitude" => "required"
         ]);
 
-        $validated_products = $request->validate([
-            'products' => 'required|array|min:1',
-            'products.*.product_id' => 'required|integer|exists:products,id',
-            'products.*.expiration' => 'required|date',
-            'products.*.producted_in' => 'required|date',
-            'products.*.price_unit' => 'required|numeric|min:0',
-            'products.*.special_description' => 'string',
-            'products.*.imported_load' => 'numeric|min:0',
-            "products.*.distribution" => "required|array",
-            "products.*.distribution.*.warehouse_id" => "required|integer",
-            "products.*.distribution.*.load" => "required|min:1"
+       $validated_products = $request->validate([
+    'products' => 'required|array|min:1',
+    'products.*.product_id' => 'required|integer|exists:products,id',
+    'products.*.expiration' => 'required|date',
+    'products.*.producted_in' => 'required|date',
+    'products.*.price_unit' => 'required|numeric|min:0',
+    'products.*.special_description' =>'string',
+    'products.*.imported_load' => 'numeric|min:0',
+    "products.*.distribution" => "required|array",
+    "products.*.distribution.*.warehouse_id" => "required|integer",
+    "products.*.distribution.*.load" => "required|min:1"
 
-        ]);
+]);
 
 
-        $products_key = null;
-        $import_operation_key = null;
+        $products_key=null;
+        $import_operation_key=null;
 
 
         $products = $validated_products["products"];
 
 
 
-        if (empty($keys["products_key"]) || empty($keys["import_operation_key"])) {
+         if(empty($keys["products_key"]) || empty($keys["import_operation_key"])  )
+         {
 
-            $time = now();
-            $products_key = "products_" . $time;
-            $import_operation_key = "import_operation" . $time;
-            $import_op_products_keys = [];
-            if (Cache::has("import_op_products_keys")) {
+            $time=now();
+                $products_key="products_".$time;
+                $import_operation_key="import_operation".$time;
+                 $import_op_products_keys = [];
+                if (Cache::has("import_op_products_keys")) {
 
-                $import_op_products_keys = Cache::get("import_op_products_keys");
-                Cache::forget("import_op_products_keys");
-            }
+                 $import_op_products_keys = Cache::get("import_op_products_keys");
+                 Cache::forget("import_op_products_keys");
+                  }
 
-            $import_op_products_keys[$import_operation_key] = [
-                "import_operation_key" => $import_operation_key,
-                "products_key" => $products_key,
-            ];
-            Cache::put("import_op_products_keys", $import_op_products_keys, now()->addMinutes(60));
-
-
-            Cache::put($products_key, $products, now()->addMinutes(60));
-            Cache::put($import_operation_key, $validated_values, now()->addMinutes(60));
-        } else {
-            Cache::forget($keys["products_key"]);
-            Cache::forget($keys["import_operation_key"]);
+                $import_op_products_keys[$import_operation_key] = [
+                 "import_operation_key" => $import_operation_key,
+                 "products_key" => $products_key,
+                    ];
+              Cache::put("import_op_products_keys", $import_op_products_keys, now()->addMinutes(60));
 
 
-            $products_key = $keys["products_key"];
-            $import_operation_key = $keys["import_operation_key"];
+        Cache::put($products_key,$products,now()->addMinutes(60));
+        Cache::put($import_operation_key,$validated_values,now()->addMinutes(60));
 
-            $import_op_products_keys = Cache::get("import_op_storage_media_keys");
-            $import_op_products_keys[$keys["import_operation_key"]]["import_operation_key"] = $keys["import_operation_key"];
-            $import_op_products_keys[$keys["import_operation_key"]]["products_key"] = $keys["products_key"];
-            Cache::forget("import_op_storage_media_keys");
+         }
 
-            Cache::put("import_op_storage_media_keys", $import_op_products_keys, now()->addMinutes(60));
+        else{
+         Cache::forget($keys["products_key"]);
+         Cache::forget($keys["import_operation_key"]);
 
-            Cache::put($products_key, $products, now()->addMinutes(60));
-            Cache::put($import_operation_key, $validated_values, now()->addMinutes(60));
+
+        $products_key=$keys["products_key"];
+        $import_operation_key=$keys["import_operation_key"];
+
+        $import_op_products_keys=Cache::get("import_op_storage_media_keys");
+        $import_op_products_keys[$keys["import_operation_key"]]["import_operation_key"]=$keys["import_operation_key"];
+        $import_op_products_keys[$keys["import_operation_key"]]["products_key"]=$keys["products_key"];
+        Cache::forget("import_op_storage_media_keys");
+
+        Cache::put("import_op_storage_media_keys",$import_op_products_keys,now()->addMinutes(60));
+
+        Cache::put($products_key,$products,now()->addMinutes(60));
+        Cache::put($import_operation_key,$validated_values,now()->addMinutes(60));
+
         }
 
 
-        return response()->json([
-            "msg" => "saved for one hour conferm it or edit or after it will be lost",
-            "products_key" => $products_key,
-            "import_operation_key" => $import_operation_key,
-            "supplier_id" => $validated_values["supplier_id"],
+        return response()->json(["msg" => "saved for one hour conferm it or edit or after it will be lost",
+        "products_key"=>$products_key,
+        "import_operation_key"=>$import_operation_key,
+         "supplier_id" => $validated_values["supplier_id"],
             "location" => $validated_values["location"],
             "latitude" =>  $validated_values["latitude"],
             "longitude" =>  $validated_values["longitude"],
-            "products" => $products
-        ], 201);
+        "products"=>$products], 201);
     }
 
-    public function accept_import_op_products(Request $request)
-    {
+public function accept_import_op_products(Request $request){
 
-        $products = Cache::get($request->products_key);
-        $import_operation = Cache::get($request->import_operation_key);
-        if (!$products || !$import_operation) {
-            return response()->json(["msg" => "already accepted or deleted"], 400);
-        }
-        $import_operation = Import_operation::create($import_operation);
-        Cache::forget($request->import_operation_key);
-        Cache::forget($request->storage_media_key);
-
-        importing_op_prod::dispatch($import_operation, $products);
-
-        return response()->json(["msg" => "storage_media under creating"], 202);
+    $products=Cache::get($request->products_key);
+    $import_operation=Cache::get($request->import_operation_key);
+    if( !$products || !$import_operation){
+     return response()->json(["msg"=>"already accepted or deleted"],400);
     }
+    $import_operation=Import_operation::create($import_operation);
+    Cache::forget( $request->import_operation_key);
+    Cache::forget( $request->storage_media_key);
+
+    importing_op_prod::dispatch($import_operation, $products);
+
+return response()->json(["msg"=>"storage_media under creating"],202);
+
+}
 
 
-    public function reject_import_op(Request $request)
-    {
-        $elements = Cache::get($request->key);
-        $import_operation = Cache::get($request->import_operation_key);
-        if (!$elements || !$import_operation) {
-            return response()->json(["msg" => "already accepted or deleted"], 400);
-        }
-        Cache::forget($request->import_operation_key);
-        Cache::forget($request->key);
-
-        return response()->json(["msg" => "import opertation rejected successfuly"], 200);
+public function reject_import_op(Request $request){
+$elements=Cache::get($request->key);
+$import_operation=Cache::get($request->import_operation_key);
+    if( !$elements || !$import_operation){
+     return response()->json(["msg"=>"already accepted or deleted"],400);
     }
+    Cache::forget( $request->import_operation_key);
+    Cache::forget( $request->key);
 
-    public function show_latest_import_op_products()
-    {
-        $import_op_products_keys = Cache::get("import_op_products_keys");
-        $import_operations = [];
+    return response()->json(["msg"=>"import opertation rejected successfuly"],200);
+}
 
-        $i = 0;
-        if (!$import_op_products_keys) {
-            return response()->json(["no operation"]);
+public function show_latest_import_op_products(){
+     $import_op_products_keys=Cache::get("import_op_products_keys");
+    $import_operations=[];
+
+    $i=0;
+    if(!$import_op_products_keys){
+         return response()->json(["no operation"]);
+}
+
+     foreach($import_op_products_keys as $element){
+
+       $import_operation=Cache::get($element["import_operation_key"]);
+       $products=Cache::get($element["products_key"]);
+       if(!$import_operation || !$products){
+
+      continue;
         }
+       $element["supplier_id"]=$import_operation["supplier_id"];
+       $element["supplier"]=Supplier::find($import_operation["supplier_id"]);
+        $element["location"]=$import_operation["location"];
+         $element["latitude"]=$import_operation["latitude"];
+          $element["longitude"]=$import_operation["longitude"];
 
-        foreach ($import_op_products_keys as $element) {
+             $element["products"]=$products;
+             $i=0;
+            foreach($element["products"] as $product){
+                $element["products"][$i]["product"]=Product::find($product["product_id"]);
+                $j=0;
 
-            $import_operation = Cache::get($element["import_operation_key"]);
-            $products = Cache::get($element["products_key"]);
-            if (!$import_operation || !$products) {
+                foreach($element["products"][$i]["distribution"] as  $dist){
 
-                continue;
-            }
-            $element["supplier_id"] = $import_operation["supplier_id"];
-            $element["supplier"] = Supplier::find($import_operation["supplier_id"]);
-            $element["location"] = $import_operation["location"];
-            $element["latitude"] = $import_operation["latitude"];
-            $element["longitude"] = $import_operation["longitude"];
-
-            $element["products"] = $products;
-            $i = 0;
-            foreach ($element["products"] as $product) {
-                $element["products"][$i]["product"] = Product::find($product["product_id"]);
-                $j = 0;
-
-                foreach ($element["products"][$i]["distribution"] as  $dist) {
-
-                    $warehouse = Warehouse::find($dist["warehouse_id"]);
+                 $warehouse=Warehouse::find($dist["warehouse_id"]);
 
 
-                    $dist["warehouse"] = $this->calcute_areas_on_place_for_a_specific_product($warehouse, $element["products"][$i]["product_id"]);
-                    $element["products"][$i]["distribution"][$j]["warehouse"] = $dist["warehouse"];
-                    $j++;
+                 $dist["warehouse"]=$this->calcute_areas_on_place_for_a_specific_product($warehouse,$element["products"][$i]["product_id"]);
+                $element["products"][$i]["distribution"][$j]["warehouse"]=$dist["warehouse"];
+                 $j++;
                 }
                 $i++;
             }
 
 
-            $import_operations[$i] = $element;
-        }
+             $import_operations[$i]= $element;
 
-        return response()->json(["import_operations" => $import_operations]);
-    }
+     }
+
+     return response()->json(["import_operations"=>$import_operations]);
+
+
+
+
+
+
+}
 
     public function create_import_op_vehicles(Request $request)
     {
+    $keys = [
+        "import_operation_key" => $request->import_operation_key,
+        "vehicles_key" => $request->vehicles_key
+    ];
+
         $validated_values = $request->validate([
-            "supplier_id" => "required|integer",
-            "location" => "required",
-            "latitude" => "required",
-            "longitude" => "required"
-        ]);
+        "supplier_id" => "required|integer",
+        "location" => "required",
+        "latitude" => "required",
+        "longitude" => "required"
+    ]);
 
-        $import_operation = Import_operation::create($validated_values);
-        $vehicles = $request->input('vehicles');  // array of vehicles
+        $validated_vehicles = $request->validate([
+        'vehicles' => 'required|array|min:1',
 
+        'vehicles.*.name' => 'required|string',
+        'vehicles.*.expiration' => 'required|date',
+        'vehicles.*.producted_in' => 'required|date',
+        'vehicles.*.readiness' => 'required|numeric|min:0',
+        'vehicles.*.location' => 'string',
+        'vehicles.*.latitude' => 'numeric',
+        'vehicles.*.longitude' => 'numeric',
+        'vehicles.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif,bmp|max:4096',
+        'vehicles.*.capacity' => 'required|integer',
+        'vehicles.*.type_id' => 'required|integer|exists:types,id',
+        'vehicles.*.place_type' => 'required|in:Warehouse,DistributionCenter',
+        'vehicles.*.place_id' => 'required|integer'
+    ]);
 
+    $vehicles = $validated_vehicles["vehicles"];
+    $vehicles_key = null;
+    $import_operation_key = null;
 
-        StoreVehiclesJob::dispatch($vehicles, $import_operation->id, $import_operation->location, $import_operation->longitude, $import_operation->latitude);
+        if (empty($keys["vehicles_key"]) || empty($keys["import_operation_key"])) {
 
-        return response()->json(['message' => 'Vehicles are being processed.']);
+            $time = now()->timestamp;
+        $vehicles_key = "vehicles_" . $time;
+        $import_operation_key = "import_operation_" . $time;
+
+            $import_op_vehicles_keys = [];
+
+            if (Cache::has("import_op_vehicles_keys")) {
+            $import_op_vehicles_keys = Cache::get("import_op_vehicles_keys");
+            Cache::forget("import_op_vehicles_keys");
+        }
+
+            $import_op_vehicles_keys[$import_operation_key] = [
+            "import_operation_key" => $import_operation_key,
+            "vehicles_key" => $vehicles_key,
+        ];
+
+            Cache::put("import_op_vehicles_keys", $import_op_vehicles_keys, now()->addMinutes(60));
+        Cache::put($vehicles_key, $vehicles, now()->addMinutes(60));
+        Cache::put($import_operation_key, $validated_values, now()->addMinutes(60));
+
+        } else {
+
+            $vehicles_key = $keys["vehicles_key"];
+        $import_operation_key = $keys["import_operation_key"];
+
+            Cache::forget($vehicles_key);
+        Cache::forget($import_operation_key);
+
+            Cache::put($vehicles_key, $vehicles, now()->addMinutes(60));
+        Cache::put($import_operation_key, $validated_values, now()->addMinutes(60));
     }
 
 
-    public function add_new_supplies_to_supplier(Request $request)
+
+        return response()->json([
+        "msg" => "Saved for one hour. Confirm or edit it before it expires.",
+        "vehicles_key" => $vehicles_key,
+        "import_operation_key" => $import_operation_key,
+        "supplier_id" => $validated_values["supplier_id"],
+        "location" => $validated_values["location"],
+        "latitude" => $validated_values["latitude"],
+        "longitude" => $validated_values["longitude"],
+        "vehicles" => $vehicles
+    ], 201);
+}
+
+public function accept_import_op_vehicles(Request $request)
     {
-        $validated_values = $request->validate([
-            "supplier_id" => "required",
-            "suppliesable_type" => "required|in:Product,Storage_media",
-            "suppliesable_id" => "required",
-            "max_delivery_time_by_days" => "required|numeric"
 
-        ]);
-
-        $supplier = Supplier::find($validated_values["supplier_id"]);
-
-        if (!$supplier) {
-            return response()->json(["msg" => "supplier is not exist!"], 404);
+        $vehicles = Cache::get($request->vehicles_key);
+        $import_operation = Cache::get($request->import_operation_key);
+        if (!$vehicles || !$import_operation) {
+            return response()->json(["msg" => "already accepted or deleted"], 400);
         }
-        $model = "App\\Models\\" . $validated_values["suppliesable_type"];
+        $import_operation = Import_operation::create($import_operation);
+        Cache::forget($request->import_operation_key);
 
-        $supplies = $model::find($validated_values["suppliesable_id"]);
+       StoreVehiclesJob::dispatch($vehicles,$import_operation->id,$import_operation->location,$import_operation->longitude,$import_operation->latitude );
 
-        if (!$supplies) {
+        return response()->json(["msg" => "vehicles under creating"], 202);
 
-            return response()->json(["msg" => "supplies is not exist!"], 404);
-        }
-        $validated_values["suppliesable_type"] = $model;
-        $supplies_info = Supplier_Details::where("supplier_id", $validated_values["supplier_id"])->where("suppliesable_type", $validated_values["suppliesable_type"])->where("suppliesable_id", $validated_values["suppliesable_id"])->get();
-
-        if (!$supplies_info->isEmpty()) {
-
-            return response()->json(["msg" => "supplier already suport that!??"], 400);
-        }
-
-
-
-        Supplier_Details::create($validated_values);
-
-        return response()->json(["msg" => "now the supplier support that", "supplies" => $supplies], 201);
     }
 
-    public function show_suppliers()
-    {
-        $suppliers = Supplier::all();
-        return response()->json(["suppliers" => $suppliers]);
-    }
 
-    public function show_products_of_supplier($id)
-    {
-        $supplier = Supplier::find($id);
-        if (!$supplier) {
-            return response()->json(["msg" => "supplier is npt exist"], 400);
-        }
+   public function add_new_supplies_to_supplier(Request $request){
+     $validated_values=$request->validate([
+         "supplier_id"=>"required",
+         "suppliesable_type"=>"required|in:Product,Storage_media",
+         "suppliesable_id"=>"required",
+         "max_delivery_time_by_days"=>"required|numeric"
 
-        $supplier_product = $supplier->supplier_products;
+     ]);
+
+      $supplier=Supplier::find($validated_values["supplier_id"]);
+
+      if(!$supplier){
+        return response()->json(["msg"=>"supplier is not exist!"],404);
+      }
+      $model="App\\Models\\".$validated_values["suppliesable_type"];
+
+      $supplies=$model::find($validated_values["suppliesable_id"]);
+
+      if(!$supplies){
+
+         return response()->json(["msg"=>"supplies is not exist!"],404);
+      }
+      $validated_values["suppliesable_type"]=$model;
+       $supplies_info=Supplier_Details::where("supplier_id",$validated_values["supplier_id"])->
+       where("suppliesable_type",$validated_values["suppliesable_type"])->
+       where("suppliesable_id",$validated_values["suppliesable_id"])->get();
+
+       if(!$supplies_info->isEmpty()){
+
+           return response()->json(["msg"=>"supplier already suport that!??"],400);
+       }
 
 
-        return response()->json(["supplier_products" => $supplier_product], 200);
-    }
 
-    public function show_warehouses_of_product($id)
-    {
-        $product = Product::find($id);
+      Supplier_Details::create($validated_values);
 
-        $type = $product->type;
+      return response()->json(["msg"=>"now the supplier support that","supplies"=>$supplies],201);
 
 
-        $warehouses = $type->warehouses;
+   }
+
+ public function show_suppliers(){
+   $suppliers=Supplier::all();
+   return response()->json(["suppliers"=>$suppliers]);
+
+ }
+
+public function show_products_of_supplier($id){
+   $supplier=Supplier::find($id);
+   if(!$supplier){
+    return response()->json(["msg"=>"supplier is npt exist"],400);
+   }
+
+   $supplier_product=$supplier->supplier_products;
 
 
-        $warehouses_with_details = [];
-        $i = 1;
-        foreach ($warehouses as $warehouse) {
+    return response()->json(["supplier_products"=>$supplier_product],200);
+ }
 
-            $warehouse = $this->calcute_areas_on_place_for_a_specific_product($warehouse, $id);
+ public function show_warehouses_of_product($id){
+    $product=Product::find($id);
 
-            $warehouses_with_details[$i] = $warehouse;
+    $type=$product->type;
 
-            $i++;
-        }
-        return response()->json(["msg" => "here the warehouses", "warehouses" => $warehouses_with_details]);
-    }
+
+    $warehouses=$type->warehouses;
+
+
+    $warehouses_with_details=[];
+    $i=1;
+    foreach($warehouses as $warehouse){
+
+       $warehouse=$this->calcute_areas_on_place_for_a_specific_product($warehouse,$id);
+
+        $warehouses_with_details[$i]=$warehouse;
+
+        $i++;
+       }
+     return response()->json(["msg"=>"here the warehouses","warehouses"=>$warehouses_with_details]);
+ }
 
 
     public function show_storage_media_of_supplier($id)

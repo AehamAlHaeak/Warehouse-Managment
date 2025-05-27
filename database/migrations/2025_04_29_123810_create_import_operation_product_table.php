@@ -29,6 +29,7 @@ return new class extends Migration
 
             $table->string("special_description")->nullable();//if it exist then the load mostnot exist
             $table->double("price_unit");//price of buy 
+           
    
         });
     }

@@ -10,6 +10,10 @@ class Warehouse extends Model
     use HasFactory;
     protected $guarded;
 
+    //    protected $fillable = [ 'name', 'location', 'capacity'];
+
+
+
     public function supported_roduct(){
         return $this->belongsToMany(product::class,'warehouse__product');
     }
@@ -32,8 +36,16 @@ class Warehouse extends Model
         return $this->belongsTo(type::class,"type_id");
     }
 
-       public function garages(){
-       return $this->morphMany(Garage::class,"existable");
-    }
+   public function garages(){
+    return $this->morphMany(Garage::class,"existable");
+   }
+       
+
+
+
+      
+
+
+
 
 }

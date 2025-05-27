@@ -21,4 +21,7 @@ return $this->belongsToMany(Import_op_storage_md::class,"posetions_on_sections",
 
         return $this->belongsTo(Product::class,"product_id");
     }
+    public function existable(){
+        return $this->morphTo();
+    }
 }

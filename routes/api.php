@@ -46,6 +46,15 @@ Route::controller(SuperAdmenController::class)->group(function () {
 
     Route::post("suppourt_new_product", "suppourt_new_product");
     Route::post("create_import_op_vehicles", "create_import_op_vehicles");
+
+
+     Route::post("accept_import_op_vehicles", "accept_import_op_vehicles");
+
+    Route::post("edit_product", "edit_product");
+    Route::get("show_places_of_products/{product_id}", "show_places_of_products");
+    Route::get("delete_product/{product_id}", "delete_product");
+
+
     Route::get("show_products", "show_products");
     Route::post("orded_locations", "orded_locations");
     Route::get("creeate_bill", "creeate_bill");
@@ -56,7 +65,7 @@ Route::controller(SuperAdmenController::class)->group(function () {
     Route::get("show_suppliers_of_product/{id}", "show_suppliers_of_product");
     Route::get("show_storage_media_of_supplier/{id}", "show_storage_media_of_supplier");
 });
-//show_latest_import_op_products
+//edit_product
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
 Route::middleware('auth.api:employee')->group(function () {
     Route::post('logout_employe', [SuperAdmenController::class, 'logout_employe']);
@@ -69,8 +78,13 @@ Route::controller(UserController::class)->group(function () {
     Route::post('near_by_centers', 'near_by_centers');
     Route::middleware('auth.api')->group(function () {
         Route::post('logout_user', 'logout_user');
+
         Route::post('updateUser', 'updateUser
         ');
+
+        Route::post('updateUser', 'updateUser');
+
+
     });
 });
 
@@ -83,6 +97,7 @@ Route::middleware("is_distrebution_center_manager")->controller(Distribution_Cen
 });
 
 //creeate_bil
+
 //mean that the products recievd successfully
 Route::get('confirmReception', [Movecontroller::class, 'confirmReception']);
 
@@ -95,3 +110,8 @@ Route::prefix('warehouses')->group(function () {
     Route::get('{id}/vehOnGar', [WarehouseController::class, 'showVehicles_OnGarage']);
      Route::get('{id}/storage-media', [WarehouseController::class, 'show_Storage_Md']);
 });
+
+//mean that the products recievd successfully 
+Route::get('confirmReception',[Movecontroller::class,'confirmReception']);
+Route::post('statusTheProduct', [Movecontroller::class, 'statusTheProduct'])->middleware('auth.api:employee');
+
