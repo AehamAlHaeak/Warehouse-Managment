@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use Carbon\Carbon;
 use App\Models\Bill;
 use App\Models\type;
@@ -36,11 +37,11 @@ use App\Models\Supplier_Details;
 use App\Models\Supplier_Product;
 use App\Models\Transfer_Vehicle;
 use App\Jobs\importing_operation;
-use App\Models\Werehouse_Product;
-use Tymon\JWTAuth\Facades\JWTAuth;
+
 use App\Jobs\import_storage_media;
 use App\Models\DistributionCenter;
 
+use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Models\Import_op_storage_md;
 use App\Models\Posetions_on_section;
 use Illuminate\Support\Facades\Auth;
@@ -52,9 +53,10 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\storeProductRequest;
 use Tymon\JWTAuth\Exceptions\JWTException;
-use App\Http\Requests\storeEmployeeRequest;
 
+use App\Http\Requests\storeEmployeeRequest;
 use App\Models\Distribution_center_Product;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
 
 class SuperAdmenController extends Controller
@@ -66,7 +68,7 @@ class SuperAdmenController extends Controller
 
   public function start_application(Request $request){
 
-    
+    try{
     $validated_values = $request->validate([
         "name" => "required",
         "email" => "required|email",
@@ -78,7 +80,14 @@ class SuperAdmenController extends Controller
         "start_time" => "required",
         "work_hours" => "required",
     ]);
-
+    }
+     catch (ValidationException $e) {
+      
+        return response()->json([
+            'msg' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    }
     
   
     $admin = Employe::where(function ($query) use ($validated_values) {
@@ -132,7 +141,7 @@ class SuperAdmenController extends Controller
 
     public function create_new_warehouse(Request $request)
     {
-
+try{
         $validated_values = $request->validate([
             "name" => "required|max:128",
             "location" => "required",
@@ -142,33 +151,78 @@ class SuperAdmenController extends Controller
             "num_sections" => "required|integer"
 
         ]);
-
+    }
+     catch (ValidationException $e) {
+      
+        return response()->json([
+            'msg' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    }
 
         $warehouse = Warehouse::create($validated_values);
         return response()->json(["msg" => "warehouse added", "warehouse_data" => $warehouse], 201);
     }
 
 
-    public function create_new_employe(storeEmployeeRequest $request)
+    public function create_new_employe(Request $request)
     {
         $request->validate([
             'image' => 'image|mimes:jpeg,png,jpg,gif|max:4096'
         ]);
-        $validated_values = $request->validated();
-
+      
+        try{
+        
+        $validated_values = $request->validate([
+             "name"=>"required",
+            "email"=>"required|email",
+            "password"=>"required|min:8",
+            "phone_number"=>"required|max:10",
+            "specialization_id"=>"required|integer",
+            "salary"=>"required",
+            "birth_day"=>"date",
+            "country"=>"required",
+            "start_time"=>"required",
+            "work_hours"=>"required",
+            "workable_type"=>"in:Warehouse,DistributionCenter",
+            "workable_id"=>"integer"
+        ]);
+    }
+    catch (ValidationException $e) {
+      
+        return response()->json([
+            'msg' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    }
+    
+    $employe=Employe::where(function ($query) use ($validated_values) {
+        $query->where("email", $validated_values["email"])
+              ->orWhere("phone_number", $validated_values["phone_number"]);
+    })->first();
+    
+            if($employe){
+                return response()->json(['msg' => 'employe already exist'], 400);
+            }
+          
         $password = Hash::make($validated_values["password"]);
 
         $validated_values['password'] = $password;
 
         if ($request->workable_type != null) {
+            
             $validated_values['workable_type'] = "App\Models\\" . $request->workable_type;
         }
         if ($request->image != null) {
+           
             $image = $request->file('image');
             $image_path = $image->store('Products', 'public');
             $validated_values["img_path"] = 'storage/' . $image_path;
         }
+        
         $employe = Employe::create($validated_values);
+        
+       
         $employe->specialization = $employe->specialization->name;
         return response()->json(["msg" => "succesfuly adding", "employe_data" => $employe], 201);
     }
@@ -176,7 +230,7 @@ class SuperAdmenController extends Controller
 
     public function create_new_distribution_center(Request $request)
     {
-
+       try{
         $validated_values = $request->validate([
             "name" => "required|max:128",
             "location" => "required",
@@ -186,7 +240,13 @@ class SuperAdmenController extends Controller
             "type_id" => "required|integer",
             "num_sections" => "required|integer"
         ]);
-
+    } catch (ValidationException $e) {
+      
+        return response()->json([
+            'msg' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    }
 
         $center = DistributionCenter::create($validated_values);
         return response()->json(["msg" => " distribution_center added!", "center_data" => $center], 201);
@@ -195,6 +255,7 @@ class SuperAdmenController extends Controller
 
 
 public function create_new_garage(Request $request){
+    try{
  $validated_values=$request->validate([
     "existable_type"=>"string|in:Warehouse,DistributionCenter",
     "existable_id"=>"integer",
@@ -205,6 +266,14 @@ public function create_new_garage(Request $request){
     "max_capacity"=>"required|integer"
 
  ]);
+}
+ catch (ValidationException $e) {
+      
+        return response()->json([
+            'msg' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    }
   $validated_values["existable_type"]="App\\Models\\".$validated_values["existable_type"];
  $garage=Garage::create($validated_values);
 
@@ -226,11 +295,20 @@ public function create_new_garage(Request $request){
 
     public function create_new_supplier(Request $request)
     {
+        try{
         $validated_values = $request->validate([
             "comunication_way" => "required",
             "identifier" => "required",
             "country" => "required"
         ]);
+    }
+     catch (ValidationException $e) {
+      
+        return response()->json([
+            'msg' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    }
         $supplier = Supplier::where("identifier", $validated_values["identifier"])->get();
         if ($supplier->isNotEmpty()) {
             return response()->json(["msg" => "supplier already exist", "supplier_data" => $supplier], 400);
@@ -250,7 +328,7 @@ public function create_new_garage(Request $request){
 
     public function suppourt_new_product(Request $request)
     {
-
+try{
         $validated_values = $request->validate([
             "name" => "required",
             "description" => "required",
@@ -260,6 +338,14 @@ public function create_new_garage(Request $request){
             "unit"=>"required",
             "quantity"=>"required"
         ]);
+    }
+     catch (ValidationException $e) {
+      
+        return response()->json([
+            'msg' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    }
         $product = Product::where("name", $validated_values["name"])->get();
 
 
@@ -353,16 +439,16 @@ public function delete_product($product_id){
  $product=Product::find($product_id);
  
 if (!$product) {
-        return response()->json(['error' => 'Product not found.'], 404);
+        return response()->json(['msg' => 'Product not found.'], 404);
     }
 
     $threshold = Carbon::now()->subMinutes(30);
 
     if ($product->created_at >= $threshold) {
         $product->delete();
-        return response()->json(['message' => 'Product deleted successfully.']);
+        return response()->json(['msg' => 'Product deleted successfully.']);
     } else {
-        return response()->json(['error' => 'Cannot delete: product is older than 30 minutes.'], 403);
+        return response()->json(['msg' => 'Cannot delete: product is older than 30 minutes.'], 403);
     }  
 
 
@@ -374,7 +460,7 @@ public function edit_product(Request $request)
     $product = Product::find($request->product_id);
 
     if (!$product) {
-        return response()->json(['error' => 'Product not found.'], 404);
+        return response()->json(['msg' => 'Product not found.'], 404);
     }
 
     $now = Carbon::now();
@@ -400,12 +486,12 @@ public function edit_product(Request $request)
     ];
 
     if (!$isOlderThan30Min) {
-        // إذا لسا بأول 30 دقيقة، اسم و وصف و نوع كمان بيتحدثو
+       
         $alwaysUpdatable = array_merge($alwaysUpdatable, ['name', 'type_id']);
     } else {
         if ($request->hasAny(['name', 'type_id'])) {
             return response()->json([
-                'error' => 'You can\'t edit name, description, or type after 30 minutes.'
+                'msg' => 'You can\'t edit name, or type after 30 minutes.'
             ], 403);
         }
     }
@@ -428,40 +514,33 @@ public function edit_product(Request $request)
     $product->update($updateData);
 
     return response()->json([
-        'message' => 'Product updated successfully.',
+        'msg' => 'Product updated successfully.',
         'product' => $product
     ]);
 }
     //this method to try the algorithm of location
-    public function orded_locations(Request $request)
-    {
-        //calculate($lat1, $lon1, $lat2, $lon2, $unit = 'km')
-        $sorted_places = $this->sort_the_near_by_location("App\Models\DistributionCenter", $request->latitude, $request->longitude);
-        return response()->json($sorted_places);
-    }
-    public function creeate_bill()
-    {
-
-        $sourc = DistributionCenter::find(1);
-        $user = User::find(1);
-        $user["location"] = "damas";
-
-        $user["longitude"] = 33;
-        $user["latitude"] = 35;
-
-        $transfer = $this->transfers($sourc, $user, ["1" => 2], now());
-        return response()->json(["trans" => $transfer], 201);
-    }
-
-
+   
     public function support_new_container(Request $request)
     {
+        try{
         $validated_values = request()->validate([
             "name" => "required",
             "capacity" => "required|numeric",
             "product_id" => "required|integer"
         ]);
-
+    }
+     catch (ValidationException $e) {
+      
+        return response()->json([
+            'msg' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    }
+       $container=Containers_type::where("product_id",$validated_values["product_id"])->first();
+       if($container){
+        $container->product;
+        return response()->json(["msg" => "continer for this product already exist", "continer_data" => $container], 400);
+       }
         $container = Containers_type::create($validated_values);
         return response()->json(["msg" => "created", "continer_data" => $container], 201);
     }
@@ -470,6 +549,7 @@ public function edit_product(Request $request)
 
     public function create_new_section(Request $request)
     {
+        try{
         $validated_values = $request->validate([
             "existable_type" => "required|in:DistributionCenter,Warehouse",
             "existable_id" => "required",
@@ -479,6 +559,14 @@ public function edit_product(Request $request)
             "num_positions_on_class" => "required|integer",
             "name" => "required"
         ]);
+    }
+     catch (ValidationException $e) {
+      
+        return response()->json([
+            'msg' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    }
 
         $model = "App\\Models\\" . $validated_values["existable_type"];
 
@@ -519,6 +607,7 @@ public function edit_product(Request $request)
 
     public function suppurt_new_storage_media(Request $request)
     {
+        try{
         $validated_values = $request->validate([
             "name" => "required",
             "container_id" => "required|integer",
@@ -526,7 +615,13 @@ public function edit_product(Request $request)
             "num_classes" => "required|integer",
             "num_positions_on_class" => "required|integer",
         ]);
-
+    } catch (ValidationException $e) {
+      
+        return response()->json([
+            'msg' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    }
         $storage_element = Storage_media::create($validated_values);
 
         return response()->json(["msg" => "storage_element created succesfully", "sorage_element" => $storage_element], 201);
@@ -537,7 +632,7 @@ public function edit_product(Request $request)
 
 
     public function create_new_imporet_op_storage_media(Request $request)
-    {    
+    {    try{
          $keys=$request->validate([
         "import_operation_key"=>"string",
         "storage_media_key"=>"string"
@@ -557,7 +652,14 @@ public function edit_product(Request $request)
             'storage_media.*.quantity' => 'required|integer|min:1',
             'storage_media.*.section_id' => 'required|integer|min:1'
         ]);
-
+    }
+     catch (ValidationException $e) {
+      
+        return response()->json([
+            'msg' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    }
         $storage_media = $validated_items["storage_media"];
 
    
@@ -691,14 +793,14 @@ public function show_latest_import_op_storage_media(){
             "import_operation_key"=> $request-> import_operation_key,
             "products_key"=>$request->products_key
             ];
-    
+    try{
         $validated_values = $request->validate([
             "supplier_id" => "required|integer",
             "location" => "required",
             "latitude" => "required",
             "longitude" => "required"
         ]);
-
+    
        $validated_products = $request->validate([
     'products' => 'required|array|min:1',
     'products.*.product_id' => 'required|integer|exists:products,id',
@@ -713,7 +815,13 @@ public function show_latest_import_op_storage_media(){
     
 ]);
  
-
+    } catch (ValidationException $e) {
+      
+        return response()->json([
+            'msg' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    }
         $products_key=null;
         $import_operation_key=null;
          
@@ -869,7 +977,7 @@ public function show_latest_import_op_products(){
         "import_operation_key" => $request->import_operation_key,
         "vehicles_key" => $request->vehicles_key
     ];
-
+try{
         $validated_values = $request->validate([
         "supplier_id" => "required|integer",
         "location" => "required",
@@ -893,7 +1001,14 @@ public function show_latest_import_op_products(){
         'vehicles.*.place_type' => 'required|in:Warehouse,DistributionCenter',
         'vehicles.*.place_id' => 'required|integer'
     ]);
-
+}
+ catch (ValidationException $e) {
+      
+        return response()->json([
+            'msg' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    }
     $vehicles = $validated_vehicles["vehicles"];
     $vehicles_key = null;
     $import_operation_key = null;
@@ -965,6 +1080,7 @@ public function accept_import_op_vehicles(Request $request)
 
 
    public function add_new_supplies_to_supplier(Request $request){
+    try{
      $validated_values=$request->validate([
          "supplier_id"=>"required",
          "suppliesable_type"=>"required|in:Product,Storage_media",
@@ -972,7 +1088,14 @@ public function accept_import_op_vehicles(Request $request)
          "max_delivery_time_by_days"=>"required|numeric"
 
      ]);
-    
+    }
+     catch (ValidationException $e) {
+      
+        return response()->json([
+            'msg' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    }
       $supplier=Supplier::find($validated_values["supplier_id"]);
       
       if(!$supplier){

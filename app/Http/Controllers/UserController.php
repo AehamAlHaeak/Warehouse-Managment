@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Exception;
 use App\Models\User;
 use App\Traits\TokenUser;
+use Illuminate\Validator;
 use Illuminate\Http\Request;
 use App\Traits\AlgorithmsTrait;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -12,12 +13,12 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\storeUserRequest;
+
+
+
 use App\Http\Requests\updateUserRequest;
-
-
-
 use Tymon\JWTAuth\Exceptions\JWTException;
-use Illuminate\Validator;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
@@ -26,7 +27,7 @@ class UserController extends Controller
     {
       
          
-
+try{
         $validatedData = $request->validate([
             'name' => 'string',
             'last_name' => 'string',
@@ -36,7 +37,14 @@ class UserController extends Controller
             'phone_number' => 'string',
             'password' => 'required|string|min:6',
           ]);
-        
+} 
+catch (ValidationException $e) {
+      
+        return response()->json([
+            'msg' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    }
     
         
         if (!empty($validatedData["email"])) {
@@ -75,13 +83,20 @@ class UserController extends Controller
 
     public function login_user(Request $request)
     {
-        
+        try{
         $validated_values = $request->validate([
             "email" => "email",
             "password" => "string",
             "phone_number" => "string",
         ]);
-
+    }
+     catch (ValidationException $e) {
+      
+        return response()->json([
+            'msg' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    }
         try {
 
             if (!empty($validated_values["email"])) {
@@ -129,7 +144,26 @@ class UserController extends Controller
     {
         $user = Auth()->user();
         $user_data = User::find($user->id);
-        $data = $request->validated();
+        try{
+        $data = $request->validate([
+            'name' => 'sometimes|string',
+            'last_name' => 'sometimes|string',
+            'location' => 'sometimes|string',
+            'birthday' => 'sometimes|date',
+            'email' => 'sometimes|email|unique:users,email',
+            'phone_number' => 'sometimes|string|unique:users,phone_number',
+            'password' => 'sometimes|string|min:6',
+            'image' => 'sometimes|image|mimes:jpeg,png,jpg,gif,bmp|max:4096',
+            'creditCards' => 'sometimes|json'
+        ]);
+    }
+     catch (ValidationException $e) {
+      
+        return response()->json([
+            'msg' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    }
         try {
             if (!empty($data['password'])) {
                 $data['password'] = Hash::make($data['password']);
@@ -157,12 +191,20 @@ class UserController extends Controller
 
 
     public function near_by_centers(Request $request){
+        try{
         $location=$request->validate([
             'location'=>'required|string',
             'latitude'=>'required',
             'longitude'=>'required'
         ]);
-
+    }
+     catch (ValidationException $e) {
+      
+        return response()->json([
+            'msg' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    }
 
 $nearest_center=$this->calculate_the_nearest_location("App\Models\DistributionCenter",$request->latitude,$request->longitude);
 

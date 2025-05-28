@@ -22,5 +22,7 @@ class Containers_type extends Model
     public function storage_media(){
      return $this->hasOne(Storage_media::class,"container_id");
     }
-
+    public function product(){
+        return $this->belongsTo(Product::class,"product_id");
+    }
 }
