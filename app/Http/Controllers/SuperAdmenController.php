@@ -37,10 +37,10 @@ use App\Models\Supplier_Product;
 use App\Models\Transfer_Vehicle;
 use App\Jobs\importing_operation;
 use App\Models\Werehouse_Product;
-
+use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Jobs\import_storage_media;
 use App\Models\DistributionCenter;
-use Tymon\JWTAuth\Facades\JWTAuth;
+
 use App\Models\Import_op_storage_md;
 use App\Models\Posetions_on_section;
 use Illuminate\Support\Facades\Auth;
@@ -63,6 +63,59 @@ class SuperAdmenController extends Controller
     use CRUDTrait;
     use AlgorithmsTrait;
     use LoadingTrait;
+
+  public function start_application(Request $request){
+
+    
+    $validated_values = $request->validate([
+        "name" => "required",
+        "email" => "required|email",
+        "password" => "required|min:8",
+        "phone_number" => "required",
+        "salary" => "required",
+        "birth_day" => "date",
+        "country" => "required",
+        "start_time" => "required",
+        "work_hours" => "required",
+    ]);
+
+    
+  
+    $admin = Employe::where(function ($query) use ($validated_values) {
+        $query->where("email", $validated_values["email"])
+              ->orWhere("phone_number", $validated_values["phone_number"]);
+    })->first();
+
+    if ($admin) {
+        return response()->json(["msg" => "your account already exist go to login"], 409);
+    }
+
+    $specialization = Specialization::firstOrCreate(["name" => "super_admin"]);
+
+    $requiredSpecs = [
+        
+        'warehouse_admin',
+        'distribution_center_admin',
+        
+    ];
+
+    foreach ($requiredSpecs as $spec) {
+        Specialization::firstOrCreate(['name' => $spec]);
+    }
+
+    $validated_values["specialization_id"] = $specialization->id;
+
+    
+    $validated_values["password"] = bcrypt($validated_values["password"]);
+
+    $admin = Employe::create($validated_values);
+
+
+   $token=$this->create_token($admin);
+
+   return response()->json(["msg"=>"started succesfully!","token"=>$token],201);
+}
+
     //first create a type to imprt the products type and warehouse type an etc
     public function create_new_specification(Request $request)
     {

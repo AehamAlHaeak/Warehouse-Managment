@@ -33,6 +33,7 @@ public function create_token($object){
         'id' => $object->id,
         'email' => $object->email,
         'phone_number' => $object->phone_number,
+        'exp' => now()->addYear()->timestamp
     ];
     
   
