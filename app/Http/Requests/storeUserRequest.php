@@ -21,17 +21,22 @@ class storeUserRequest extends FormRequest
      */
     public function rules(): array
     {
+    
+
+      
+        
         return [
-            'name' => 'required|string',
-            'last_name' => 'required|string',
-            'location' => 'required|string',
-            'birthday' => 'nullable|date',
-            'email' => 'nullable|email|unique:users,email',
-            'phone_number' => 'nullable|string|unique:users,phone_number',
+            'name' => 'string',
+            'last_name' => 'string',
+            'location' => 'string',
+            'birthday' => 'date',
+            'email' => 'email|unique:users,email',
+            'phone_number' => 'string|unique:users,phone_number',
             'password' => 'required|string|min:6',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,bmp|max:4096',
-            'creditCards' => 'nullable|json',
+          
+          
         ];
+    
     }
     public function messages(): array
     {

@@ -95,9 +95,9 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
 //show_storage_media_of_supplier
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
 Route::middleware('auth.api:employee')->group(function () {
-    Route::post('logout_employe', [SuperAdmenController::class, 'logout_employe']);
+   
 });
-
+//login_user
 
 Route::controller(UserController::class)->group(function () {
     Route::post('register_user', 'register_user');

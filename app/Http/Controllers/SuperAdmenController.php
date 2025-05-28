@@ -106,7 +106,7 @@ class SuperAdmenController extends Controller
     $validated_values["specialization_id"] = $specialization->id;
 
     
-    $validated_values["password"] = bcrypt($validated_values["password"]);
+    $validated_values["password"] = Hash::make( $validated_values['password']);
 
     $admin = Employe::create($validated_values);
 
