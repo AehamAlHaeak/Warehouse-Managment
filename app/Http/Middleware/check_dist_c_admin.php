@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Employe;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,20 +23,47 @@ class check_dist_c_admin
 
            
             $specialization = $payload->get('specialization');
+           
      if($specialization=="super_admin" ||  $specialization=="warehouse_admin" ||$specialization=="distribution_center_admin"  ){
+       
+        $employe=Auth::guard('employee')->user();
+        if($employe){
               $request->merge([
-                'employe' => Auth::guard('employee')->user(),
+                "employe" =>$employe,
             ]);
+           
              
             return $next($request);
+        }
+        else{
+                try {
+        
+        JWTAuth::invalidate(JWTAuth::getToken());
+
+        return response()->json(['message' => 'Successfully logged out']);
+    } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+        return response()->json(['msg' => 'Unauthorized - Invalid or missing employe token'], 401);
+    }
+            return response()->json(['msg' => 'Unauthorized - Invalid or missing employe token'],401);
+        }
             }
            
            
         }
+ try {
+        
+        JWTAuth::invalidate(JWTAuth::getToken());
 
-        return response()->json(['message' => 'Unauthorized - Invalid or missing employe token'], 401);
+    
+    } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+        return response()->json(['msg' => 'Unauthorized - Invalid or missing employe token'], 401);
+    }
+
+
+
+        return response()->json(['msg' => 'Unauthorized - Invalid or missing employe token'], 401);
     } catch (\Exception $e) {
-        return response()->json(['message' => 'Token error: ' . $e->getMessage()], 401);
+        return response()->json(['msg' => 'Token error: ' . $e->getMessage()], 401);
     }
     }
 }

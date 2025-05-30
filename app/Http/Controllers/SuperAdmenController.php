@@ -336,8 +336,25 @@ try{
             "type_id" => "required",
             "actual_piece_price"=>"required|numeric",
             "unit"=>"required",
-            "quantity"=>"required"
+            "quantity"=>"required",
+            "prod_sup_id"=>"numeric",
+            "pr_max_delivery_time_by_days"=>"required_with:prod_sup_id|numeric"
         ]);
+
+           $continer_values = request()->validate([
+            "name_container" => "required",
+            "capacity" => "required|numeric",
+           
+        ]);
+       
+       $storage_media_values = $request->validate([
+    "name_storage_media" => "required",
+    "num_floors" => "required|integer",
+    "num_classes" => "required|integer",
+    "num_positions_on_class" => "required|integer",
+    "sto_m_id" => "numeric",
+    "st_max_delivery_time_by_days" => "required_with:sto_m_id|numeric"
+]);
     }
      catch (ValidationException $e) {
       
@@ -346,15 +363,70 @@ try{
             'errors' => $e->errors(),
         ], 422);
     }
+
         $product = Product::where("name", $validated_values["name"])->get();
 
 
         if ($product->isNotEmpty()) {
             return response()->json(["msg" => "product already exist", "product_data" => $product], 400);
         }
+        try{
+            $prod_sup=null;
+            
+            if(!empty($validated_values["prod_sup_id"])){
+                $prod_sup["supplier_id"]=$validated_values["prod_sup_id"];
+                 $prod_sup["max_delivery_time_by_days"]=$validated_values["pr_max_delivery_time_by_days"];
+               
+            }
+             unset($validated_values["prod_sup_id"]);
+                unset($validated_values["pr_max_delivery_time_by_days"]);
         $product = Product::create($validated_values);
+          $continer_values["name"]=$continer_values["name_container"];
+          unset($continer_values["name_container"]);
+        $continer_values["product_id"]= $product->id;
+        $container=Containers_type::create($continer_values);
+        $storage_media_values["container_id"]=$container->id;
+         $storage_media_values["name"]=$storage_media_values["name_storage_media"];
+         unset($storage_media_values["name_storage_media"]);
+         $sto_m_sup=null;
+            if(!empty($storage_media_values["sto_m_id"])){
+                $sto_m_sup["supplier_id"]=$storage_media_values["sto_m_id"];
+               
+                $sto_m_sup["max_delivery_time_by_days"]=$storage_media_values["st_max_delivery_time_by_days"];
+               
+              
+            }
+        unset($storage_media_values["sto_m_id"]);
+        unset($storage_media_values["st_max_delivery_time_by_days"]);
 
-        return response()->json(["msg" => "product created", "product_data" => $product], 201);
+        $storage_media=Storage_media::create($storage_media_values);
+        if(!empty($prod_sup)){
+          $product_supplier=Supplier::find($prod_sup["supplier_id"]);
+          if($product_supplier){
+           $prod_sup["suppliesable_type"]="App\\Models\\Product";
+            $prod_sup["suppliesable_id"]=$product->id;
+            $product->supplier=$product_supplier;
+             Supplier_Details::create($prod_sup);
+          }
+        }
+        if(!empty($sto_m_sup)){
+            
+          $sto_m_sup_supplier=Supplier::find($sto_m_sup["supplier_id"]);
+          if($sto_m_sup_supplier){
+           $sto_m_sup["suppliesable_type"]="App\\Models\\Storage_media";
+            $sto_m_sup["suppliesable_id"]=$storage_media->id;
+            $storage_media->supplier=$sto_m_sup_supplier;
+             Supplier_Details::create($sto_m_sup);
+          }
+        }
+        }
+        catch(\Exception $e){
+            return response()->json(["msg"=>$e->getMessage()]);
+        }
+
+        return response()->json(["msg" => "product and logestic things created succesfully!", "product_data" => $product,
+        "container_data"=>$container,
+        "storage_media_data"=>$storage_media], 201);
     }
 
 
@@ -747,7 +819,10 @@ return response()->json(["msg"=>"storage_media under creating"],202);
 
  
 public function show_latest_import_op_storage_media(){
+    
+
     $import_op_storage_media_keys=Cache::get("import_op_storage_media_keys");
+   
     $import_operations=[];
     $i=1;
     if(!$import_op_storage_media_keys){
@@ -771,6 +846,8 @@ public function show_latest_import_op_storage_media(){
             $section=Section::find($storage_element["section_id"]);
             $section_empty_posetions = $section->posetions()->whereNull('storage_media_id')->get();
             $storage_media[$j]["empty_capacity"]=$section_empty_posetions->count();
+            $section->existable;
+           $storage_media[$j]["section"]=$section;
            
              $j++;
            }
@@ -1063,7 +1140,7 @@ try{
 
 public function accept_import_op_vehicles(Request $request)
     {
-
+        
         $vehicles = Cache::get($request->vehicles_key);
         $import_operation = Cache::get($request->import_operation_key);
         if (!$vehicles || !$import_operation) {
@@ -1181,6 +1258,16 @@ public function show_products_of_supplier($id){
     return response()->json(["supplier_storage_media"=>$supplier_storage_media],200);
  }
    
+
+ public function show_supplier_of_storage_media($storage_media_id){
+$storage_element=Storage_media::find($storage_media_id);
+
+if($storage_element){
+   $suppliers=$storage_element->supplier;
+   return response()->json(["msg"=>"here is the suppliers!","suppliers"=>$suppliers],202); 
+}
+  return response()->json(["msg"=>"storage_element not found!"],404);
+ }
  
 
 public function show_suppliers_of_product($id){
@@ -1194,8 +1281,107 @@ public function show_suppliers_of_product($id){
 
 }
      
+public function edit_storage_media(Request $request){
+   try{
+        $validated_values = $request->validate([
+            "storage_media_id"=>"required",
+            "name" => "string",
+            "container_id" => "integer",
+            "num_floors" => "integer",
+            "num_classes" => "integer",
+            "num_positions_on_class" => "integer",
+        ]);
+    } catch (ValidationException $e) {
+      
+        return response()->json([
+            'msg' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    } 
+
+    $storage_element=Storage_media::find($validated_values["storage_media_id"]);
+        ;
+     if(!$storage_element){
+        return response()->json(["msg"=>"storage_media not found"],404);
+     }
+     
+     $now = Carbon::now();
+    $createdAt = Carbon::parse($storage_element->created_at);
+    $isOlderThan30Min = $createdAt->diffInMinutes($now) > 30;
 
 
-   
+     if (!$isOlderThan30Min) {
+         unset($validated_values["storage_media_id"]);
+         try{
+         $storage_element->update($validated_values);
+         }
+         catch(\Exception $e){
+             return response()->json([
+            'msg' => 'editing fild',
+            'errors' => $e,
+        ], 422);
+         }
+         return response()->json([
+                'msg' => 'edited seccessfully'
+            ], 201);
+        
+    } else {
+       
+            return response()->json([
+                'msg' => 'You can\'t edit after 30 minutes.'
+            ], 403);
+        
+
+}
+
+}  
+public function delete_storage_media($storage_media_id){
+    $storage_element=Storage_media::find($storage_media_id);
+     if(!$storage_element){
+        return response()->json(["msg"=>"storage_media not found"],404);
+     }
+     
+    $imported_storage_media=$storage_element->imported_storage_elements;
+                 
+       if (!$imported_storage_media->isEmpty()) {
+         return response()->json(["msg"=>"you import this !! cannot delete "],400);
+        }
+
+            $import_op_storage_media=Cache::get("import_op_storage_media_keys");
+           
+            if(Cache::has("import_op_storage_media_keys")){
+                $import_op_storage_media=Cache::get("import_op_storage_media_keys");
+            foreach($import_op_storage_media as $element){
+                 $storage_media=Cache::get($element["storage_media_key"]);
+                    if(!$storage_media ){
+                    continue;
+                        }
+               foreach( $storage_media as $storage_elements ){
+                  if($storage_element->id == $storage_elements["storage_media_id"]){
+                    return response()->json(["msg"=>"you let this storage element in un acceptod or deleted import operation !! cannot delete "],400);
+                  }
+               }
+            }
+        }
+
+         try{
+           $storage_element->delete($storage_media_id);
+         }
+         catch(\Exception $e){
+             return response()->json([
+            'msg' => 'deliting fild',
+            'errors' => $e,
+        ], 422);
+         }
+         return response()->json([
+                'msg' => 'deleted seccessfully'
+            ], 201);
+        
+     
+
+}
+ 
+
+
 
 }

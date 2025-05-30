@@ -15,18 +15,16 @@ class Storage_media extends Model
         return $this->belongsTo(Containers_type::class);
     }
  
-    public function impo_operation(){
-        return $this->belongsToMany(Import_operation::class,"Import_operation_id");
-    }
+   
+    
+
      public function supplier(){
-      return $this->morphToMany(Supplier::class,"suppliesable","supplier__details");
+      return $this->morphToMany(Supplier::class,"suppliesable","supplier__details")
+                 ->withPivot('max_delivery_time_by_days')
+                ->as('details');
     }
 
-    public function deliveryTime(): Attribute
-{
-    return Attribute::get(function () {
-        
-        return $this->pivot->max_delivery_time ?? null;
-    });
-}
+    public function imported_storage_elements(){
+        return $this->hasMany(Import_op_storage_md::class,"storage_media_id");
+    } 
 }
