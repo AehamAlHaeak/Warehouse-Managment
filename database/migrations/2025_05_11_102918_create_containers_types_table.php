@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string("name");
             
             $table->unsignedBigInteger("product_id")->unique();
-            $table->foreign("product_id")->references("id")->on("products");
+            $table->foreign("product_id")->references("id")->on("products")->cascadeOnDelete();
             $table->integer("capacity");
             //contain by unit as example the thigh by unit the caocity is refers to number of it  
             // the container is a general concept , then we'll specify it

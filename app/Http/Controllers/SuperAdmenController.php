@@ -37,7 +37,7 @@ use App\Models\Supplier_Details;
 use App\Models\Supplier_Product;
 use App\Models\Transfer_Vehicle;
 use App\Jobs\importing_operation;
-
+use App\Models\Import_operation_product;
 use App\Jobs\import_storage_media;
 use App\Models\DistributionCenter;
 
@@ -398,7 +398,7 @@ try{
             }
         unset($storage_media_values["sto_m_id"]);
         unset($storage_media_values["st_max_delivery_time_by_days"]);
-
+         $storage_media_values["product_id"]=$product->id;
         $storage_media=Storage_media::create($storage_media_values);
         if(!empty($prod_sup)){
           $product_supplier=Supplier::find($prod_sup["supplier_id"]);
@@ -421,6 +421,7 @@ try{
         }
         }
         catch(\Exception $e){
+            $product->delete($product->id);
             return response()->json(["msg"=>$e->getMessage()]);
         }
 
@@ -509,20 +510,81 @@ public function show_places_of_products($product_id){
 
 public function delete_product($product_id){
  $product=Product::find($product_id);
- 
-if (!$product) {
-        return response()->json(['msg' => 'Product not found.'], 404);
-    }
 
-    $threshold = Carbon::now()->subMinutes(30);
+            if (!$product) {
+                    return response()->json(['msg' => 'Product not found.'], 404);
+                }
+                
+            
+                $exists = Import_operation_product::where("product_id", $product_id)->exists();
+         
+            
+               if($exists){
+                 return response()->json(["msg"=>"you imported this product !! cannot delete"],400);
+               }
 
-    if ($product->created_at >= $threshold) {
-        $product->delete();
-        return response()->json(['msg' => 'Product deleted successfully.']);
-    } else {
-        return response()->json(['msg' => 'Cannot delete: product is older than 30 minutes.'], 403);
-    }  
+           if (Cache::has("import_op_products_keys")) {
+                
+                 $import_op_products_keys = Cache::get("import_op_products_keys");
+                
+                   foreach($import_op_products_keys as $element){
+                     
+                     $products=null;
+                     if(Cache::has($element["products_key"])){
+                       
+                       $products=Cache::get( $element["products_key"]);
+                       
+                     }
+                     if($products==null){
+                        continue;
+                     }
+                     
+                     foreach($products as $may_imp_product){
+                        
+                        if($may_imp_product["product_id"]==$product->id){
+                            return response()->json(["msg"=>"you let this product in undeleted import operation !! cannot delete "],400);
+                        }
 
+                     }
+
+                   }
+    
+
+                }
+                $storage_element=$product->storage_media;
+               
+                 $exists=Import_op_storage_md::where("storage_media_id",$storage_element->id)->exists();
+                
+                 if($exists){
+                    return response()->json(["msg"=>"you import storage media for this product !! cannot delete"],400);
+
+                 }
+
+                 if(Cache::has("import_op_storage_media_keys")){
+                    "echo i am in has sto m in cashs";
+                            $import_op_storage_media=Cache::get("import_op_storage_media_keys");
+                        foreach($import_op_storage_media as $element){
+                            $storage_media=Cache::get($element["storage_media_key"]);
+                                if(!$storage_media ){
+                                continue;
+                                    }
+                        foreach( $storage_media as $storage_elements ){
+                            if($storage_element->id == $storage_elements["storage_media_id"]){
+                                return response()->json(["msg"=>"you let storage element of this product in undeleted import operation !! cannot delete "],400);
+                            }
+                        }
+                        }
+                    }
+
+                     
+                      try{
+                    $storage_element->delete($storage_element->id);
+                    $product->delete($product_id);
+                      }
+                      catch(\Exception $e ){
+                      return response()->json(["msg"=>$e],201);
+                      }
+                    return response()->json(["msg"=>"deleted successfuly!"],201);
 
 }
 
@@ -592,31 +654,6 @@ public function edit_product(Request $request)
 }
     //this method to try the algorithm of location
    
-    public function support_new_container(Request $request)
-    {
-        try{
-        $validated_values = request()->validate([
-            "name" => "required",
-            "capacity" => "required|numeric",
-            "product_id" => "required|integer"
-        ]);
-    }
-     catch (ValidationException $e) {
-      
-        return response()->json([
-            'msg' => 'Validation failed',
-            'errors' => $e->errors(),
-        ], 422);
-    }
-       $container=Containers_type::where("product_id",$validated_values["product_id"])->first();
-       if($container){
-        $container->product;
-        return response()->json(["msg" => "continer for this product already exist", "continer_data" => $container], 400);
-       }
-        $container = Containers_type::create($validated_values);
-        return response()->json(["msg" => "created", "continer_data" => $container], 201);
-    }
-
 
 
     public function create_new_section(Request $request)
@@ -673,34 +710,6 @@ public function edit_product(Request $request)
 
         return response()->json(["msg" => "section created succesfully", "section" => $section], 201);
     }
-
-
-
-
-    public function suppurt_new_storage_media(Request $request)
-    {
-        try{
-        $validated_values = $request->validate([
-            "name" => "required",
-            "container_id" => "required|integer",
-            "num_floors" => "required|integer",
-            "num_classes" => "required|integer",
-            "num_positions_on_class" => "required|integer",
-        ]);
-    } catch (ValidationException $e) {
-      
-        return response()->json([
-            'msg' => 'Validation failed',
-            'errors' => $e->errors(),
-        ], 422);
-    }
-        $storage_element = Storage_media::create($validated_values);
-
-        return response()->json(["msg" => "storage_element created succesfully", "sorage_element" => $storage_element], 201);
-    }
-
-
-
 
 
     public function create_new_imporet_op_storage_media(Request $request)
@@ -802,6 +811,7 @@ Cache::put("import_op_storage_media_keys", $import_op_storage_media_keys, now()-
      
     $storage_media=Cache::get($request->storage_media_key);
     $import_operation=Cache::get($request->import_operation_key);
+    
     if( !$storage_media || !$import_operation){
      return response()->json(["msg"=>"already accepted or deleted"],400);
     }
@@ -1217,10 +1227,25 @@ public function show_products_of_supplier($id){
     return response()->json(["msg"=>"supplier is npt exist"],400);
    }
    
-   $supplier_product=$supplier->supplier_products;
-     
+   $supplier_products=$supplier->supplier_products;
+     foreach($supplier_products as $product){
+        
+
+      $sections=$product->sections;
+      $avilable_area=0;
+      $max_area=0;
+      foreach($sections as $section){
+           $areas=$this->calculate_areas($section);
+             $avilable_area+=$areas["avilable_area"];
+             $max_area+=$areas["max_capacity"];
+      }
+     $product->avilable_area=$avilable_area;
+      $product->max_area=$max_area;
+
+
+     }
    
-    return response()->json(["supplier_products"=>$supplier_product],200);
+    return response()->json(["supplier_products"=>$supplier_products],200);
  }
 
  public function show_warehouses_of_product($id){
@@ -1286,7 +1311,6 @@ public function edit_storage_media(Request $request){
         $validated_values = $request->validate([
             "storage_media_id"=>"required",
             "name" => "string",
-            "container_id" => "integer",
             "num_floors" => "integer",
             "num_classes" => "integer",
             "num_positions_on_class" => "integer",
@@ -1335,53 +1359,5 @@ public function edit_storage_media(Request $request){
 }
 
 }  
-public function delete_storage_media($storage_media_id){
-    $storage_element=Storage_media::find($storage_media_id);
-     if(!$storage_element){
-        return response()->json(["msg"=>"storage_media not found"],404);
-     }
-     
-    $imported_storage_media=$storage_element->imported_storage_elements;
-                 
-       if (!$imported_storage_media->isEmpty()) {
-         return response()->json(["msg"=>"you import this !! cannot delete "],400);
-        }
-
-            $import_op_storage_media=Cache::get("import_op_storage_media_keys");
-           
-            if(Cache::has("import_op_storage_media_keys")){
-                $import_op_storage_media=Cache::get("import_op_storage_media_keys");
-            foreach($import_op_storage_media as $element){
-                 $storage_media=Cache::get($element["storage_media_key"]);
-                    if(!$storage_media ){
-                    continue;
-                        }
-               foreach( $storage_media as $storage_elements ){
-                  if($storage_element->id == $storage_elements["storage_media_id"]){
-                    return response()->json(["msg"=>"you let this storage element in un acceptod or deleted import operation !! cannot delete "],400);
-                  }
-               }
-            }
-        }
-
-         try{
-           $storage_element->delete($storage_media_id);
-         }
-         catch(\Exception $e){
-             return response()->json([
-            'msg' => 'deliting fild',
-            'errors' => $e,
-        ], 422);
-         }
-         return response()->json([
-                'msg' => 'deleted seccessfully'
-            ], 201);
-        
-     
-
-}
- 
-
-
 
 }

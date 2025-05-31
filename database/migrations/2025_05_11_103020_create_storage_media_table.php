@@ -21,7 +21,8 @@ return new class extends Migration
             $table->integer("num_classes");//row
             $table->integer("num_positions_on_class");//column
             //according to this container type , I'll know the products that'll be stored in it
-            
+            $table->unsignedBigInteger("product_id");
+            $table->foreign("product_id")->references("id")->on("products")->cascadeOnDelete();
         });
     }
 

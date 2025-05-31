@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\AlgorithmsTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Product extends Model
 {
     use HasFactory;
+    use AlgorithmsTrait;
     protected $guarded;
 
     
@@ -56,6 +58,10 @@ public function type() {
     }
     public function sections(){
         return $this->hasMany(Section::class,"product_id");
+    }
+   
+    public function storage_media(){
+        return $this->hasOne(Storage_media::class,"product_id");
     }
 
 }

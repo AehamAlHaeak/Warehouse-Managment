@@ -33,13 +33,10 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
         Route::get("delete_product/{product_id}", "delete_product");
        // end 
        //create logistic things 
-        Route::post("support_new_container", "support_new_container");
-        
-        Route::post("support_new_storage_media", "suppurt_new_storage_media");
-
+       
          Route::post("edit_storage_media", "edit_storage_media");
 
-          Route::get("delete_storage_media/{storage_media_id}", "delete_storage_media");
+         
          //end
         //delete_storage_media($storage_media_id)
         //constract the structure

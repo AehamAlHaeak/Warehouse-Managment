@@ -202,10 +202,10 @@ public function calculate_the_nearest_location($model, $latitude, $longitude)
 }
 public function sort_the_near_by_location($model, $latitude, $longitude)
 {
-    // جيب كل العناصر
+   
     $items = $model::all();
 
-    // أضف المسافة لكل عنصر
+    
     foreach ($items as $item) {
         $data=$this->calculate($item->latitude, $item->longitude, $latitude, $longitude);
         
@@ -213,10 +213,10 @@ public function sort_the_near_by_location($model, $latitude, $longitude)
         $item->duration=$data['durations'][0][1]/3600;
     }
 
-    // استخدم Laravel Collection sortBy لترتيب العناصر حسب المسافة
+  
     $sorted = $items->sortBy('distance')->values();
 
-    // رجّع النتيجة كـ Collection مرتبة
+   
     return $sorted;
 }
 
