@@ -338,7 +338,17 @@ try{
             "unit"=>"required",
             "quantity"=>"required",
             "prod_sup_id"=>"numeric",
-            "pr_max_delivery_time_by_days"=>"required_with:prod_sup_id|numeric"
+            "pr_max_delivery_time_by_days"=>"required_with:prod_sup_id|numeric",
+            "lowest_temperature" => "numeric|nullable",
+            "highest_temperature" => "numeric|gte:lowest_temperature|nullable",
+            "lowest_humidity" => "numeric|nullable",
+            "highest_humidity" => "numeric|gte:lowest_humidity|nullable",
+            "lowest_light" => "numeric|nullable",
+            "highest_light" => "numeric|gte:lowest_light|nullable",
+            "lowest_pressure" => "numeric|nullable",
+            "highest_pressure" => "numeric|gte:lowest_pressure|nullable",
+            "lowest_ventilation" => "numeric|nullable",
+            "highest_ventilation" => "numeric|gte:lowest_ventilation|nullable",
         ]);
 
            $continer_values = request()->validate([

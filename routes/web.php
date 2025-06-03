@@ -32,11 +32,12 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
         Route::get("delete_product/{product_id}", "delete_product");
        // end 
        //create logistic things 
-        Route::post("support_new_container", "support_new_container");
-        
-        Route::post("support_new_storage_media", "suppurt_new_storage_media");
-         //end
+       
+         Route::post("edit_storage_media", "edit_storage_media");
 
+         
+         //end
+        //delete_storage_media($storage_media_id)
         //constract the structure
         Route::post("create_new_warehouse", "create_new_warehouse");
           
@@ -63,6 +64,8 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
         //import operation storage media operations 
         //this api is public can use it in difirent cases here and on show in supplier details
         Route::get("show_storage_media_of_supplier/{id}", "show_storage_media_of_supplier");
+  
+        Route::get("show_supplier_of_storage_media/{storage_media_id}", "show_supplier_of_storage_media");
  
         Route::post("create_new_imporet_op_storage_media", "create_new_imporet_op_storage_media");
          
@@ -74,7 +77,7 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
  
         Route::post("accept_import_op_vehicles", "accept_import_op_vehicles");
  
-        //import operation storage media operations 
+        //import operation product operations 
         //this api is public can use it in difirent cases here and on show in supplier details
         Route::post("create_new_import_operation_product", "create_new_import_operation_product");
         
@@ -91,4 +94,3 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
         Route::post("reject_import_op", "reject_import_op");
 
 });
-//show_storage_media_of_supplier
