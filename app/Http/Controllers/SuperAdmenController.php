@@ -1429,7 +1429,17 @@ public function edit_continer(Request $request){
         return response()->json(["msg"=>"storage_media not found"],404);
      }
      $product=$storage_media->product;
-     $sections = $product->sections()->select('id', 'name', 'product_id', 'existable_type', 'existable_id')->get();
+     $sections = $product->sections()->select([
+                'id',
+                'name',
+                'product_id',
+                'num_floors',
+                'num_classes',
+                'num_positions_on_class',
+                'average',
+                'variance'
+            ])
+            ->get();
      if($sections->isEmpty()){
        return response()->json(["msg"=>"sections not found"],404);
      }
