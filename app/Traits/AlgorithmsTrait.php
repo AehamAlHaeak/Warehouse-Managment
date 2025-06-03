@@ -253,9 +253,12 @@ public function create_postions($model,$object,$foreignId_name){
          $continer=$product->continer;
          $storage_media=$continer->storage_media;
          $storage_elements=$section->storage_elements;
+            
+             $actual_storage_elements_count= $storage_elements->count();
              
-             $max_capacity= $storage_elements->count();
-            $max_capacity=$max_capacity*$storage_media->num_floors*$storage_media->num_classes*$storage_media->num_positions_on_class*$continer->capacity;
+             $max_storage_media_area=$section->num_floors*$section->num_classes*$section->num_positions_on_class;
+              $avilable_storage_media_area=$max_storage_media_area-$actual_storage_elements_count;
+            $max_capacity_products=$actual_storage_elements_count*$storage_media->num_floors*$storage_media->num_classes*$storage_media->num_positions_on_class*$continer->capacity;
              
             foreach($storage_elements as $storage_element){
 
@@ -266,7 +269,9 @@ public function create_postions($model,$object,$foreignId_name){
 
             $areas=[
                 "avilable_area"=>$avilable_area,
-               "max_capacity"=>$max_capacity
+               "max_capacity"=>$max_capacity_products,
+               "storage_media_avilable_area"=> $avilable_storage_media_area,
+               "storage_media_max_area"=>$max_storage_media_area
             ];
             return $areas;
 
@@ -275,10 +280,23 @@ public function create_postions($model,$object,$foreignId_name){
     public function calcute_areas_on_place_for_a_specific_product($object,$product_id){
        $avilable_area=0;
        $max_capacity=0;
-         
-    
-        $sections_of_the_product_in_object=$object->sections->where("product_id",$product_id);
-   
+        //   "storage_media_avilable_area"=> $avilable_storage_media_area,
+        //        "storage_media_max_area"=>$max_storage_media_area
+        $avilable_storage_media_area=0;
+        $max_storage_media_area=0;
+       $sections_of_the_product_in_object = $object->sections()
+            ->where('product_id', $product_id)
+            ->select([
+                'id',
+                'name',
+                'product_id',
+                'num_floors',
+                'num_classes',
+                'num_positions_on_class',
+                'average',
+                'variance'
+            ])
+            ->get();
           
           foreach($sections_of_the_product_in_object as $section){
           
@@ -286,11 +304,15 @@ public function create_postions($model,$object,$foreignId_name){
              $areas=$this->calculate_areas( $section);
               $avilable_area+=$areas["avilable_area"];
               $max_capacity+=$areas["max_capacity"];
+               $avilable_storage_media_area+=$areas["storage_media_avilable_area"];
+               $max_storage_media_area+=$areas["storage_media_max_area"];
           }
        
         $object->max_capacity=$max_capacity;
         $object->avilable_area=$avilable_area;
-       unset($object["sections"]);
+         $object->avilable_storage_media_area=$avilable_storage_media_area;
+          $object->max_storage_media_area=$max_storage_media_area;
+       
        return $object;
     }
 }

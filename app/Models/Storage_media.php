@@ -27,4 +27,8 @@ class Storage_media extends Model
     public function imported_storage_elements(){
         return $this->hasMany(Import_op_storage_md::class,"storage_media_id");
     } 
+
+   public function product(){
+    return $this->belongsTo(Product::class,"product_id");
+   }
 }

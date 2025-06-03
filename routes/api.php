@@ -36,7 +36,7 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
        
          Route::post("edit_storage_media", "edit_storage_media");
 
-         
+         Route::post("edit_continer", "edit_continer");
          //end
         //delete_storage_media($storage_media_id)
         //constract the structure
@@ -72,6 +72,8 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
          
         Route::get("show_latest_import_op_storage_media", "show_latest_import_op_storage_media");
  
+        Route::get("show_sections_of_storage_media/{storage_media_id}", "show_sections_of_storage_media");
+       
         Route::post("accept_import_op_storage_media", "accept_import_op_storage_media");
         //  end
         Route::post("create_import_op_vehicles", "create_import_op_vehicles");
@@ -95,7 +97,7 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
         Route::post("reject_import_op", "reject_import_op");
 
 });
-//suppurt_new_storage_media
+//show_sections_of_storage_media/{storage_media_id}
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
 Route::middleware('auth.api:employee')->group(function () {
    

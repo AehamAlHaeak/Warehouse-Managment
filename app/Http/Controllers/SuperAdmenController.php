@@ -1370,4 +1370,80 @@ public function edit_storage_media(Request $request){
 
 }  
 
+public function edit_continer(Request $request){
+ try{
+   
+        $validated_values = $request->validate([
+            "container_id"=>"required",
+            "capacity"=>"numeric",
+            "name"=>"string"
+           
+        ]);
+    } catch (ValidationException $e) {
+      
+        return response()->json([
+            'msg' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    } 
+ $continer=Containers_type::find($validated_values["container_id"]);
+        ;
+     if(!$continer){
+        return response()->json(["msg"=>"container not found"],404);
+     }
+     
+     $now = Carbon::now();
+    $createdAt = Carbon::parse($continer->created_at);
+    $isOlderThan30Min = $createdAt->diffInMinutes($now) > 30;
+
+
+     if (!$isOlderThan30Min) {
+         unset($validated_values["container_id"]);
+         try{
+        $continer->update($validated_values);
+         }
+         catch(\Exception $e){
+             return response()->json([
+            'msg' => 'editing fild',
+            'errors' => $e,
+        ], 422);
+         }
+         return response()->json([
+                'msg' => 'edited seccessfully'
+            ], 201);
+        
+    } else {
+       
+            return response()->json([
+                'msg' => 'You can\'t edit after 30 minutes.'
+            ], 403);
+        
+
+}
+
+}
+
+ public function show_sections_of_storage_media($storage_media_id){
+     $storage_media=Storage_media::find($storage_media_id);
+     if(!$storage_media){ 
+        return response()->json(["msg"=>"storage_media not found"],404);
+     }
+     $product=$storage_media->product;
+     $sections = $product->sections()->select('id', 'name', 'product_id', 'existable_type', 'existable_id')->get();
+     if($sections->isEmpty()){
+       return response()->json(["msg"=>"sections not found"],404);
+     }
+    
+     foreach($sections as $section){
+       $areas=$this->calculate_areas($section);
+       $section->storage_media_avilable_area=$areas["storage_media_avilable_area"];
+       $section->storage_media_max_area=$areas["storage_media_max_area"];
+       unset($section["storage_elements"]);
+       //"product"
+         unset($section["product"]);
+       
+     }
+     return response()->json(["msg"=>"here the sections","sections"=>$sections],202);
+
+ }
 }

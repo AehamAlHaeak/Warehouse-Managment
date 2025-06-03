@@ -14,9 +14,7 @@ class Warehouse extends Model
 
 
 
-    public function supported_roduct(){
-        return $this->belongsToMany(product::class,'warehouse__product');
-    }
+   
 
     public function wareHouseType(){
         return $this->belongsTo(type::class);
