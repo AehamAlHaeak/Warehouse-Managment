@@ -38,7 +38,7 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
 
          Route::post("edit_continer", "edit_continer");
          //end
-        //delete_storage_media($storage_media_id)
+        
         //constract the structure
         Route::post("create_new_warehouse", "create_new_warehouse");
           
@@ -61,18 +61,21 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
  
       
         //end
-        
+        //show_sections_of_storage_media_on_warehouse($storage_media_id,$warehouse_id)
         //import operation storage media operations 
         //this api is public can use it in difirent cases here and on show in supplier details
         Route::get("show_storage_media_of_supplier/{id}", "show_storage_media_of_supplier");
   
         Route::get("show_supplier_of_storage_media/{storage_media_id}", "show_supplier_of_storage_media");
  
+        Route::get("show_sections_of_storage_media_on_warehouse/{storage_media_id}/{warehouse_id}", "show_sections_of_storage_media_on_warehouse");
+ 
+        Route::get("show_warehouse_of_storage_media/{storage_media_id}", "show_warehouse_of_storage_media");
+ 
         Route::post("create_new_imporet_op_storage_media", "create_new_imporet_op_storage_media");
          
         Route::get("show_latest_import_op_storage_media", "show_latest_import_op_storage_media");
  
-        Route::get("show_sections_of_storage_media/{storage_media_id}", "show_sections_of_storage_media");
        
         Route::post("accept_import_op_storage_media", "accept_import_op_storage_media");
         //  end
@@ -97,12 +100,26 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
         Route::post("reject_import_op", "reject_import_op");
 
 });
-//show_sections_of_storage_media/{storage_media_id}
+//show_warehouse_of_storage_media($storage_media_id)
+
+Route::controller(WarehouseController::class)->group(function () {
+
+Route::get("show_distrebution_centers_of_product/{warehouse_id}/{product_id}","show_distrebution_centers_of_product");
+Route::get("show_distribution_centers_of_storage_media_in_warehouse/{warehouse_id}/{storage_media_id}","show_distribution_centers_of_storage_media_in_warehouse");
+
+
+
+
+
+});
+//show_distribution_centers_of_storage_media_in_warehouse($warehouse_id,$storage_media_id)
+
+
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
 Route::middleware('auth.api:employee')->group(function () {
    
 });
-//login_user
+
 
 Route::controller(UserController::class)->group(function () {
     Route::post('register_user', 'register_user');
@@ -132,6 +149,8 @@ Route::middleware("is_distrebution_center_manager")->controller(Distribution_Cen
 
 //mean that the products recievd successfully
 Route::get('confirmReception', [Movecontroller::class, 'confirmReception']);
+
+
 
 Route::prefix('warehouses')->group(function () {
     Route::get('{id}/employees', [WarehouseController::class, 'showEmployees']);

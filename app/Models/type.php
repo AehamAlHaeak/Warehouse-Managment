@@ -13,4 +13,7 @@ class type extends Model
     public function warehouses(){
         return $this->hasMany(Warehouse::class,"type_id");
     }
+    public function distribution_centers(){
+        return $this->hasMany(DistributionCenter::class,"type_id");
+    }
 }

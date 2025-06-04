@@ -1423,13 +1423,34 @@ public function edit_continer(Request $request){
 
 }
 
- public function show_sections_of_storage_media($storage_media_id){
+ 
+ public function show_warehouse_of_storage_media($storage_media_id){
+   $storage_media=Storage_media::find($storage_media_id);
+   if(!$storage_media){
+    return response()->json(["msg"=>"Storage_media not not found"],404);
+   }
+   $product=$storage_media->product;
+    
+  return $this->show_warehouses_of_product($product->id);
+   
+ }
+ 
+ public function show_sections_of_storage_media_on_warehouse($storage_media_id,$warehouse_id){
+   
      $storage_media=Storage_media::find($storage_media_id);
      if(!$storage_media){ 
         return response()->json(["msg"=>"storage_media not found"],404);
      }
+    
      $product=$storage_media->product;
-     $sections = $product->sections()->select([
+     
+     $warehouse=Warehouse::find($warehouse_id);
+     if(!$warehouse){
+      return response()->json(["msg"=>"warehouse not found"],404);
+     }
+     $sections = $warehouse->sections()
+            ->where('product_id', $product->id)
+            ->select([
                 'id',
                 'name',
                 'product_id',
@@ -1440,17 +1461,18 @@ public function edit_continer(Request $request){
                 'variance'
             ])
             ->get();
+ 
      if($sections->isEmpty()){
        return response()->json(["msg"=>"sections not found"],404);
      }
-    
+ 
      foreach($sections as $section){
+
        $areas=$this->calculate_areas($section);
+           
        $section->storage_media_avilable_area=$areas["storage_media_avilable_area"];
        $section->storage_media_max_area=$areas["storage_media_max_area"];
-       unset($section["storage_elements"]);
-       //"product"
-         unset($section["product"]);
+      
        
      }
      return response()->json(["msg"=>"here the sections","sections"=>$sections],202);

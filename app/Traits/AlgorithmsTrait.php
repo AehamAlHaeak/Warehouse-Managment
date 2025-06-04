@@ -253,6 +253,10 @@ public function create_postions($model,$object,$foreignId_name){
          $continer=$product->continer;
          $storage_media=$continer->storage_media;
          $storage_elements=$section->storage_elements;
+            unset($section["product"]);
+            unset($section["continer"]);
+            unset($section["storage_media"]);
+            unset($section["storage_elements"]);
             
              $actual_storage_elements_count= $storage_elements->count();
              
@@ -266,7 +270,7 @@ public function create_postions($model,$object,$foreignId_name){
           
             }
             $avilable_area=$avilable_area*$continer->capacity;
-
+            
             $areas=[
                 "avilable_area"=>$avilable_area,
                "max_capacity"=>$max_capacity_products,

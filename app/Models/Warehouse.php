@@ -38,7 +38,9 @@ class Warehouse extends Model
     return $this->morphMany(Garage::class,"existable");
    }
        
-
+public function distribution_centers(){
+    return $this->hasMany(DistributionCenter::class,"warehouse_id");
+}
 
 
       
