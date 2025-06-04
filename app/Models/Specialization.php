@@ -9,4 +9,7 @@ class Specialization extends Model
 {
     use HasFactory;
     protected $guarded;
+    public function employees(){
+        return $this->hasMany(Employe::class,"specialization_id");
+    }
 }

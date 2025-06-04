@@ -16,4 +16,7 @@ class type extends Model
     public function distribution_centers(){
         return $this->hasMany(DistributionCenter::class,"type_id");
     }
+    public function products(){
+        return $this->hasMany(Product::class,"type_id");
+    }
 }
