@@ -103,7 +103,6 @@ class SuperAdmenController extends Controller
         $specialization = Specialization::firstOrCreate(["name" => "super_admin"]);
 
         $requiredSpecs = [
-
             'warehouse_admin',
             'distribution_center_admin',
 
@@ -167,11 +166,12 @@ class SuperAdmenController extends Controller
 
     public function create_new_employe(Request $request)
     {
-        $request->validate([
+       
+$request->validate([
             'image' => 'image|mimes:jpeg,png,jpg,gif|max:4096'
         ]);
-
         try {
+           
 
             $validated_values = $request->validate([
                 "name" => "required",
@@ -218,9 +218,12 @@ class SuperAdmenController extends Controller
             $image_path = $image->store('Products', 'public');
             $validated_values["img_path"] = 'storage/' . $image_path;
         }
-
-        $employe = Employe::create($validated_values);
-
+           try{
+          $employe = Employe::create($validated_values);
+           }
+           catch(Exception $e){
+          return response()->json(["error"=>$e->getMessage()]);
+           }
 
         $employe->specialization = $employe->specialization->name;
         return response()->json(["msg" => "succesfuly adding", "employe_data" => $employe], 201);
@@ -646,7 +649,7 @@ class SuperAdmenController extends Controller
             'product' => $product
         ]);
     }
-    //this method to try the algorithm of location
+
 
 
 
@@ -844,6 +847,10 @@ class SuperAdmenController extends Controller
             foreach ($storage_media as $storage_element) {
 
                 $section = Section::find($storage_element["section_id"]);
+                if (!$section) {
+                    $storage_media[$j]["section"] = "section deleted";
+                    continue;
+                }
                 $section_empty_posetions = $section->posetions()->whereNull('storage_media_id')->get();
                 $storage_media[$j]["empty_capacity"] = $section_empty_posetions->count();
                 $section->existable;
@@ -1540,16 +1547,173 @@ class SuperAdmenController extends Controller
         }
         return response()->json(["msg" => "here the specializations", "specializations" => $sprcializations], 202);
     }
-    public function delete_Specialization($speci_id){
-        $spec=Specialization::find($speci_id);
-        if($spec->name=="super_admin" ||$spec->name=="warehouse_admin"||$spec->name=="distribution_center_admin" ){
-            return response()->json(["msg"=>"you want to delete basic specialization {$spec->name} delete denied"],403);
+
+
+    public function delete_Specialization($spec_id)
+    {
+        $spec = Specialization::find($spec_id);
+        if(!$spec){
+          return response()->json(["msg" => "specialization not found"], 404);
+         
         }
-        $employees_of_spec=$spec->employees;
-        if(!$employees_of_spec->isEmpty()){
-            return response()->json(["msg"=>"the specialization has emplyees you cannot delete it","employes"=>$employees_of_spec],403);
+        if ($spec->name == "super_admin" || $spec->name == "warehouse_admin" || $spec->name == "distribution_center_admin") {
+            return response()->json(["msg" => "you want to delete basic specialization {$spec->name} delete denied"], 403);
+        }
+        $employees_of_spec = $spec->employees;
+        if (!$employees_of_spec->isEmpty()) {
+            return response()->json(["msg" => "the specialization has emplyees you cannot delete it", "employes" => $employees_of_spec], 403);
         }
         $employees_of_spec->delete($employees_of_spec->id);
-        return response()->json(["msg"=>"deleted succesfuly!"],202);
+        return response()->json(["msg" => "deleted succesfuly!"], 202);
+    }
+
+    public function edit_Specialization(Request $request)
+    {
+        try {
+
+            $validated_values = $request->validate([
+                "spec_id" => "required",
+                "name" => "string"
+
+            ]);
+        } catch (ValidationException $e) {
+
+            return response()->json([
+                'msg' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+        $spec = Specialization::find($validated_values["spec_id"]);
+        if (!$spec) {
+            return response()->json(["msg" => "the specialization not found"], 404);
+        }
+        if ($spec->name == "super_admin" || $spec->name == "warehouse_admin" || $spec->name == "distribution_center_admin") {
+            return response()->json(["msg" => "you want to edit basic specialization {$spec->name} edit denied"], 403);
+        }
+        $now = Carbon::now();
+        $createdAt = Carbon::parse($spec->created_at);
+        $isOlderThan30Min = $createdAt->diffInMinutes($now) > 30;
+
+
+        if (!$isOlderThan30Min) {
+            unset($validated_values["spec_id"]);
+            try {
+                $spec->update($validated_values);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'msg' => 'editing fild',
+                    'errors' => $e,
+                ], 422);
+            }
+            return response()->json([
+                'msg' => 'edited seccessfully'
+            ], 201);
+        } else {
+
+            return response()->json([
+                'msg' => 'You can\'t edit after 30 minutes.'
+            ], 403);
+        }
+    }
+
+    public function show_employees_of_spec($spec_id){
+        $spec = Specialization::find($spec_id);
+
+        if(!$spec){
+
+          return response()->json(["msg" => "specialization not found"], 404);
+    
+        }
+        $employees= $spec->employees;
+        if($employees->isEmpty()){
+             return response()->json(["msg" => "emplyees of this specialization not found"], 404);
+    
+        }
+         return response()->json(["msg" => "here the employes","employees"=>$employees], 202);
+
+    }
+    public function show_all_employees(){
+      $employees=Specialization::whereHas('employees')->with('employees')->where("name","!=","super_admin")->get();
+      return response()->json(["msg"=>"here the employees","employees"=>$employees],202);
+    }
+
+
+    public function cancel_employe($emp_id){
+      $employe=Employe::find($emp_id);
+          if(!$employe){
+              return response()->json(["msg" => "emplye not found"], 404); 
+          }
+          $specialization=$employe->specialization;
+          if($specialization->name=="super_admin"){
+              return response()->json(["msg" => "cannot cancel a super admin! cancel denied "], 403); 
+          }
+         $employe->delete($employe);
+          return response()->json(["msg" => " canceled succesfully! "], 202); 
+       
+    }
+
+
+    public function edit_employe(Request $request){
+        try {
+           
+            $validated_values = $request->validate([
+                'employe_id'=>"required",
+                "name" => "string",
+                "email" => "email",
+                "password" => "min:8",
+                "phone_number" => "max:10",
+                "specialization_id" => "integer",
+                "salary" => "numeric",
+                "birth_day" => "date",
+                "country" => "string",
+                "start_time" =>"date_format:H:i",
+                "work_hours" => "numeric",
+                "workable_type" => "in:Warehouse,DistributionCenter",
+                "workable_id" => "integer"
+            ]);
+         
+        } catch (ValidationException $e) {
+
+            return response()->json([
+                'msg' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+            $employe=Employe::find($validated_values["employe_id"]);
+             
+            if(!$employe)
+            {
+              return response()->json(["msg" => "emplye not found"], 404); 
+            }
+            
+            unset($validated_values["employe_id"]);
+            $specialization=Specialization::find($validated_values["specialization_id"]);
+            if(!empty($validated_values["specialization_id"])){
+            if($specialization->name=="super_admin"){
+              return response()->json(["msg" => "you cannot set specialization to super admin !editing denied"], 403); 
+            }
+         
+        }
+        $checkEmploy=Employe::where(function ($query) use ($validated_values) {
+            $query->where("email", $validated_values["email"])
+                ->orWhere("phone_number", $validated_values["phone_number"]);
+        })->first();
+        if($checkEmploy){
+         
+          return response()->json(["msg" => "you enter phone number or email already exists why?? !editing denied"], 403); 
+         
+        }
+    
+        if(!empty($validated_values["password"])){
+            $validated_values["password"]= Hash::make($validated_values["password"]);
+        }
+        try{
+      $employe=$employe->update($validated_values);
+        }
+        catch(Exception $e){
+         return response()->json(["error"=>$e->getMessage()]);
+        }
+      return response()->json(["msg" => "editing succesfully!"], 202); 
+           
     }
 }

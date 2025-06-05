@@ -20,17 +20,30 @@ Route::post("start_application", [SuperAdmenController::class, "start_applicatio
 Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->group(function () {
 
     //create type of prods or specializations of employes
+
     Route::post("create_new_specification", "create_new_specification");
+
     //types configrations and featurs 
+
     Route::get("show_all_types", "show_all_types");
+
     Route::post("edit_type", "edit_type");
+
     Route::get("show_products_of_type/{type_id}", "show_products_of_type");
+
     Route::get("show_warehouse_of_type/{type_id}", "show_warehouse_of_type");
+
     Route::get("delete_type/{type_id}", "delete_type");
     //end
-    //Specializations configration
+    //Specializations configration 
       Route::get("show_all_specializations", "show_all_specializations");
-      Route::get("delete_Specialization/{speci_id}", "delete_Specialization");
+
+      Route::get("delete_Specialization/{spec_id}", "delete_Specialization");
+
+      Route::post("edit_Specialization", "edit_Specialization");
+
+    Route::get("show_employees_of_spec/{spec_id}", "show_employees_of_spec");
+
     //end
 //show_all_specializations
 
@@ -58,11 +71,18 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
     Route::post("create_new_distribution_center", "create_new_distribution_center");
 
     Route::post("create_new_garage", "create_new_garage");
-
+       //employees configrations
+    Route::get("show_all_employees", "show_all_employees");
+     
     Route::post("create_new_employe", "create_new_employe");
 
+     Route::post("edit_employe", "edit_employe");
+
+     Route::get("cancel_employe/{emp_id}", "cancel_employe");
+    
+        //end
     Route::post("create_new_section", "create_new_section");
-    //end
+    //end  cancel_employe/{$emp_id}
 
 
     //suppliers config
