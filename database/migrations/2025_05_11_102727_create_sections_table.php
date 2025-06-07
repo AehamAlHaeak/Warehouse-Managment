@@ -26,6 +26,7 @@ return new class extends Migration
              $table->double("average")->default(0);
             //as a note we willnot store standard deviation because it sqrt(variance/n)
             $table->double("variance")->default(0);
+            $table->enum("status",["active", "inactive", "deleted"])->default();
 
         });
     }

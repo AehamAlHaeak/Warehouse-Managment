@@ -20,19 +20,32 @@ Route::post("start_application", [SuperAdmenController::class, "start_applicatio
 Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->group(function () {
 
     //create type of prods or specializations of employes
+
     Route::post("create_new_specification", "create_new_specification");
+
     //types configrations and featurs 
+
     Route::get("show_all_types", "show_all_types");
+
     Route::post("edit_type", "edit_type");
+
     Route::get("show_products_of_type/{type_id}", "show_products_of_type");
+
     Route::get("show_warehouse_of_type/{type_id}", "show_warehouse_of_type");
+
     Route::get("delete_type/{type_id}", "delete_type");
     //end
-    //Specializations configration
-      Route::get("show_all_specializations", "show_all_specializations");
-      Route::get("delete_Specialization/{speci_id}", "delete_Specialization");
+    //Specializations configration 
+    Route::get("show_all_specializations", "show_all_specializations");
+
+    Route::get("delete_Specialization/{spec_id}", "delete_Specialization");
+
+    Route::post("edit_Specialization", "edit_Specialization");
+
+    Route::get("show_employees_of_spec/{spec_id}", "show_employees_of_spec");
+
     //end
-//show_all_specializations
+    //show_all_specializations
 
     //products page apis
     Route::get("show_products", "show_products");
@@ -52,17 +65,40 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
     Route::post("edit_continer", "edit_continer");
     //end
 
-    //constract the structure
+    //constract the structur  delete_warehouse
     Route::post("create_new_warehouse", "create_new_warehouse");
+
+    Route::post("edit_warehouse", "edit_warehouse");
+
+    Route::get("delete_warehouse/{warehouse_id}", "delete_warehouse");
 
     Route::post("create_new_distribution_center", "create_new_distribution_center");
 
+    Route::post("edit_distribution_center", "edit_distribution_center");
+     
+    Route::get("delete_distribution_center/{dest_id}", "delete_distribution_center");
+
     Route::post("create_new_garage", "create_new_garage");
+
+    Route::post("edit_garage", "edit_garage");
+
+    Route::get("delete_garage/{garage_id}", "delete_garage");
+    //employees configrations 
+    Route::get("show_all_employees", "show_all_employees");
 
     Route::post("create_new_employe", "create_new_employe");
 
+    Route::post("edit_employe", "edit_employe");
+
+    Route::get("cancel_employe/{emp_id}", "cancel_employe");
+
+    //end 
     Route::post("create_new_section", "create_new_section");
-    //end
+
+    Route::post("edit_section", "edit_section");
+
+    Route::get("delete_section/{sec_id}", "delete_section");
+    //end  cancel_employe/{$emp_id}
 
 
     //suppliers config

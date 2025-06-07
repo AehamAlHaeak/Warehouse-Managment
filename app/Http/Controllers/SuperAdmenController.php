@@ -97,7 +97,21 @@ class SuperAdmenController extends Controller
         })->first();
 
         if ($admin) {
-            return response()->json(["msg" => "your account already exist go to login"], 409);
+            if ($admin->specialization->name == "super_admin") {
+                return response()->json(["msg" => "your account already exist go to login"], 409);
+            }
+            return response()->json(["msg" => "you are not authorized"], 401);
+        }
+
+        $specialization = Specialization::where("name", "super_admin")->first();
+
+        if ($specialization) {
+
+            $admin = $specialization->employees;
+
+            if (!$admin->isEmpty()) {
+                return response()->json(["msg" => "you are not authorized"], 401);
+            }
         }
 
         $specialization = Specialization::firstOrCreate(["name" => "super_admin"]);
@@ -163,15 +177,81 @@ class SuperAdmenController extends Controller
         return response()->json(["msg" => "warehouse added", "warehouse_data" => $warehouse], 201);
     }
 
+    public function edit_warehouse(Request $request)
+    {
+        try {
+            $validated_values = $request->validate([
+                "warehouse_id" => "required",
+                "name" => "max:128",
+                "location" => "string",
+                "latitude" => "numeric",
+                "longitude" => "numeric",
+                "type_id" => "integer",
+                "num_sections" => "integer"
+
+            ]);
+        } catch (ValidationException $e) {
+
+            return response()->json([
+                'msg' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+        $warehouse = Warehouse::find($validated_values["warehouse_id"]);
+        if (!$warehouse) {
+            return response()->json(["msg" => "warehouse not found"], 404);
+        }
+        unset($validated_values["warehouse_id"]);
+        if (!empty($validated_values["type_id"])) {
+            $type = type::find($validated_values["type_id"]);
+            if (!$type) {
+                return response()->json(["msg" => "type not found"], 404);
+            }
+            if ($validated_values["type_id"] != $warehouse->type_id) {
+                $has_sections = $warehouse->sections()->exists();
+
+                if ($has_sections) {
+                    return response()->json(["msg" => "the waehouse has sections contain products of this type! cannot edit it"], 400);
+                }
+            }
+        }
+        try {
+            $warehouse->update($validated_values);
+        } catch (Exception $e) {
+            return response()->json(["error" => $e->getMessage()], 400);
+        }
+        return response()->json(["msg" => "edited succesfuly!"], 202);
+    }
+
+    public function delete_warehouse($warehouse_id)
+    {
+        $warehouse = Warehouse::find($warehouse_id);
+        if (!$warehouse) {
+            return response()->json(["msg" => "warehouse not found"], 404);
+        }
+        $has_sections = $warehouse->sections()->exists();
+        $has_employees = $warehouse->employees()->exists();
+        $has_des_centers = $warehouse->distribution_centers()->exists();
+        if ($has_sections ||  $has_employees) {
+            return response()->json([
+                "msg" => "the waehouse has realted data ! cannot delete it",
+                "has_sections" => $has_sections,
+                "has_employes" => $has_employees,
+                "has_distribution_centers" => $has_des_centers
+            ], 400);
+        }
+        $warehouse->delete($warehouse->id);
+        return response()->json(["msg" => "deleted succesfuly!"], 202);
+    }
 
     public function create_new_employe(Request $request)
     {
-       
-$request->validate([
+
+        $request->validate([
             'image' => 'image|mimes:jpeg,png,jpg,gif|max:4096'
         ]);
         try {
-           
+
 
             $validated_values = $request->validate([
                 "name" => "required",
@@ -218,12 +298,11 @@ $request->validate([
             $image_path = $image->store('Products', 'public');
             $validated_values["img_path"] = 'storage/' . $image_path;
         }
-           try{
-          $employe = Employe::create($validated_values);
-           }
-           catch(Exception $e){
-          return response()->json(["error"=>$e->getMessage()]);
-           }
+        try {
+            $employe = Employe::create($validated_values);
+        } catch (Exception $e) {
+            return response()->json(["error" => $e->getMessage()]);
+        }
 
         $employe->specialization = $employe->specialization->name;
         return response()->json(["msg" => "succesfuly adding", "employe_data" => $employe], 201);
@@ -239,7 +318,6 @@ $request->validate([
                 "latitude" => "required|numeric",
                 "longitude" => "required|numeric",
                 "warehouse_id" => "required|numeric",
-                "type_id" => "required|integer",
                 "num_sections" => "required|integer"
             ]);
         } catch (ValidationException $e) {
@@ -254,7 +332,81 @@ $request->validate([
         return response()->json(["msg" => " distribution_center added!", "center_data" => $center], 201);
     }
 
+    public function edit_distribution_center(Request $request)
+    {
 
+        try {
+            $validated_values = $request->validate([
+                "dis_center_id" => "required",
+                "name" => "max:128",
+                "location" => "string",
+                "latitude" => "numeric",
+                "longitude" => "numeric",
+                "warehouse_id" => "numeric",
+                "num_sections" => "integer"
+            ]);
+        } catch (ValidationException $e) {
+
+            return response()->json([
+                'msg' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $center = DistributionCenter::find($validated_values["dis_center_id"]);
+        if (!$center) {
+            return response()->json(["msg" => "distribution_center not found"], 404);
+        }
+        unset($validated_values["dis_center_id"]);
+
+        if (!empty($validated_values["warehouse_id"])) {
+
+            $warehouse = Warehouse::find($validated_values["warehouse_id"]);
+            if (!$warehouse) {
+                return response()->json(["msg" => "warehouse not found"], 404);
+            }
+
+            if ($warehouse->id != $center->warehouse_id) {
+                $section_of_center = $center->sections()->first();
+
+                if ($section_of_center) {
+                    $product_in_dis = $section_of_center->product;
+                    $type_id_of_product = $product_in_dis->type->id;
+                    if ($type_id_of_product != $warehouse->type_id) {
+                        return response()->json([
+                            "msg" => "the warehouse type is not the same as the type of products in the distribution center! cannot move it to warehouse editing denied"
+                        ], 400);
+                    }
+                }
+            }
+        }
+        try {
+            $center->update($validated_values);
+        } catch (Exception $e) {
+            return response()->json(["error" => $e->getMessage()]);
+        }
+        return response()->json(["msg" => "edited succesfuly!"], 202);
+    }
+
+
+    public function delete_distribution_center($dest_id)
+    {
+        $dist_c = DistributionCenter::find($dest_id);
+        if (!$dist_c) {
+            return response()->json(["msg" => "the distributin center not found"], 404);
+        }
+        $has_sections = $dist_c->sections()->exists();
+        $has_employees = $dist_c->employes()->exists();
+        if ($has_sections ||  $has_employees) {
+            return response()->json([
+                "msg" => "the distributin center has realted data ! cannot delete it",
+                "has_sections" => $has_sections,
+                "has_employes" => $has_employees
+            ], 400);
+        }
+        $dist_c->delete($dist_c->id);
+        return response()->json(["msg" => "deleted successfully!"], 202);
+    }
 
     public function create_new_garage(Request $request)
     {
@@ -263,9 +415,6 @@ $request->validate([
                 "existable_type" => "string|in:Warehouse,DistributionCenter",
                 "existable_id" => "integer",
                 "type" => "required|in:big,medium",
-                "location" => "string",
-                "latitude" => "numeric",
-                "longitude" => "numeric",
                 "max_capacity" => "required|integer"
 
             ]);
@@ -283,6 +432,68 @@ $request->validate([
     }
 
 
+    public function edit_garage(Request $request)
+    {
+        try {
+            $validated_values = $request->validate([
+                "garage_id" => "required",
+                "existable_type" => "string|in:Warehouse,DistributionCenter",
+                "existable_id" => "integer",
+                "type" => "in:big,medium",
+                "max_capacity" => "integer"
+
+            ]);
+        } catch (ValidationException $e) {
+
+            return response()->json([
+                'msg' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+        $garage = Garage::find($validated_values["garage_id"]);
+        if (!$garage) {
+            return response()->json(["msg" => "garage not found"], 404);
+        }
+        unset($validated_values["garage_id"]);
+        if (!empty($validated_values["existable_type"])) {
+            $validated_values["existable_type"] = "App\\Models\\" . $validated_values["existable_type"];
+            $existable = $validated_values["existable_type"]::find($validated_values["existable_id"]);
+            if (!$existable) {
+                return response()->json(["msg" => "the place where you want transfer the garage not found"], 404);
+            }
+        }
+        $garage->update($validated_values);
+        return response()->json(["msg" => "edited successfully!"], 202);
+    }
+    public function delete_garage($garage_id)
+    {
+        $garage = Garage::find($garage_id);
+        if (!$garage) {
+            return response()->json(["msg" => "garage not found"], 404);
+        }
+        $has_vehicles = $garage->vehicles()->exists();
+        if ($has_vehicles) {
+            return response()->json([
+                "msg" => "the garage has realted data! cannot delete it",
+                "has_vehicles" => $has_vehicles
+            ], 400);
+        }
+        try {
+            $garage->delete($garage->id);
+        } catch (Exception $e) {
+            return response()->json(["error" => $e->getMessage()], 409);
+        }
+        return response()->json(["msg" => "deleted successfully!"], 202);
+    }
+
+    public function show_garage_details($garage_id)
+    {
+        $garage = Garage::find($garage_id);
+        if (!$garage) {
+            return response()->json(["msg" => "garage not found"], 404);
+        }
+        return response()->json(["msg" => "garage details", "garage_data" => $garage], 202);
+    }
 
 
 
@@ -299,7 +510,8 @@ $request->validate([
             $validated_values = $request->validate([
                 "comunication_way" => "required",
                 "identifier" => "required",
-                "country" => "required"
+                "country" => "required",
+                "name" => "required"
             ]);
         } catch (ValidationException $e) {
 
@@ -313,9 +525,11 @@ $request->validate([
             return response()->json(["msg" => "supplier already exist", "supplier_data" => $supplier], 400);
         }
 
-
-        $supplier = Supplier::create($validated_values);
-
+        try {
+            $supplier = Supplier::create($validated_values);
+        } catch (Exception $e) {
+            return response()->json(["error" => $e->getMessage()]);
+        }
 
         return response()->json(["msg" => "supplier added", "supplier_data" => $supplier], 201);
     }
@@ -489,7 +703,7 @@ $request->validate([
             $product->load_on_company == $actual_load_in_warehouses + $actual_load_in_distribution_centers;
             unset($product["sections"]);
         }
-        return response()->json(["msg" => "sucessfull", "products" => $products], 200);
+        return response()->json(["msg" => "sucessfull", "products" => $products], 202);
     }
 
 
@@ -681,23 +895,24 @@ $request->validate([
             return response()->json(["msg" => "the place which you want isnot exist"], 404);
         }
         try {
-            $num_of_sections_on_place = $place->sections->count();
+            $num_of_sections_on_place = $place->sections()->where("status","!=","deleted")->count();
 
             if ($num_of_sections_on_place == $place->num_sections) {
                 return response()->json(["msg" => "the place is full"], 400);
             }
         } catch (\Exception $e) {
+            return response()->json(["msg" => "Something went wrong"], 409);
         }
         $product = Product::find($validated_values["product_id"]);
 
         if (!$product) {
             return response()->json(["msg" => "the product which you want isnot exist"], 404);
         }
-
-        if ($product->type->id != $place->type->id) {
-            return response()->json(["msg" => "the type is not smothe"], 400);
+        if ($model == "App\\Models\\Warehouse") {
+            if ($product->type->id != $place->type->id) {
+                return response()->json(["msg" => "the type is not smothe"], 400);
+            }
         }
-
         $validated_values["existable_type"] = $model;
 
         $section = Section::create($validated_values);
@@ -707,7 +922,73 @@ $request->validate([
         return response()->json(["msg" => "section created succesfully", "section" => $section], 201);
     }
 
+    public function edit_section(Request $request)
+    {
+        try {
+            $validated_values = $request->validate([
+                "section_id" => "required|integer",
+                "name" => "string",
+                "num_floors" => "integer",
+                "num_classes" => "integer",
+                "num_positions_on_class" => "integer"
+            ]);
+        } catch (ValidationException $e) {
 
+            return response()->json([
+                'msg' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        };
+
+        $section = Section::find($validated_values["section_id"]);
+        if (!$section) {
+            return response()->json(["msg" => "the section which you want is not exist"], 404);
+        }
+        $isOlderThan30Min = Carbon::now()->diffInMinutes($section->created_at) > 30;
+        if ($isOlderThan30Min) {
+            return response()->json([
+                'msg' => 'You can\'t edit section after 30 minutes.'
+            ], 403);
+        }
+        $has_storage_elements = $section->storage_elements()->exists();
+        if ($has_storage_elements) {
+            return response()->json(["msg" => "you have storage elements on this section!! cannot edit "], 400);
+        }
+
+        try {
+            $section->posetions()->delete();
+              unset($validated_values["section_id"]);
+            $section->update($validated_values);
+           
+            $updated_section = Section::find($section->id);
+            $this->create_postions("App\\Models\\Posetions_on_section", $updated_section, "section_id");
+        } catch (\Exception $e) {
+            return response()->json([
+                'msg' => 'error while updating section',
+                'errors' => $e,
+            ], 500);
+        }
+        return response()->json(["msg" => "section updated succesfully", "section" => $updated_section], 202);
+    }
+
+    public function delete_section($section_id){
+        $section = Section::find($section_id);
+
+        if (!$section) {
+            return response()->json(["msg" => "the section which you want is not exist"], 404);
+        }
+        
+       
+        $has_storage_elements = $section->storage_elements()->exists();
+        if ($has_storage_elements) {
+            return response()->json(["msg" => "you have storage elements on this section!! cannot delete "], 400);
+    }
+        $section->status = "deleted";
+        $section->posetions()->delete();
+        $section->save();
+        return response()->json(["msg" => "section deleted succesfully but i let it as a archiving to emprove the perormance"], 202);
+         
+}
     public function create_new_imporet_op_storage_media(Request $request)
     {
         try {
@@ -994,7 +1275,7 @@ $request->validate([
         Cache::forget($request->import_operation_key);
         Cache::forget($request->key);
 
-        return response()->json(["msg" => "import opertation rejected successfuly"], 200);
+        return response()->json(["msg" => "import opertation rejected successfuly"], 202);
     }
 
     public function show_latest_import_op_products()
@@ -1196,6 +1477,14 @@ $request->validate([
         return response()->json(["msg" => "now the supplier support that", "supplies" => $supplies], 201);
     }
 
+    public function delete_supplies_from_supplier($supplies_id){
+        $supplies = Supplier_Details::find($supplies_id);
+        if (!$supplies) {
+            return response()->json(["msg" => "supplies is not exist"], 404);
+        }
+        $supplies->delete($supplies->id);
+        return response()->json(["msg" => "supplies deleted successfully"]);
+    }
     public function show_suppliers()
     {
         $suppliers = Supplier::all();
@@ -1225,7 +1514,7 @@ $request->validate([
             $product->max_area = $max_area;
         }
 
-        return response()->json(["supplier_products" => $supplier_products], 200);
+        return response()->json(["supplier_products" => $supplier_products], 202);
     }
 
     public function show_warehouses_of_product($id)
@@ -1262,7 +1551,7 @@ $request->validate([
         $supplier_storage_media = $supplier->supplier_storage_media;
 
 
-        return response()->json(["supplier_storage_media" => $supplier_storage_media], 200);
+        return response()->json(["supplier_storage_media" => $supplier_storage_media], 202);
     }
 
 
@@ -1413,7 +1702,7 @@ $request->validate([
             return response()->json(["msg" => "warehouse not found"], 404);
         }
         $sections = $warehouse->sections()
-            ->where('product_id', $product->id)
+            ->where('product_id', $product->id)->where("status","!=", "deleted")
             ->select([
                 'id',
                 'name',
@@ -1552,9 +1841,8 @@ $request->validate([
     public function delete_Specialization($spec_id)
     {
         $spec = Specialization::find($spec_id);
-        if(!$spec){
-          return response()->json(["msg" => "specialization not found"], 404);
-         
+        if (!$spec) {
+            return response()->json(["msg" => "specialization not found"], 404);
         }
         if ($spec->name == "super_admin" || $spec->name == "warehouse_admin" || $spec->name == "distribution_center_admin") {
             return response()->json(["msg" => "you want to delete basic specialization {$spec->name} delete denied"], 403);
@@ -1616,48 +1904,48 @@ $request->validate([
         }
     }
 
-    public function show_employees_of_spec($spec_id){
+    public function show_employees_of_spec($spec_id)
+    {
         $spec = Specialization::find($spec_id);
 
-        if(!$spec){
+        if (!$spec) {
 
-          return response()->json(["msg" => "specialization not found"], 404);
-    
+            return response()->json(["msg" => "specialization not found"], 404);
         }
-        $employees= $spec->employees;
-        if($employees->isEmpty()){
-             return response()->json(["msg" => "emplyees of this specialization not found"], 404);
-    
+        $employees = $spec->employees;
+        if ($employees->isEmpty()) {
+            return response()->json(["msg" => "emplyees of this specialization not found"], 404);
         }
-         return response()->json(["msg" => "here the employes","employees"=>$employees], 202);
-
+        return response()->json(["msg" => "here the employes", "employees" => $employees], 202);
     }
-    public function show_all_employees(){
-      $employees=Specialization::whereHas('employees')->with('employees')->where("name","!=","super_admin")->get();
-      return response()->json(["msg"=>"here the employees","employees"=>$employees],202);
-    }
-
-
-    public function cancel_employe($emp_id){
-      $employe=Employe::find($emp_id);
-          if(!$employe){
-              return response()->json(["msg" => "emplye not found"], 404); 
-          }
-          $specialization=$employe->specialization;
-          if($specialization->name=="super_admin"){
-              return response()->json(["msg" => "cannot cancel a super admin! cancel denied "], 403); 
-          }
-         $employe->delete($employe);
-          return response()->json(["msg" => " canceled succesfully! "], 202); 
-       
+    public function show_all_employees()
+    {
+        $employees = Specialization::whereHas('employees')->with('employees')->where("name", "!=", "super_admin")->get();
+        return response()->json(["msg" => "here the employees", "employees" => $employees], 202);
     }
 
 
-    public function edit_employe(Request $request){
+    public function cancel_employe($emp_id)
+    {
+        $employe = Employe::find($emp_id);
+        if (!$employe) {
+            return response()->json(["msg" => "emplye not found"], 404);
+        }
+        $specialization = $employe->specialization;
+        if ($specialization->name == "super_admin") {
+            return response()->json(["msg" => "cannot cancel a super admin! cancel denied "], 403);
+        }
+        $employe->delete($employe);
+        return response()->json(["msg" => " canceled succesfully! "], 202);
+    }
+
+
+    public function edit_employe(Request $request)
+    {
         try {
-           
+
             $validated_values = $request->validate([
-                'employe_id'=>"required",
+                'employe_id' => "required",
                 "name" => "string",
                 "email" => "email",
                 "password" => "min:8",
@@ -1666,12 +1954,11 @@ $request->validate([
                 "salary" => "numeric",
                 "birth_day" => "date",
                 "country" => "string",
-                "start_time" =>"date_format:H:i",
+                "start_time" => "date_format:H:i",
                 "work_hours" => "numeric",
                 "workable_type" => "in:Warehouse,DistributionCenter",
                 "workable_id" => "integer"
             ]);
-         
         } catch (ValidationException $e) {
 
             return response()->json([
@@ -1679,41 +1966,36 @@ $request->validate([
                 'errors' => $e->errors(),
             ], 422);
         }
-            $employe=Employe::find($validated_values["employe_id"]);
-             
-            if(!$employe)
-            {
-              return response()->json(["msg" => "emplye not found"], 404); 
-            }
-            
-            unset($validated_values["employe_id"]);
-            $specialization=Specialization::find($validated_values["specialization_id"]);
-            if(!empty($validated_values["specialization_id"])){
-            if($specialization->name=="super_admin"){
-              return response()->json(["msg" => "you cannot set specialization to super admin !editing denied"], 403); 
-            }
-         
+        $employe = Employe::find($validated_values["employe_id"]);
+
+        if (!$employe) {
+            return response()->json(["msg" => "emplye not found"], 404);
         }
-        $checkEmploy=Employe::where(function ($query) use ($validated_values) {
+
+        unset($validated_values["employe_id"]);
+        $specialization = Specialization::find($validated_values["specialization_id"]);
+        if (!empty($validated_values["specialization_id"])) {
+            if ($specialization->name == "super_admin") {
+                return response()->json(["msg" => "you cannot set specialization to super admin !editing denied"], 403);
+            }
+        }
+        $checkEmploy = Employe::where(function ($query) use ($validated_values) {
             $query->where("email", $validated_values["email"])
                 ->orWhere("phone_number", $validated_values["phone_number"]);
         })->first();
-        if($checkEmploy){
-         
-          return response()->json(["msg" => "you enter phone number or email already exists why?? !editing denied"], 403); 
-         
+        if ($checkEmploy) {
+
+            return response()->json(["msg" => "you enter phone number or email already exists why?? !editing denied"], 403);
         }
-    
-        if(!empty($validated_values["password"])){
-            $validated_values["password"]= Hash::make($validated_values["password"]);
+
+        if (!empty($validated_values["password"])) {
+            $validated_values["password"] = Hash::make($validated_values["password"]);
         }
-        try{
-      $employe=$employe->update($validated_values);
+        try {
+            $employe = $employe->update($validated_values);
+        } catch (Exception $e) {
+            return response()->json(["error" => $e->getMessage()]);
         }
-        catch(Exception $e){
-         return response()->json(["error"=>$e->getMessage()]);
-        }
-      return response()->json(["msg" => "editing succesfully!"], 202); 
-           
+        return response()->json(["msg" => "editing succesfully!"], 202);
     }
 }

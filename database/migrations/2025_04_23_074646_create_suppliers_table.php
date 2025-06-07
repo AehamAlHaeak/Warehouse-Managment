@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string("comunication_way");
             $table->string("identifier")->unique();
             $table->string("country");
+            $table->string("name");
+            //add some idetifiers as name etc
         });
     }
 
