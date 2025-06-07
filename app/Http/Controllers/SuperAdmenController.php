@@ -534,8 +534,62 @@ class SuperAdmenController extends Controller
         return response()->json(["msg" => "supplier added", "supplier_data" => $supplier], 201);
     }
 
+     public function edit_supplier(Request $request){
+        try {
+            $validated_values = $request->validate([
+                "supplier_id" => "required",
+                "comunication_way" => "string",
+                "identifier" => "string",
+                "country" => "string",
+                "name" => "string"
+            ]);
+        } catch (ValidationException $e) {
 
+            return response()->json([
+                'msg' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        }
 
+        $supplier = Supplier::find($validated_values["supplier_id"]);
+        if (!$supplier) {
+            return response()->json(["msg" => "supplier not found"], 404);
+        }
+        unset($validated_values["supplier_id"]);
+        if(!empty($validated_values["identifier"]) ){
+            $supplier_check = Supplier::where("identifier", $validated_values["identifier"])->first();
+            if($supplier_check->id!= $supplier->id){
+                return response()->json(["msg" => "identifier already exist on another supplier"], 400);
+            }
+        }
+        try {
+        $supplier->update($validated_values);
+           }
+           catch (Exception $e) {
+            return response()->json(["error" => $e->getMessage()], 409);
+        }
+        return response()->json(["msg" => "supplier edited"], 202);
+     }
+     
+     public function delete_supplier($supplier_id){
+        $supplier = Supplier::find($supplier_id);
+        if (!$supplier) {
+            return response()->json(["msg" => "supplier not found"], 404);
+        }
+        $has_import_operations = $supplier->import_operations()->exists();
+        if ($has_import_operations) {
+            return response()->json([
+                "msg" => "the supplier has realted data! cannot delete it",
+                "has_import_operations" => $has_import_operations
+            ], 400);
+        }
+        try {
+            $supplier->delete($supplier->id);
+        } catch (Exception $e) {
+            return response()->json(["error" => $e->getMessage()], 409);
+        }
+        return response()->json(["msg" => "deleted successfully!"], 202);
+     }
 
 
 

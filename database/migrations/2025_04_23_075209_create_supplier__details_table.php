@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->timestamps();
             $table->unsignedBigInteger("supplier_id");
-            $table->foreign("supplier_id")->references("id")->on("suppliers");
+            $table->foreign("supplier_id")->references("id")->on("suppliers")->cascadeOnDelete();
             $table->nullableMorphs("suppliesable");
             //may be vehicles or storage_media or products where it null then it supply vehicles 
             $table->double("max_delivery_time_by_days");

@@ -107,9 +107,14 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
     Route::post("create_new_supplier", "create_new_supplier");
 
     Route::post("add_new_supplies_to_supplier", "add_new_supplies_to_supplier");
+     
+    Route::post("edit_supplier", "edit_supplier");
 
+    Route::get("delete_supplier/{supplier_id}", "delete_supplier");
 
-    //end
+    Route::get("delete_supplies_from_supplier/{supplies_id}", "delete_supplies_from_supplier");
+    
+    //end 
     //show_sections_of_storage_media_on_warehouse($storage_media_id,$warehouse_id)
     //import operation storage media operations 
     //this api is public can use it in difirent cases here and on show in supplier details
@@ -157,3 +162,5 @@ Route::controller(WarehouseController::class)->group(function () {
 });
 //show_distribution_centers_of_storage_media_in_warehouse($warehouse_id,$storage_media_id)
 
+
+Route::post("login_employe", [EmployeController::class, 'login_employe']);

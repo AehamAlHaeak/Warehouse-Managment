@@ -25,5 +25,8 @@ public function supplier_storage_media()
                 ->withPivot('max_delivery_time_by_days')
                 ->as('details');
 }
-   
+  
+public function import_operations(){
+    return $this->hasMany(Import_operation::class,"supplier_id");
+}
 }
