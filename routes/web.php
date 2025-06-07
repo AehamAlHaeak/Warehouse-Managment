@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiController;
 use App\Http\Controllers\IDUController;
+use App\Http\Controllers\EmployeController;
 use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\SuperAdmenController;
 /*
