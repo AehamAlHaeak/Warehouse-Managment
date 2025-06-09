@@ -11,10 +11,7 @@ class Vehicle extends Model
     protected $guarded;
     // protected $fillable=[ 'import_operation_id', 'latitude', 'longitude', 'location', 'type', 'garage_id', 'warehouse_id'];
 
-    public function bill()
-    {
-        return $this->hasMany(Bill::class);
-    }
+    
 
     public function vehicleTransfer()
     {
@@ -42,18 +39,12 @@ class Vehicle extends Model
     }
 
 
-    public function vehicles(){
-        return $this->belongsTo(Garage::class);
-    }
-
+    
     public function garage()
     {
         return $this->belongsTo(Garage::class);
     }
 
-    public function warehouse()
-    {
-        return $this->belongsTo(Warehouse::class);
-    }
+    
 
 }

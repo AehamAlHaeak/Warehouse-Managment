@@ -57,9 +57,7 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
     Route::post("edit_product", "edit_product");
 
     Route::get("delete_product/{product_id}", "delete_product");
-    // end 
-    //create logistic things 
-
+   
     Route::post("edit_storage_media", "edit_storage_media");
 
     Route::post("edit_continer", "edit_continer");
@@ -132,10 +130,14 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
 
 
     Route::post("accept_import_op_storage_media", "accept_import_op_storage_media");
-    //  end
+    //  end  show_latest_import_op_vehicles
     Route::post("create_import_op_vehicles", "create_import_op_vehicles");
 
     Route::post("accept_import_op_vehicles", "accept_import_op_vehicles");
+     
+     Route::get("show_latest_import_op_vehicles", "show_latest_import_op_vehicles");
+
+
 
     //import operation product operations 
     //this api is public can use it in difirent cases here and on show in supplier details

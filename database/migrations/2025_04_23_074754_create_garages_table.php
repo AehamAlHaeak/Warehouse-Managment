@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->timestamps();
            
-            $table->enum("type",["big","medium"]);
+            $table->enum("size_of_vehicle",["big","medium"]);
             $table->nullableMorphs("existable");//existable_type,existable_id
             //can be null only if the company decide to make undepended garage as a reserve
             //garage

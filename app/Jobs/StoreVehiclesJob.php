@@ -2,16 +2,18 @@
 
 namespace App\Jobs;
 
-use App\Models\DistributionCenter;
-use App\Models\Warehouse;
+use Log;
 use App\Models\Garage;
 use App\Models\Vehicle;
+use App\Models\Warehouse;
 use Illuminate\Bus\Queueable;
+use App\Models\Import_operation;
+use App\Models\DistributionCenter;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\Log as l;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use App\Models\Import_operation;
 
 class StoreVehiclesJob implements ShouldQueue
 {
@@ -55,16 +57,21 @@ class StoreVehiclesJob implements ShouldQueue
             unset($vehicleData["place_type"]);
             unset($vehicleData["place_id"]);
             $garages = $place->garages;
-            foreach ($garages as $garage) {
-                $full_area =$garage->vehicles->count();
-               
+           
+                
+                    foreach($garages as $garage){
+                    if($garage->max_capacity > $garage->vehicles->count() && $garage->size_of_vehicle == $vehicleData["size_of_vehicle"]){
                     $vehicleData["garage_id"] = $garage->id;
-                   
-                  
+                     Vehicle::create($vehicleData);
+                    break;
+                    }
+                    } 
+                     
+                    
+                    
+          
 
-            }
-
-                Vehicle::create($vehicleData);
+               
 
 
             

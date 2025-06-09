@@ -414,7 +414,7 @@ class SuperAdmenController extends Controller
             $validated_values = $request->validate([
                 "existable_type" => "string|in:Warehouse,DistributionCenter",
                 "existable_id" => "integer",
-                "type" => "required|in:big,medium",
+                "size_of_vehicle" => "required|in:big,medium",
                 "max_capacity" => "required|integer"
 
             ]);
@@ -439,7 +439,7 @@ class SuperAdmenController extends Controller
                 "garage_id" => "required",
                 "existable_type" => "string|in:Warehouse,DistributionCenter",
                 "existable_id" => "integer",
-                "type" => "in:big,medium",
+                "size_of_vehicle" => "in:big,medium",
                 "max_capacity" => "integer"
 
             ]);
@@ -461,6 +461,17 @@ class SuperAdmenController extends Controller
             if (!$existable) {
                 return response()->json(["msg" => "the place where you want transfer the garage not found"], 404);
             }
+        }
+        if($validated_values["size_of_vehicle"]){
+          if($garage->size_of_vehicle!= $validated_values["size_of_vehicle"]){
+            $vehicles_in_garage = $garage->vehicles()->first();
+            if($vehicles_in_garage){
+                return response()->json(["msg"=>"the vehicle size in the garage is different from the new size! edit garage denied" ], 400);
+          }
+        }
+        }
+        if($validated_values["max_capacity"] < $garage->vehicles()->count()){
+            return response()->json(["msg"=>" edit garage denied you want to reduce the capacity less than exists vehicles" ], 400);
         }
         $garage->update($validated_values);
         return response()->json(["msg" => "edited successfully!"], 202);
@@ -534,7 +545,8 @@ class SuperAdmenController extends Controller
         return response()->json(["msg" => "supplier added", "supplier_data" => $supplier], 201);
     }
 
-     public function edit_supplier(Request $request){
+    public function edit_supplier(Request $request)
+    {
         try {
             $validated_values = $request->validate([
                 "supplier_id" => "required",
@@ -556,22 +568,22 @@ class SuperAdmenController extends Controller
             return response()->json(["msg" => "supplier not found"], 404);
         }
         unset($validated_values["supplier_id"]);
-        if(!empty($validated_values["identifier"]) ){
+        if (!empty($validated_values["identifier"])) {
             $supplier_check = Supplier::where("identifier", $validated_values["identifier"])->first();
-            if($supplier_check->id!= $supplier->id){
+            if ($supplier_check->id != $supplier->id) {
                 return response()->json(["msg" => "identifier already exist on another supplier"], 400);
             }
         }
         try {
-        $supplier->update($validated_values);
-           }
-           catch (Exception $e) {
+            $supplier->update($validated_values);
+        } catch (Exception $e) {
             return response()->json(["error" => $e->getMessage()], 409);
         }
         return response()->json(["msg" => "supplier edited"], 202);
-     }
-     
-     public function delete_supplier($supplier_id){
+    }
+
+    public function delete_supplier($supplier_id)
+    {
         $supplier = Supplier::find($supplier_id);
         if (!$supplier) {
             return response()->json(["msg" => "supplier not found"], 404);
@@ -589,7 +601,7 @@ class SuperAdmenController extends Controller
             return response()->json(["error" => $e->getMessage()], 409);
         }
         return response()->json(["msg" => "deleted successfully!"], 202);
-     }
+    }
 
 
 
@@ -949,7 +961,7 @@ class SuperAdmenController extends Controller
             return response()->json(["msg" => "the place which you want isnot exist"], 404);
         }
         try {
-            $num_of_sections_on_place = $place->sections()->where("status","!=","deleted")->count();
+            $num_of_sections_on_place = $place->sections()->where("status", "!=", "deleted")->count();
 
             if ($num_of_sections_on_place == $place->num_sections) {
                 return response()->json(["msg" => "the place is full"], 400);
@@ -1011,9 +1023,9 @@ class SuperAdmenController extends Controller
 
         try {
             $section->posetions()->delete();
-              unset($validated_values["section_id"]);
+            unset($validated_values["section_id"]);
             $section->update($validated_values);
-           
+
             $updated_section = Section::find($section->id);
             $this->create_postions("App\\Models\\Posetions_on_section", $updated_section, "section_id");
         } catch (\Exception $e) {
@@ -1025,24 +1037,24 @@ class SuperAdmenController extends Controller
         return response()->json(["msg" => "section updated succesfully", "section" => $updated_section], 202);
     }
 
-    public function delete_section($section_id){
+    public function delete_section($section_id)
+    {
         $section = Section::find($section_id);
 
         if (!$section) {
             return response()->json(["msg" => "the section which you want is not exist"], 404);
         }
-        
-       
+
+
         $has_storage_elements = $section->storage_elements()->exists();
         if ($has_storage_elements) {
             return response()->json(["msg" => "you have storage elements on this section!! cannot delete "], 400);
-    }
+        }
         $section->status = "deleted";
         $section->posetions()->delete();
         $section->save();
         return response()->json(["msg" => "section deleted succesfully but i let it as a archiving to emprove the perormance"], 202);
-         
-}
+    }
     public function create_new_imporet_op_storage_media(Request $request)
     {
         try {
@@ -1405,6 +1417,7 @@ class SuperAdmenController extends Controller
                 'vehicles.*.location' => 'string',
                 'vehicles.*.latitude' => 'numeric',
                 'vehicles.*.longitude' => 'numeric',
+                'vehicles.*.size_of_vehicle' => 'required|in:big,medium',
                 'vehicles.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif,bmp|max:4096',
                 'vehicles.*.capacity' => 'required|integer',
                 'vehicles.*.type_id' => 'required|integer|exists:types,id',
@@ -1479,13 +1492,52 @@ class SuperAdmenController extends Controller
         }
         $import_operation = Import_operation::create($import_operation);
         Cache::forget($request->import_operation_key);
-
+        Cache::forget($request->vehicles_key);
         StoreVehiclesJob::dispatch($vehicles, $import_operation->id, $import_operation->location, $import_operation->longitude, $import_operation->latitude);
 
         return response()->json(["msg" => "vehicles under creating"], 202);
     }
-
-
+     
+    public function show_latest_import_op_vehicles(){
+        $import_op_vehicles_keys=Cache::get("import_op_vehicles_keys");
+       
+        $import_operations=[];
+        $i = 0;
+        if($import_op_vehicles_keys){
+            
+            foreach ($import_op_vehicles_keys as $key => $value) {
+                
+                $import_operation = Cache::get($value["import_operation_key"]);
+               
+                $vehicles = Cache::get($value["vehicles_key"]);
+                if (!$import_operation ||!$vehicles) {
+                    continue;
+                }
+                
+                $value["supplier_id"] =$import_operation["supplier_id"];
+                $value["location"] = $import_operation["location"];
+                $value["latitude"] = $import_operation["latitude"];
+                $value["longitude"] = $import_operation["longitude"];
+                $value["supplier"]=Supplier::find($import_operation["supplier_id"]);
+              $j=1;
+                foreach ($vehicles as $vehicle) {
+                    
+                    $model="App\\Models\\". $vehicle["place_type"];
+                    
+                    $place = $model::find($vehicle["place_id"]);
+                    
+                   $place=$this->calculate_areas_of_vehicles($place);
+                    //return $place;
+                    $vehicles[$j]["place"] = $place;
+                    $j++;
+                }
+                $value["vehicles"] = $vehicles;
+                $import_operations[$i]=$value;
+                $i++;
+            }
+    }
+    return response()->json(["msg" => "here the latest import_operations", "import_operations" => $import_operations]);
+    }
     public function add_new_supplies_to_supplier(Request $request)
     {
         try {
@@ -1531,7 +1583,8 @@ class SuperAdmenController extends Controller
         return response()->json(["msg" => "now the supplier support that", "supplies" => $supplies], 201);
     }
 
-    public function delete_supplies_from_supplier($supplies_id){
+    public function delete_supplies_from_supplier($supplies_id)
+    {
         $supplies = Supplier_Details::find($supplies_id);
         if (!$supplies) {
             return response()->json(["msg" => "supplies is not exist"], 404);
@@ -1756,7 +1809,7 @@ class SuperAdmenController extends Controller
             return response()->json(["msg" => "warehouse not found"], 404);
         }
         $sections = $warehouse->sections()
-            ->where('product_id', $product->id)->where("status","!=", "deleted")
+            ->where('product_id', $product->id)->where("status", "!=", "deleted")
             ->select([
                 'id',
                 'name',
@@ -1844,12 +1897,14 @@ class SuperAdmenController extends Controller
         $warehouse_of_type = $type->warehouses;
 
         $products_of_type = $type->products;
-
-        if (!$warehouse_of_type->isEmpty() || !$products_of_type->isEmpty()) {
+        
+        $vehicles_of_type = $type->vehicles;
+        if (!$warehouse_of_type->isEmpty() || !$products_of_type->isEmpty() ||!$vehicles_of_type->isEmpty()  ) {
             return response()->json([
                 "msg" => "the type hase a data",
                 "warehouses" => $warehouse_of_type,
-                "products" => $products_of_type
+                "products" => $products_of_type,
+                "vehicles" => $vehicles_of_type
             ]);
         }
         $type->delete($type->id);

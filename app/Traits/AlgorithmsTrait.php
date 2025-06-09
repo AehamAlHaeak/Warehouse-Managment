@@ -281,6 +281,42 @@ public function create_postions($model,$object,$foreignId_name){
 
     }
 
+    
+
+    public function calculate_areas_of_vehicles($object){
+      $garage_of_type=$object->garages;
+      unset($object["garages"]);
+      $avilable_area_big=0;
+      $max_capacity_big=0;
+      $full_area_in_palce_big=0;
+      $avilable_area_medium=0;
+      $max_capacity_medium=0;
+      $full_area_in_palce_medium=0;
+      foreach($garage_of_type as $garage){
+          $fullarea=$garage->vehicles->count();
+          
+          $fullarea=$garage->vehicles->count(); 
+          if($garage->size_of_vehicle == "big" ){
+          $max_capacity_big+=$garage->max_capacity;
+          $full_area_in_palce_big+=$fullarea;
+          
+          $avilable_area_big+=$garage->max_capacity-$fullarea;
+          }
+          else{
+            $max_capacity_medium+=$garage->max_capacity;
+            $full_area_in_palce_medium+=$fullarea;
+            $avilable_area_medium+=$garage->max_capacity-$fullarea;
+          }
+      }
+       $object->avilable_area_vehicles_big=$avilable_area_big;
+       $object->max_capacity_vehicles_big=$max_capacity_big;
+       $object->full_area_vehicles_big=$full_area_in_palce_big;
+       $object->avilable_area_vehicles_medium=$avilable_area_medium;
+       $object->max_capacity_vehicles_medium=$max_capacity_medium;
+       $object->full_area_vehicles_medium=$full_area_in_palce_medium;
+       return  $object;
+    }
+
     public function calcute_areas_on_place_for_a_specific_product($object,$product_id){
        $avilable_area=0;
        $max_capacity=0;

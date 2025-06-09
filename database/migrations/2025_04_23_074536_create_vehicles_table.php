@@ -18,7 +18,7 @@ return new class extends Migration
             $table->date("expiration");
             $table->date("producted_in");
             $table->double("readiness");
-
+            $table->enum("size_of_vehicle",["big","medium"]);
             $table->string("location");
             $table->double("latitude");
             $table->double("longitude");
