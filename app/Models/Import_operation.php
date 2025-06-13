@@ -22,8 +22,8 @@ class Import_operation extends Model
         return $this->belongsTo(Supplier::class,"supplier_id");
     }
 
-    public function container(){
-        return $this->belongsToMany(Containers_type::class,"container_id");
+    public function containers(){
+        return $this->hasMany(Import_op_container::class,"import_operation_id");
     }
 
     public function storage_md(){

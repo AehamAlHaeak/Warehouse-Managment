@@ -25,6 +25,12 @@ return new class extends Migration
             $table->double("latitude")->nullable();
             $table->double("longitude")->nullable();
 
+            $table->unsignedBigInteger("parent_trans")->nullable();
+            $table->foreign("parent_trans")->references("id")->on("transfers")->cascadeOnDelete();
+            $table->unsignedBigInteger("related_trans")->nullable();
+            $table->foreign("related_trans")->references("id")->on("transfers");
+            
+  
 
         });
     }

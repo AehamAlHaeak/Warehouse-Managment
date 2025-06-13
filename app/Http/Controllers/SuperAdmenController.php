@@ -58,10 +58,11 @@ use App\Http\Requests\storeEmployeeRequest;
 use App\Models\Distribution_center_Product;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
+use App\Traits\TransferTraitAeh;
 
 class SuperAdmenController extends Controller
 {
-    use TransferTrait;
+    use TransferTraitAeh;
     use CRUDTrait;
     use AlgorithmsTrait;
     use LoadingTrait;
@@ -462,16 +463,16 @@ class SuperAdmenController extends Controller
                 return response()->json(["msg" => "the place where you want transfer the garage not found"], 404);
             }
         }
-        if($validated_values["size_of_vehicle"]){
-          if($garage->size_of_vehicle!= $validated_values["size_of_vehicle"]){
-            $vehicles_in_garage = $garage->vehicles()->first();
-            if($vehicles_in_garage){
-                return response()->json(["msg"=>"the vehicle size in the garage is different from the new size! edit garage denied" ], 400);
-          }
+        if ($validated_values["size_of_vehicle"]) {
+            if ($garage->size_of_vehicle != $validated_values["size_of_vehicle"]) {
+                $vehicles_in_garage = $garage->vehicles()->first();
+                if ($vehicles_in_garage) {
+                    return response()->json(["msg" => "the vehicle size in the garage is different from the new size! edit garage denied"], 400);
+                }
+            }
         }
-        }
-        if($validated_values["max_capacity"] < $garage->vehicles()->count()){
-            return response()->json(["msg"=>" edit garage denied you want to reduce the capacity less than exists vehicles" ], 400);
+        if ($validated_values["max_capacity"] < $garage->vehicles()->count()) {
+            return response()->json(["msg" => " edit garage denied you want to reduce the capacity less than exists vehicles"], 400);
         }
         $garage->update($validated_values);
         return response()->json(["msg" => "edited successfully!"], 202);
@@ -1497,46 +1498,47 @@ class SuperAdmenController extends Controller
 
         return response()->json(["msg" => "vehicles under creating"], 202);
     }
-     
-    public function show_latest_import_op_vehicles(){
-        $import_op_vehicles_keys=Cache::get("import_op_vehicles_keys");
-       
-        $import_operations=[];
+
+    public function show_latest_import_op_vehicles()
+    {
+        $import_op_vehicles_keys = Cache::get("import_op_vehicles_keys");
+
+        $import_operations = [];
         $i = 0;
-        if($import_op_vehicles_keys){
-            
+        if ($import_op_vehicles_keys) {
+
             foreach ($import_op_vehicles_keys as $key => $value) {
-                
+
                 $import_operation = Cache::get($value["import_operation_key"]);
-               
+
                 $vehicles = Cache::get($value["vehicles_key"]);
-                if (!$import_operation ||!$vehicles) {
+                if (!$import_operation || !$vehicles) {
                     continue;
                 }
-                
-                $value["supplier_id"] =$import_operation["supplier_id"];
+
+                $value["supplier_id"] = $import_operation["supplier_id"];
                 $value["location"] = $import_operation["location"];
                 $value["latitude"] = $import_operation["latitude"];
                 $value["longitude"] = $import_operation["longitude"];
-                $value["supplier"]=Supplier::find($import_operation["supplier_id"]);
-              $j=1;
+                $value["supplier"] = Supplier::find($import_operation["supplier_id"]);
+                $j = 1;
                 foreach ($vehicles as $vehicle) {
-                    
-                    $model="App\\Models\\". $vehicle["place_type"];
-                    
+
+                    $model = "App\\Models\\" . $vehicle["place_type"];
+
                     $place = $model::find($vehicle["place_id"]);
-                    
-                   $place=$this->calculate_areas_of_vehicles($place);
+
+                    $place = $this->calculate_areas_of_vehicles($place);
                     //return $place;
                     $vehicles[$j]["place"] = $place;
                     $j++;
                 }
                 $value["vehicles"] = $vehicles;
-                $import_operations[$i]=$value;
+                $import_operations[$i] = $value;
                 $i++;
             }
-    }
-    return response()->json(["msg" => "here the latest import_operations", "import_operations" => $import_operations]);
+        }
+        return response()->json(["msg" => "here the latest import_operations", "import_operations" => $import_operations]);
     }
     public function add_new_supplies_to_supplier(Request $request)
     {
@@ -1897,9 +1899,9 @@ class SuperAdmenController extends Controller
         $warehouse_of_type = $type->warehouses;
 
         $products_of_type = $type->products;
-        
+
         $vehicles_of_type = $type->vehicles;
-        if (!$warehouse_of_type->isEmpty() || !$products_of_type->isEmpty() ||!$vehicles_of_type->isEmpty()  ) {
+        if (!$warehouse_of_type->isEmpty() || !$products_of_type->isEmpty() || !$vehicles_of_type->isEmpty()) {
             return response()->json([
                 "msg" => "the type hase a data",
                 "warehouses" => $warehouse_of_type,
@@ -2106,5 +2108,24 @@ class SuperAdmenController extends Controller
             return response()->json(["error" => $e->getMessage()]);
         }
         return response()->json(["msg" => "editing succesfully!"], 202);
+    }
+    public function try_choise_trucks($warehouse_id,$import_operation_id) {
+     
+        $warehouse = Warehouse::find($warehouse_id);
+        if (!$warehouse) {
+            return response()->json(["msg" => "warehouse not found"], 404);
+        }
+        
+        $import_operation = Import_operation::find($import_operation_id);
+        if (!$import_operation) {
+            return response()->json(["msg" => "import_operation not found"], 404);
+        }
+       
+        $continers= $import_operation->containers;
+        
+        
+        $truks_continers=$this->resive_transfers($import_operation,$warehouse,$continers);
+        
+        return response()->json(["trucks" => $truks_continers], 202);
     }
 }

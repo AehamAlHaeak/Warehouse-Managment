@@ -154,8 +154,11 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
     Route::get("show_latest_import_op_products", "show_latest_import_op_products");
     //end
     Route::post("reject_import_op", "reject_import_op");
+     
+    Route::get("try_choise_trucks/{warehouse_id}/{import_operation_id}", "try_choise_trucks");
+
 });
-//show_warehouse_of_storage_media($storage_media_id)
+//try_choise_trucks($warehouse_id,$import_operation_id)
 
 Route::controller(WarehouseController::class)->group(function () {
 

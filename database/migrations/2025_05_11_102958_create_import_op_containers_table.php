@@ -22,8 +22,8 @@ return new class extends Migration
             
             //when i make import operation i will enter the container and the products will 
             //be entered recently and linked with their containers
-            $table->unsignedBigInteger("transfer_vehicle_id")->nullable();
-            $table->foreign("transfer_vehicle_id")->references("id")->on("transfer__details");
+            // $table->unsignedBigInteger("transfer_vehicle_id")->nullable();
+            // $table->foreign("transfer_vehicle_id")->references("id")->on("transfer__details");
             //i specifi the id by transfee_vehicle_id_to see this 
             //continer in which transfer has been loaded
              

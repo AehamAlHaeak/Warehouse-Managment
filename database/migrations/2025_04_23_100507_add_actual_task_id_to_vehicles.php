@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('vehicles', function (Blueprint $table) {
-            $table->nullableMorphs("taskable");// taskable_type, taskable_id
+           // $table->nullableMorphs("taskable");// taskable_type, taskable_id
+        $table->unsignedBigInteger("transfer_id");
+        $table->foreign("transfer_id")->references("id")->on("transfers");
         });
     }
 
