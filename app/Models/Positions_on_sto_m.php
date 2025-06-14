@@ -11,9 +11,7 @@ class Positions_on_sto_m extends Model
     protected $guarded;
     public $table="positions_on_sto_m";
 
-    public function requiredata(){
-        return $this->belongsTo(type::class);
-    }
+    
 }
 
 

@@ -18,8 +18,8 @@ class Transfer extends Model
          return $this->belongsToMany(Product::class,'tranfer__vehicle');
     }
 
-    public function transfer_transferVehicle(){
-        return $this->hasMany(Transfer_Vehicle::class);
+    public function transfer_details(){
+        return $this->hasMany(Transfer_detail::class,"transfer_id");
     }
     public function sourceable()
     {

@@ -7,6 +7,7 @@ use App\Models\Garage;
 use App\Models\Vehicle;
 use App\Models\Warehouse;
 use Illuminate\Bus\Queueable;
+use App\Models\Specialization;
 use App\Models\Import_operation;
 use App\Models\DistributionCenter;
 use Illuminate\Queue\SerializesModels;
@@ -57,24 +58,24 @@ class StoreVehiclesJob implements ShouldQueue
             unset($vehicleData["place_type"]);
             unset($vehicleData["place_id"]);
             $garages = $place->garages;
-           
-                
-                    foreach($garages as $garage){
-                    if($garage->max_capacity > $garage->vehicles->count() && $garage->size_of_vehicle == $vehicleData["size_of_vehicle"]){
+            $driver_spec = Specialization::where('name', 'driver')->first();
+            $avilable_drivers = $place->employees()
+                ->where('specialization_id', $driver_spec->id)
+                ->whereDoesntHave('vehicle')
+                ->get();
+
+            foreach ($garages as $garage) {
+                if ($garage->max_capacity > $garage->vehicles->count() && $garage->size_of_vehicle == $vehicleData["size_of_vehicle"]) {
+
                     $vehicleData["garage_id"] = $garage->id;
-                     Vehicle::create($vehicleData);
-                    break;
+                    if ($avilable_drivers->isNotEmpty()) {
+                        $driver = $avilable_drivers->splice(0, 1)->first();
+                        $vehicleData["driver_id"] = $driver->id;
                     }
-                    } 
-                     
-                    
-                    
-          
-
-               
-
-
-            
+                    Vehicle::create($vehicleData);
+                    break;
+                }
+            }
         }
     }
 }

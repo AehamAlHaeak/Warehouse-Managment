@@ -281,7 +281,29 @@ public function create_postions($model,$object,$foreignId_name){
 
     }
 
-    
+    public function calculate_ready_vehiscles($object,$product){
+           $garages=$object->garages;
+           unset($object["garages"]);
+           $activ_vehicles_count=0;
+           $avilable_vehicles_count=0;
+           $can_to_trans_load=0;
+           $continer=$product->continer;
+           
+           foreach($garages as $garage){
+               $avilable_vehicles_on_garage=$garage->vehicles()->where("product_id", $product->id)
+               ->whereNull("transfer_id")->get();
+              $activ_vehicles_count+=$garage->vehicles()->where("product_id", $product->id)
+               ->where("transfer_id","!=",null)->count();
+               $avilable_vehicles_count+= $avilable_vehicles_on_garage->count();
+               $can_to_trans_load+= $avilable_vehicles_on_garage->sum("capacity")*$continer->capacity;
+           }
+
+         $object->can_to_translate_load=$can_to_trans_load;
+         $object->avilable_vehicles_count=$avilable_vehicles_count;
+         $object->activ_vehicles_count=$activ_vehicles_count;
+         return $object;
+
+    }
 
     public function calculate_areas_of_vehicles($object){
       $garage_of_type=$object->garages;

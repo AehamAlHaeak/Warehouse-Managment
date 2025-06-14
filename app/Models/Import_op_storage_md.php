@@ -25,4 +25,8 @@ class Import_op_storage_md extends Model
 
         return $this->hasMany(Positions_on_sto_m::class,"imp_op_stor_id");
     }
+    public function posetion_on_section(){
+        return $this->hasOne(Posetions_on_section::class,"storage_media_id");
+    }
+    
 }

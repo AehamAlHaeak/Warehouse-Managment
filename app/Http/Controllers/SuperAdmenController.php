@@ -35,7 +35,7 @@ use Illuminate\Validation\Rule;
 use App\Models\Import_operation;
 use App\Models\Supplier_Details;
 use App\Models\Supplier_Product;
-use App\Models\Transfer_Vehicle;
+use App\Models\Transfer_detail;
 use App\Jobs\importing_operation;
 use App\Models\Import_operation_product;
 use App\Jobs\import_storage_media;
@@ -120,6 +120,7 @@ class SuperAdmenController extends Controller
         $requiredSpecs = [
             'warehouse_admin',
             'distribution_center_admin',
+            "driver"
 
         ];
 
@@ -1421,7 +1422,7 @@ class SuperAdmenController extends Controller
                 'vehicles.*.size_of_vehicle' => 'required|in:big,medium',
                 'vehicles.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif,bmp|max:4096',
                 'vehicles.*.capacity' => 'required|integer',
-                'vehicles.*.type_id' => 'required|integer|exists:types,id',
+                'vehicles.*.product_id' => 'required|integer|exists:products,id',
                 'vehicles.*.place_type' => 'required|in:Warehouse,DistributionCenter',
                 'vehicles.*.place_id' => 'required|integer'
             ]);
@@ -1955,7 +1956,7 @@ class SuperAdmenController extends Controller
         if (!$spec) {
             return response()->json(["msg" => "specialization not found"], 404);
         }
-        if ($spec->name == "super_admin" || $spec->name == "warehouse_admin" || $spec->name == "distribution_center_admin") {
+        if ($spec->name == "super_admin" || $spec->name == "warehouse_admin" || $spec->name == "distribution_center_admin" || $spec->name == "driver") {
             return response()->json(["msg" => "you want to delete basic specialization {$spec->name} delete denied"], 403);
         }
         $employees_of_spec = $spec->employees;
@@ -1986,7 +1987,7 @@ class SuperAdmenController extends Controller
         if (!$spec) {
             return response()->json(["msg" => "the specialization not found"], 404);
         }
-        if ($spec->name == "super_admin" || $spec->name == "warehouse_admin" || $spec->name == "distribution_center_admin") {
+        if ($spec->name == "super_admin" || $spec->name == "warehouse_admin" || $spec->name == "distribution_center_admin" || $spec->name == "driver") {
             return response()->json(["msg" => "you want to edit basic specialization {$spec->name} edit denied"], 403);
         }
         $now = Carbon::now();
@@ -2109,23 +2110,27 @@ class SuperAdmenController extends Controller
         }
         return response()->json(["msg" => "editing succesfully!"], 202);
     }
-    public function try_choise_trucks($warehouse_id,$import_operation_id) {
-     
+    public function try_choise_trucks($warehouse_id, $import_operation_id)
+    {
+
         $warehouse = Warehouse::find($warehouse_id);
         if (!$warehouse) {
             return response()->json(["msg" => "warehouse not found"], 404);
         }
-        
-        $import_operation = Import_operation::find($import_operation_id);
+
+        $import_operation =Import_operation::find($import_operation_id);
         if (!$import_operation) {
             return response()->json(["msg" => "import_operation not found"], 404);
         }
-       
-        $continers= $import_operation->containers;
-        
-        
-        $truks_continers=$this->resive_transfers($import_operation,$warehouse,$continers);
-        
+
+        $continers = $import_operation->containers;
+
+try{
+        $truks_continers = $this-> resive_transfers( $import_operation, $warehouse, $continers);
+}
+catch(\Exception $e){
+    return response()->json(["msg" => $e->getMessage()], 404);
+}
         return response()->json(["trucks" => $truks_continers], 202);
     }
 }

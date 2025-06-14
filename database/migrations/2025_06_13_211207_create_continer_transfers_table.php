@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('continer_transfers', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
-            $table->unsignedBigInteger("transfer_vehicle_id")->nullable();
-            $table->foreign("transfer_vehicle_id")->references("id")->on("transfer__details");
+            $table->unsignedBigInteger("transfer_detail_id")->nullable();
+            $table->foreign("transfer_detail_id")->references("id")->on("transfer__details");
             $table->unsignedBigInteger("imp_op_contin_id");
             $table->foreign("imp_op_contin_id")->references("id")->on("import_op_containers");
         });

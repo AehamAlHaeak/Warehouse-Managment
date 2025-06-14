@@ -22,7 +22,8 @@ return new class extends Migration
             $table->string("location");
             $table->double("latitude");
             $table->double("longitude");
-            
+            $table->unsignedBigInteger("driver_id")->nullable();
+            $table->foreign("driver_id")->references("id")->on("employes");
             $table->string("img_path")->nullable();
 
             $table->integer("capacity");

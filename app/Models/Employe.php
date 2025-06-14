@@ -31,4 +31,7 @@ protected $guarded = [];
     public function workable(){
         return $this ->morphTo();
     }
+    public function vehicle(){
+        return $this->hasOne(Vehicle::class,"driver_id");
+    }
 }
