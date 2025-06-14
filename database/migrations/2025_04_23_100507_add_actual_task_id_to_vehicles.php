@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('vehicles', function (Blueprint $table) {
            // $table->nullableMorphs("taskable");// taskable_type, taskable_id
-        $table->unsignedBigInteger("transfer_id");
+        $table->unsignedBigInteger("transfer_id")->nullable();
         $table->foreign("transfer_id")->references("id")->on("transfers");
         });
     }

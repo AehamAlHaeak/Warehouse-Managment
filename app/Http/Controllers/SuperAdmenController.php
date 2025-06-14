@@ -76,7 +76,7 @@ class SuperAdmenController extends Controller
                 "name" => "required",
                 "email" => "required|email",
                 "password" => "required|min:8",
-                "phone_number" => "required",
+                "phone_number" => "required|max:10",
                 "salary" => "required",
                 "birth_day" => "date",
                 "country" => "required",
@@ -123,7 +123,7 @@ class SuperAdmenController extends Controller
             "driver"
 
         ];
-
+echo "i am here";
         foreach ($requiredSpecs as $spec) {
             Specialization::firstOrCreate(['name' => $spec]);
         }
@@ -132,9 +132,12 @@ class SuperAdmenController extends Controller
 
 
         $validated_values["password"] = Hash::make($validated_values['password']);
-
+try{
         $admin = Employe::create($validated_values);
-
+}
+catch(Exception $e){
+    return response()->json(["msg" => "error occurred while creating the admin", "error" => $e->getMessage()], 500);
+}
 
         $token = $this->create_token($admin);
 
@@ -329,8 +332,13 @@ class SuperAdmenController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         }
-
+       try{
+        $validated_values["type_id"]=Warehouse::find($validated_values["warehouse_id"])->type_id;
         $center = DistributionCenter::create($validated_values);
+       } 
+       catch (Exception $e) {
+            return response()->json(["error" => $e->getMessage()], 400);
+        }
         return response()->json(["msg" => " distribution_center added!", "center_data" => $center], 201);
     }
 
@@ -1329,7 +1337,7 @@ class SuperAdmenController extends Controller
 
         importing_op_prod::dispatch($import_operation, $products);
 
-        return response()->json(["msg" => "storage_media under creating"], 202);
+        return response()->json(["msg" => "roducts under distributiun"], 202);
     }
 
 
