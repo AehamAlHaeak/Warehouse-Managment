@@ -27,7 +27,7 @@ trait TransferTraitAeh
     use AlgorithmsTrait;
     public function load_vehicles($load_object_id, $without_load_id, $transfer_details, $status_load, $status_wo_load)
     {
-        echo "loading vehicles...\n";
+      
         foreach ($transfer_details as $block) {
 
             $transfer_detail_l = Transfer_detail::create([
@@ -204,6 +204,6 @@ trait TransferTraitAeh
             return $transfer_details;
         }
 
-        return "the vehicles is not enugeht for the load";
+        return "the vehicles is not enough for the load";
     }
 }
