@@ -19,9 +19,8 @@ return new class extends Migration
             $table->unsignedBigInteger("imp_op_product_id");
             $table->foreign("imp_op_product_id")->references("id")->on("import_operation_product");
             $table->integer("load")->default(0);//unable to modefi
-        
-            $table->integer("sold_load")->default(0);
-             
+            
+           
         });
     }
 

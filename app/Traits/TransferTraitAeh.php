@@ -49,12 +49,12 @@ trait TransferTraitAeh
             }
             else{
                 $vehicle->update([
-                    "transfer_id" =>  $load_object_id,
+                    "transfer_id" => $load_object_id,
                 ]);
             }
             foreach ($block["container_ids"] as $continer_id) {
                 Continer_transfer::create([
-                    "transfer_detail_id" =>  $without_load_id,
+                    "transfer_detail_id" =>  $load_object_id,
                     "imp_op_contin_id" => $continer_id
                 ]);
 
@@ -64,10 +64,9 @@ trait TransferTraitAeh
     }
 
 
-    public function unload($transfer, $destination)
+    public function unload($transfer_detail, $destination)
     {
-        $transfer_details = $transfer->transfer_details;
-        foreach ($transfer_details as $transfer_detail) {
+       
             $continers = $transfer_detail->continers;
             $product =  $continers[0]->parent_continer->product;
             $continers = $continers->pluck('id');
@@ -96,7 +95,7 @@ trait TransferTraitAeh
                     }
                 }
             }
-        }
+        
         return  $destination;
     }
 
@@ -123,10 +122,10 @@ trait TransferTraitAeh
 
             $big_garages = $source->garages->where("size_of_vehicle", "big")->pluck("id");
         }
-        $avilable_vehicles_big = Vehicle::whereIn("garage_id", $big_garages)->whereNull("transfer_id")->where("product_id", $continer_product->id)->orderBy('capacity', 'desc')->get();
+        $avilable_vehicles_big = Vehicle::whereIn("garage_id", $big_garages)->whereNull("transfer_id")->where("product_id", $continer_product->id)->where("driver_id","!=",null)->orderBy('capacity', 'desc')->get();
 
 
-        $avilable_vehicles_medium = Vehicle::whereIn("garage_id", $medium_garages)->whereNull("transfer_id")->where("product_id", $continer_product->id)->orderBy('capacity', 'desc')->get();
+        $avilable_vehicles_medium = Vehicle::whereIn("garage_id", $medium_garages)->whereNull("transfer_id")->where("product_id", $continer_product->id)->where("driver_id","!=",null)->orderBy('capacity', 'desc')->get();
 
 
 

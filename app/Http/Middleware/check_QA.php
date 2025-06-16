@@ -3,13 +3,12 @@
 namespace App\Http\Middleware;
 
 use Closure;
-
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
-class check_driver
+class check_QA
 {
     /**
      * Handle an incoming request.
@@ -17,15 +16,14 @@ class check_driver
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
-
     {
-        try {
+         try {
             if (Auth::guard('employee')->check()) {
                 $payload = JWTAuth::parseToken()->getPayload();
 
                 $specialization = $payload->get('specialization');
 
-                if ($specialization == "super_admin" ||  $specialization == "driver") {
+                if ($specialization == "super_admin" ||  $specialization == "QA") {
 
                     $employe = Auth::guard('employee')->user();
                     if ($employe) {

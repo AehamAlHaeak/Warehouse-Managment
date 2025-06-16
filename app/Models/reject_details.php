@@ -9,5 +9,6 @@ class reject_details extends Pivot
      protected $guarded;
      protected $primaryKey = 'id'; 
     public $incrementing = true; 
-    protected $keyType = 'int';  
+    protected $keyType = 'int';
+    protected $table="reject_details";  
 }

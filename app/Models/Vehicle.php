@@ -18,24 +18,18 @@ class Vehicle extends Model
         return $this->belongsToMany(Transfer::class, 'transfer__vehicle');
     }
 
-    public function vehicleProduct()
-    {
-        return $this->belongsToMany(Product::class, 'transfer__vehicle');
-    }
+    
 
-    public function vehicleType()
-    {
-        return $this->belongsTo(type::class, "type_id");
-    }
+    
 
 
     public function import_operation()
     {
         return $this->belongsTo(Import_operation::class);
     }
-    public function transfer_products_of_type()
+    public function transfer_products()
     {
-        return $this->belongsTo(type::class, "type_id");
+        return $this->belongsTo(Product::class, "product_id");
     }
 
 
@@ -44,7 +38,11 @@ class Vehicle extends Model
     {
         return $this->belongsTo(Garage::class);
     }
-
-    
+     public function actual_transfer(){
+        return $this->belongsTo(Transfer::class,"transfer_id");
+     }
+    public function driver(){
+        return $this->belongsTo(Employe::class,"driver_id");
+    }
 
 }

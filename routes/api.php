@@ -12,6 +12,8 @@ use App\Http\Controllers\UserContruller;
 use App\Http\Controllers\EmployeController;
 use App\Http\Controllers\SuperAdmenController;
 use App\Http\Controllers\Distribution_Center_controller;
+use App\Http\Controllers\DriverController;
+use App\Http\Controllers\QAController;
 use App\Models\DistributionCenter;
 
 
@@ -170,6 +172,23 @@ Route::controller(WarehouseController::class)->group(function () {
 
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
 Route::middleware('auth.api:employee')->group(function () {});
+Route::controller(DriverController::class)->middleware('is_driver')->group(function () {
+
+   Route::get("show_my_curent_transfers","show_my_curent_transfers");
+    Route::get("set_status_my_transfer","set_status_my_transfer");
+});
+//set_status_my_transfer
+Route::controller(QAController::class)->middleware('is_QA')->group(function () {
+
+    Route::get("show_actual_loads","show_actual_loads");
+    Route::get("show_load_details/{load_id}","show_load_details");
+    Route::get("show_container_details/{load_id}","show_container_details");
+});
+/*
+  show_actual_loads
+ show_load_details($load_id)
+  show_container_details($load_id) */
+
 
 
 Route::controller(UserController::class)->group(function () {

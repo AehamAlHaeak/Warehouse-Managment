@@ -9,5 +9,6 @@ class reserved_details extends Pivot
  protected $guarded;
    protected $primaryKey = 'id'; 
     public $incrementing = true; 
-    protected $keyType = 'int';  
+    protected $keyType = 'int';
+    public $table="reserved_detail";  
 }

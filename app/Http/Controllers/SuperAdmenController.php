@@ -120,10 +120,11 @@ class SuperAdmenController extends Controller
         $requiredSpecs = [
             'warehouse_admin',
             'distribution_center_admin',
-            "driver"
+            "driver",
+            "QA"
 
         ];
-echo "i am here";
+        echo "i am here";
         foreach ($requiredSpecs as $spec) {
             Specialization::firstOrCreate(['name' => $spec]);
         }
@@ -132,12 +133,11 @@ echo "i am here";
 
 
         $validated_values["password"] = Hash::make($validated_values['password']);
-try{
-        $admin = Employe::create($validated_values);
-}
-catch(Exception $e){
-    return response()->json(["msg" => "error occurred while creating the admin", "error" => $e->getMessage()], 500);
-}
+        try {
+            $admin = Employe::create($validated_values);
+        } catch (Exception $e) {
+            return response()->json(["msg" => "error occurred while creating the admin", "error" => $e->getMessage()], 500);
+        }
 
         $token = $this->create_token($admin);
 
@@ -332,11 +332,10 @@ catch(Exception $e){
                 'errors' => $e->errors(),
             ], 422);
         }
-       try{
-        $validated_values["type_id"]=Warehouse::find($validated_values["warehouse_id"])->type_id;
-        $center = DistributionCenter::create($validated_values);
-       } 
-       catch (Exception $e) {
+        try {
+            $validated_values["type_id"] = Warehouse::find($validated_values["warehouse_id"])->type_id;
+            $center = DistributionCenter::create($validated_values);
+        } catch (Exception $e) {
             return response()->json(["error" => $e->getMessage()], 400);
         }
         return response()->json(["msg" => " distribution_center added!", "center_data" => $center], 201);
@@ -1964,7 +1963,11 @@ catch(Exception $e){
         if (!$spec) {
             return response()->json(["msg" => "specialization not found"], 404);
         }
-        if ($spec->name == "super_admin" || $spec->name == "warehouse_admin" || $spec->name == "distribution_center_admin" || $spec->name == "driver") {
+        if (
+            $spec->name == "super_admin" || $spec->name == "warehouse_admin"
+            || $spec->name == "distribution_center_admin" ||
+            $spec->name == "QA" || $spec->name == "driver"
+        ) {
             return response()->json(["msg" => "you want to delete basic specialization {$spec->name} delete denied"], 403);
         }
         $employees_of_spec = $spec->employees;
@@ -1995,7 +1998,11 @@ catch(Exception $e){
         if (!$spec) {
             return response()->json(["msg" => "the specialization not found"], 404);
         }
-        if ($spec->name == "super_admin" || $spec->name == "warehouse_admin" || $spec->name == "distribution_center_admin" || $spec->name == "driver") {
+        if (
+            $spec->name == "super_admin" || $spec->name == "warehouse_admin"
+            || $spec->name == "distribution_center_admin" ||
+            $spec->name == "QA" || $spec->name == "driver"
+        ) {
             return response()->json(["msg" => "you want to edit basic specialization {$spec->name} edit denied"], 403);
         }
         $now = Carbon::now();
@@ -2126,19 +2133,18 @@ catch(Exception $e){
             return response()->json(["msg" => "warehouse not found"], 404);
         }
 
-        $import_operation =Import_operation::find($import_operation_id);
+        $import_operation = Import_operation::find($import_operation_id);
         if (!$import_operation) {
             return response()->json(["msg" => "import_operation not found"], 404);
         }
 
         $continers = $import_operation->containers;
 
-try{
-        $truks_continers = $this-> resive_transfers( $import_operation, $warehouse, $continers);
-}
-catch(\Exception $e){
-    return response()->json(["msg" => $e->getMessage()], 404);
-}
+        try {
+            $truks_continers = $this->resive_transfers($import_operation, $warehouse, $continers);
+        } catch (\Exception $e) {
+            return response()->json(["msg" => $e->getMessage()], 404);
+        }
         return response()->json(["trucks" => $truks_continers], 202);
     }
 }
