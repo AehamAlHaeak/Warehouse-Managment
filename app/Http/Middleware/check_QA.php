@@ -23,7 +23,7 @@ class check_QA
 
                 $specialization = $payload->get('specialization');
 
-                if ($specialization == "super_admin" ||  $specialization == "QA") {
+                if ($specialization=="super_admin" ||  $specialization=="warehouse_admin" ||$specialization=="distribution_center_admin" ||  $specialization == "QA") {
 
                     $employe = Auth::guard('employee')->user();
                     if ($employe) {

@@ -36,4 +36,11 @@ class Import_op_container extends Model
          "imp_op_product_id"
       );
    }
+   public function posetion_on_stom(){
+      return $this->hasOne(Positions_on_sto_m::class,"imp_op_contin_id");
+   }
+   public function logs(){
+      return $this->belongsToMany(Transfer_detail::class,"continer_transfers"
+      ,"imp_op_contin_id","transfer_detail_id");
+   }
 }

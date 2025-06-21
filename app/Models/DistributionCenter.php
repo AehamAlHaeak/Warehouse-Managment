@@ -43,4 +43,7 @@ class DistributionCenter extends Model
     {
         return $this->morphMany(Transfer::class, "sourceable");
     }
+    public function warehouse(){
+        return $this->belongsTo(Warehouse::class,"warehouse_id");
+    }
 }

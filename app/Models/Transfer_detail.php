@@ -16,4 +16,7 @@ class Transfer_detail extends Model
     public function continers(){
         return $this->belongsToMany(Import_op_container::class,"continer_transfers","transfer_detail_id","imp_op_contin_id");
     }
+    public function transfer(){
+        return $this->belongsTo(Transfer::class,"transfer_id");
+    }
 }
