@@ -257,26 +257,43 @@ trait AlgorithmsTrait
         unset($section["continer"]);
         unset($section["storage_media"]);
         unset($section["storage_elements"]);
-
+        
         $actual_storage_elements_count = $storage_elements->count();
 
         $max_storage_media_area = $section->num_floors * $section->num_classes * $section->num_positions_on_class;
         $avilable_storage_media_area = $max_storage_media_area - $actual_storage_elements_count;
         $max_capacity_products = $actual_storage_elements_count * $storage_media->num_floors * $storage_media->num_classes * $storage_media->num_positions_on_class * $continer->capacity;
-
+        $selled_load=0;
+        $reserved_load=0;
+        $rejected_load=0;
+        $actual_load_product=0;
         foreach ($storage_elements as $storage_element) {
-
-            $avilable_area += $storage_element->posetions->whereNull("imp_op_contin_id")->count();
+            
+           // $avilable_area += $storage_element->posetions->whereNull("imp_op_contin_id")->count();
+            $posetions=$storage_element->posetions;
+            foreach( $posetions as $posetion){
+              if($posetion->imp_op_contin_id==null){
+                $avilable_area+=$continer->capacity;
+              }
+              else{
+                $container=$posetion->container;
+                
+                $inventory=$this->inventory_on_continer($container);
+                $selled_load+=$inventory["selled_load"];
+                
+                $rejected_load+=$inventory["rejected_load"];
+                $reserved_load+=$inventory["reserved_load"];
+                $actual_load_product+=$inventory["remine_load"];
+              }
+            }
         }
-        $avilable_area = $avilable_area * $continer->capacity;
-
-        $areas = [
-            "avilable_area" => $avilable_area,
-            "max_capacity" => $max_capacity_products,
-            "storage_media_avilable_area" => $avilable_storage_media_area,
-            "storage_media_max_area" => $max_storage_media_area
-        ];
-        return $areas;
+       $section->selled_load=$selled_load;
+       $section->rejected_load=$rejected_load;
+       $section->reserved_load=$reserved_load;
+       $section->actual_load_product=$actual_load_product;
+        $section->avilable_area=$avilable_area;
+       
+        return $section;
     }
 
     public function calculate_ready_vehiscles($object, $product)
@@ -341,8 +358,11 @@ trait AlgorithmsTrait
     {
         $avilable_area = 0;
         $max_capacity = 0;
-        //   "storage_media_avilable_area"=> $avilable_storage_media_area,
-        //        "storage_media_max_area"=>$max_storage_media_area
+        
+        $selled_load=0;
+        $reserved_load=0;
+        $rejected_load=0;
+        $actual_load_product=0;
         $avilable_storage_media_area = 0;
         $max_storage_media_area = 0;
         $sections_of_the_product_in_object = $object->sections()
@@ -362,18 +382,25 @@ trait AlgorithmsTrait
         foreach ($sections_of_the_product_in_object as $section) {
 
 
-            $areas = $this->calculate_areas($section);
-            $avilable_area += $areas["avilable_area"];
-            $max_capacity += $areas["max_capacity"];
-            $avilable_storage_media_area += $areas["storage_media_avilable_area"];
-            $max_storage_media_area += $areas["storage_media_max_area"];
+            $section = $this->calculate_areas($section);
+            $avilable_area += $section->avilable_area;
+            $max_capacity +=  $section->max_capacity;
+            $avilable_storage_media_area +=  $section->storage_media_avilable_area;
+            $max_storage_media_area +=  $section->storage_media_max_area;
+             $selled_load+= $section->selled_load;
+             $reserved_load+= $section->reserved_load;
+             $rejected_load+= $section->rejected_load;
+             $actual_load_product+= $section->actual_load_product;
         }
 
         $object->max_capacity = $max_capacity;
         $object->avilable_area = $avilable_area;
         $object->avilable_storage_media_area = $avilable_storage_media_area;
         $object->max_storage_media_area = $max_storage_media_area;
-
+        $object->selled_load=$selled_load;
+        $object->reserved_load=$reserved_load;
+        $object->rejected_load=$rejected_load;
+        $object->actual_load_product=$actual_load_product;
         return $object;
     }
     public function check_if_authorized_in_place($employe, $place)
@@ -430,5 +457,19 @@ trait AlgorithmsTrait
             }
         }
         return $load;
+    }
+    public function inventory_on_continer($container){
+       $loads=$container->loads;
+       $inventory=["selled_load"=>0,"reserved_load"=>0,"rejected_load"=>0,"remine_load"=>0];
+       foreach($loads as $load){
+          $load_logs=$this->calculate_load_logs($load);
+          
+          $inventory["selled_load"]+=$load_logs["selled_load"];
+          
+          $inventory["reserved_load"]+=$load_logs["reserved_load"];
+          $inventory["rejected_load"]+=$load_logs["rejected_load"];
+          $inventory["remine_load"]+=$load_logs["remine_load"];
+       }
+      return $inventory;
     }
 }

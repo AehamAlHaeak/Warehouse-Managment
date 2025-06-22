@@ -28,5 +28,8 @@ class Import_op_storage_md extends Model
     public function posetion_on_section(){
         return $this->hasOne(Posetions_on_section::class,"storage_media_id");
     }
+    public function section(){
+        return $this->belongsToMany(Section::class,"posetions_on_sections","storage_media_id","section_id");
+    }
     
 }

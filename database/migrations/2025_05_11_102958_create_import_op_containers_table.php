@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreign("container_type_id")->references("id")->on("containers_types");
             $table->unsignedBigInteger("import_operation_id");
             $table->foreign("import_operation_id")->references("id")->on("import_operations");
-            $table->enum("status",['accepted', 'rejected', 'sold'])->default('accepted');
+            $table->enum("status",['accepted', 'rejected', 'sold','auto_reject'])->default('accepted');
             
             //when i make import operation i will enter the container and the products will 
             //be entered recently and linked with their containers

@@ -43,4 +43,7 @@ class Import_op_container extends Model
       return $this->belongsToMany(Transfer_detail::class,"continer_transfers"
       ,"imp_op_contin_id","transfer_detail_id");
    }
+   public function loads(){
+      return $this->hasMany(Imp_continer_product::class,"imp_op_cont_id");
+   }
 }

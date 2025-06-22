@@ -30,14 +30,14 @@ use App\Jobs\StoreVehiclesJob;
 use App\Models\Specialization;
 use App\Jobs\importing_op_prod;
 use App\Models\Containers_type;
+use App\Models\Transfer_detail;
 use App\Traits\AlgorithmsTrait;
 use Illuminate\Validation\Rule;
 use App\Models\Import_operation;
 use App\Models\Supplier_Details;
 use App\Models\Supplier_Product;
-use App\Models\Transfer_detail;
+use App\Traits\TransferTraitAeh;
 use App\Jobs\importing_operation;
-use App\Models\Import_operation_product;
 use App\Jobs\import_storage_media;
 use App\Models\DistributionCenter;
 
@@ -47,18 +47,19 @@ use App\Models\Posetions_on_section;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Queue;
 use App\Http\Resources\ProductResource;
 use function PHPUnit\Framework\isEmpty;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Import_operation_product;
 use Illuminate\Support\Facades\Validator;
+
 use App\Http\Requests\storeProductRequest;
 use Tymon\JWTAuth\Exceptions\JWTException;
-
 use App\Http\Requests\storeEmployeeRequest;
 use App\Models\Distribution_center_Product;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
-use App\Traits\TransferTraitAeh;
 
 class SuperAdmenController extends Controller
 {
@@ -1167,12 +1168,12 @@ class SuperAdmenController extends Controller
         $import_operation = Import_operation::create($import_operation);
         Cache::forget($request->import_operation_key);
         Cache::forget($request->storage_media_key);
-
-        import_storage_media::dispatch($import_operation->id, $storage_media);
-
-        return response()->json(["msg" => "storage_media under creating"], 202);
+         $job=new import_storage_media($import_operation->id, $storage_media);  
+         
+           $jobId = Queue::later(now()->addMinutes(0), $job);
+        return response()->json(["msg" => "storage_media under creating", "job_id" => $jobId], 202);
+    
     }
-
 
 
 

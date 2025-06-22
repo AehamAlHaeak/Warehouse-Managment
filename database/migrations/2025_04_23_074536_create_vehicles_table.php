@@ -27,6 +27,12 @@ return new class extends Migration
             $table->string("img_path")->nullable();
 
             $table->integer("capacity");
+             $table->double("internal_temperature")->default(25);//celicios normal 20-29
+            $table->double("internal_humidity")->default(2);//rate percent %
+            $table->double("internal_light")->default(100);//lux normal is 100 on closed rooms
+            $table->double("internal_pressure")->default(1);//atm default 1 atm
+            $table->double("internal_ventilation")->default(9);//letr/second default is 8-10
+            
             //capacity reffers to the max number of the continers which it can load it
 
 

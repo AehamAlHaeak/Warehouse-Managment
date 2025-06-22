@@ -24,8 +24,7 @@ return new class extends Migration
             //required is external ones to let the storage media works
 
             
-            // $table->integer("columns");
-            // $table->integer("rows");
+          
             $table->double("readyness")->default(1);
             // whatever was the readyness , when it became lower than 0.7 , we'll make a maintenance operation
             //and we'll take the products whatever they are .. on vehicles or storage media or section .. take them 
