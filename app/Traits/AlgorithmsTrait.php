@@ -247,8 +247,8 @@ trait AlgorithmsTrait
 
     public function calculate_areas($section)
     {
-        $avilable_area = 0;
-        $max_capacity = 0;
+        $avilable_area_product = 0;
+       
         $product = $section->product;
         $continer = $product->continer;
         $storage_media = $continer->storage_media;
@@ -261,19 +261,19 @@ trait AlgorithmsTrait
         $actual_storage_elements_count = $storage_elements->count();
 
         $max_storage_media_area = $section->num_floors * $section->num_classes * $section->num_positions_on_class;
-        $avilable_storage_media_area = $max_storage_media_area - $actual_storage_elements_count;
-        $max_capacity_products = $actual_storage_elements_count * $storage_media->num_floors * $storage_media->num_classes * $storage_media->num_positions_on_class * $continer->capacity;
+        $section->avilable_storage_media_area = $max_storage_media_area - $actual_storage_elements_count;
+        $section->max_capacity_products = $actual_storage_elements_count * $storage_media->num_floors * $storage_media->num_classes * $storage_media->num_positions_on_class * $continer->capacity;
         $selled_load=0;
         $reserved_load=0;
         $rejected_load=0;
         $actual_load_product=0;
         foreach ($storage_elements as $storage_element) {
             
-           // $avilable_area += $storage_element->posetions->whereNull("imp_op_contin_id")->count();
+           
             $posetions=$storage_element->posetions;
             foreach( $posetions as $posetion){
               if($posetion->imp_op_contin_id==null){
-                $avilable_area+=$continer->capacity;
+                $avilable_area_product+=$continer->capacity;
               }
               else{
                 $container=$posetion->container;
@@ -291,7 +291,7 @@ trait AlgorithmsTrait
        $section->rejected_load=$rejected_load;
        $section->reserved_load=$reserved_load;
        $section->actual_load_product=$actual_load_product;
-        $section->avilable_area=$avilable_area;
+        $section->avilable_area=$avilable_area_product;
        
         return $section;
     }
@@ -356,8 +356,8 @@ trait AlgorithmsTrait
 
     public function calcute_areas_on_place_for_a_specific_product($object, $product_id)
     {
-        $avilable_area = 0;
-        $max_capacity = 0;
+        $avilable_area_product = 0;
+        $max_capacity_product = 0;
         
         $selled_load=0;
         $reserved_load=0;
@@ -383,24 +383,25 @@ trait AlgorithmsTrait
 
 
             $section = $this->calculate_areas($section);
-            $avilable_area += $section->avilable_area;
-            $max_capacity +=  $section->max_capacity;
-            $avilable_storage_media_area +=  $section->storage_media_avilable_area;
+            $avilable_area_product += $section->avilable_area_product;
+            $max_capacity_product+= $section->max_capacity_products;
+            $avilable_storage_media_area +=  $section->avilable_storage_media_area;
             $max_storage_media_area +=  $section->storage_media_max_area;
-             $selled_load+= $section->selled_load;
-             $reserved_load+= $section->reserved_load;
-             $rejected_load+= $section->rejected_load;
-             $actual_load_product+= $section->actual_load_product;
+            $selled_load+= $section->selled_load;
+            $reserved_load+= $section->reserved_load;
+            $rejected_load+= $section->rejected_load;
+            $actual_load_product+= $section->actual_load_product;
         }
 
-        $object->max_capacity = $max_capacity;
-        $object->avilable_area = $avilable_area;
+        $object->max_capacity_product = $max_capacity_product;
+        $object->avilable_area_product = $avilable_area_product;
         $object->avilable_storage_media_area = $avilable_storage_media_area;
         $object->max_storage_media_area = $max_storage_media_area;
         $object->selled_load=$selled_load;
         $object->reserved_load=$reserved_load;
         $object->rejected_load=$rejected_load;
         $object->actual_load_product=$actual_load_product;
+       
         return $object;
     }
     public function check_if_authorized_in_place($employe, $place)

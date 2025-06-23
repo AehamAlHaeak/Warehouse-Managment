@@ -27,7 +27,7 @@ trait TransferTraitAeh
     use AlgorithmsTrait;
     public function load_vehicles($load_object_id, $without_load_id, $transfer_details, $status_load, $status_wo_load)
     {
-      
+
         foreach ($transfer_details as $block) {
 
             $transfer_detail_l = Transfer_detail::create([
@@ -36,28 +36,26 @@ trait TransferTraitAeh
                 "status" => $status_load
 
             ]);
-           Transfer_detail::create([
+            Transfer_detail::create([
                 "vehicle_id" => $block["vehicle_id"],
                 "transfer_id" => $without_load_id,
                 "status" => $status_wo_load
             ]);
-            $vehicle=Vehicle::find($block["vehicle_id"]);
-            if($status_wo_load=="under_work"){
-            $vehicle->update([
-                "transfer_id" => $without_load_id,
-            ]);
-            }
-            else{
+            $vehicle = Vehicle::find($block["vehicle_id"]);
+            if ($status_wo_load == "under_work") {
+                $vehicle->update([
+                    "transfer_id" => $without_load_id,
+                ]);
+            } else {
                 $vehicle->update([
                     "transfer_id" => $load_object_id,
                 ]);
             }
             foreach ($block["container_ids"] as $continer_id) {
                 Continer_transfer::create([
-                    "transfer_detail_id" =>  $load_object_id,
+                    "transfer_detail_id" =>  $transfer_detail_l->id,
                     "imp_op_contin_id" => $continer_id
                 ]);
-
             }
         }
         return "loading succesfully!";
@@ -66,42 +64,45 @@ trait TransferTraitAeh
 
     public function unload($transfer_detail, $destination)
     {
-       
-            $continers = $transfer_detail->continers;
-            $product =  $continers[0]->parent_continer->product;
-            $continers = $continers->pluck('id');
-            $destination = $this->calcute_areas_on_place_for_a_specific_product($destination, $product->id);
-             $destination=$this->calculate_ready_vehiscles($destination,$product);
-            $avilable_sections = $destination->sections()->where("product_id", $product->id)->get();
-            while ($continers->isNotEmpty() && $destination->avilable_area > 0) {
 
-                foreach ($avilable_sections as $section) {
+        $continers = $transfer_detail->continers()
+            ->whereDoesntHave('posetion_on_stom')
+            ->whereNotIn('status', ['rejected', 'auto_reject'])
+            ->get();
+        $product =  $continers[0]->parent_continer->product;
+        $continers = $continers->pluck('id');
+        $destination = $this->calcute_areas_on_place_for_a_specific_product($destination, $product->id);
+        $destination = $this->calculate_ready_vehiscles($destination, $product);
+        $avilable_sections = $destination->sections()->where("product_id", $product->id)->get();
+        while ($continers->isNotEmpty() && $destination->avilable_area > 0) {
 
-                    $storage_elaments = $section->storage_elements;
-                    foreach ($storage_elaments as $storage_element) {
+            foreach ($avilable_sections as $section) {
 
-                        try {
-                            $avilablie_posetions = $storage_element->posetions()->whereNull("imp_op_contin_id")->get();
-                        } catch (\Exception $e) {
-                            return $e->getMessage();
-                        }
-                        foreach ($avilablie_posetions as $position) {
+                $storage_elaments = $section->storage_elements;
+                foreach ($storage_elaments as $storage_element) {
 
-                            $continer_id = $continers->splice(0, 1)->first();
-                            $position->imp_op_contin_id = $continer_id;
-                            $position->save();
-                            $destination->avilable_area -= 1;
-                        }
+                    try {
+                        $avilablie_posetions = $storage_element->posetions()->whereNull("imp_op_contin_id")->get();
+                    } catch (\Exception $e) {
+                        return $e->getMessage();
+                    }
+                    foreach ($avilablie_posetions as $position) {
+
+                        $continer_id = $continers->splice(0, 1)->first();
+                        $position->imp_op_contin_id = $continer_id;
+                        $position->save();
+                        $destination->avilable_area -= 1;
                     }
                 }
             }
-        
+        }
+
         return  $destination;
     }
 
     public function resive_transfers($source, $destination, $continers = null)
-    {    
-     
+    {
+
         if ($continers->isEmpty()) {
             return "No containers to transfer";
         }
@@ -122,10 +123,10 @@ trait TransferTraitAeh
 
             $big_garages = $source->garages->where("size_of_vehicle", "big")->pluck("id");
         }
-        $avilable_vehicles_big = Vehicle::whereIn("garage_id", $big_garages)->whereNull("transfer_id")->where("product_id", $continer_product->id)->where("driver_id","!=",null)->orderBy('capacity', 'desc')->get();
+        $avilable_vehicles_big = Vehicle::whereIn("garage_id", $big_garages)->whereNull("transfer_id")->where("product_id", $continer_product->id)->where("driver_id", "!=", null)->orderBy('capacity', 'desc')->get();
 
 
-        $avilable_vehicles_medium = Vehicle::whereIn("garage_id", $medium_garages)->whereNull("transfer_id")->where("product_id", $continer_product->id)->where("driver_id","!=",null)->orderBy('capacity', 'desc')->get();
+        $avilable_vehicles_medium = Vehicle::whereIn("garage_id", $medium_garages)->whereNull("transfer_id")->where("product_id", $continer_product->id)->where("driver_id", "!=", null)->orderBy('capacity', 'desc')->get();
 
 
 
@@ -205,6 +206,4 @@ trait TransferTraitAeh
 
         return "the vehicles is not enough for the load";
     }
-
-    
 }

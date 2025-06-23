@@ -170,11 +170,7 @@ Route::controller(WarehouseController::class)->middleware('is_warehouse_admin')-
 
 Route::controller(Distribution_Center_controller::class)->middleware("is_dist_c_admin")->group(function () {
 
-  Route::get("show_employees_on_place/{place_type}/{place_id}");
-  
-  
-
-
+    Route::get("show_employees_on_place/{place_type}/{place_id}");
 });
 
 Route::controller(Distribution_Center_controller::class)->middleware('is_QA')->group(function () {
@@ -182,10 +178,11 @@ Route::controller(Distribution_Center_controller::class)->middleware('is_QA')->g
     Route::get("show_load_details/{load_id}", "show_load_details");
     Route::get("show_container_details/{load_id}", "show_container_details");
     Route::post("reject_content_from_continer", "reject_content_from_continer");
-     Route::get("accept_continer/{container_id}", "accept_continer");
-     Route::get("show_sections_on_place/{place_type}/{place_id}","show_sections_on_place");
+    Route::get("accept_continer/{container_id}", "accept_continer");
+    Route::get("show_sections_on_place/{place_type}/{place_id}", "show_sections_on_place");
+    Route::post("move_containers", "move_containers");
 });
-// accept_continer( Request $request, $container_id)
+// move_containers
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
 Route::middleware('auth.api:employee')->group(function () {});
 Route::controller(DriverController::class)->middleware('is_driver')->group(function () {

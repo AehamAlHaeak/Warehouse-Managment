@@ -54,35 +54,35 @@ class Distribution_Center_controller extends Controller
 
 
     public function show_sections_on_place(Request $request, $place_type, $place_id)
-    { try{ 
-        $model = "App\\Models\\" . $place_type;
-        
-        $place = $model::find($place_id);
+    {
+        try {
+            $model = "App\\Models\\" . $place_type;
 
-        if (!$place) {
-            return response()->json(["msg" => "the place which you want is not exist"], 404);
-        }
-        $employe = $request->employe;
-        if ($employe->specialization->name != "super_admin") {
+            $place = $model::find($place_id);
 
-            $authorized_in_place = $this->check_if_authorized_in_place($employe, $place);
-            if (!$authorized_in_place) {
-                return response()->json(["msg" => "Unauthorized - Invalid or missing employe token"], 401);
+            if (!$place) {
+                return response()->json(["msg" => "the place which you want is not exist"], 404);
             }
-        }
+            $employe = $request->employe;
+            if ($employe->specialization->name != "super_admin") {
 
-        $sections = $place->sections()->with("product")->get();
-        foreach($sections as $section){
-          $section=$this->calculate_areas($section);
+                $authorized_in_place = $this->check_if_authorized_in_place($employe, $place);
+                if (!$authorized_in_place) {
+                    return response()->json(["msg" => "Unauthorized - Invalid or missing employe token"], 401);
+                }
+            }
+
+            $sections = $place->sections()->with("product")->get();
+            foreach ($sections as $section) {
+                $section = $this->calculate_areas($section);
+            }
+            if ($sections->isEmpty()) {
+                return response()->json(["msg" => "there are no sections on this place"], 404);
+            }
+            return response()->json(["msg" => "sections on this place", "sections" => $sections], 202);
+        } catch (Exception $e) {
+            return response()->json(["msg" => $e->getMessage()], 404);
         }
-        if ($sections->isEmpty()) {
-            return response()->json(["msg" => "there are no sections on this place"], 404);
-        }
-        return response()->json(["msg" => "sections on this place", "sections" => $sections], 202);
-    
-    }catch(Exception $e){
-        return response()->json(["msg" => $e->getMessage()], 404);
-    }
     }
 
     public function show_storage_elements_on_section(Request $request, $section_id)
@@ -384,32 +384,103 @@ class Distribution_Center_controller extends Controller
             return response()->json(["msg" => $e->getMessage()], 500);
         }
     }
-    public function accept_continer( Request $request, $container_id){
+    public function accept_continer(Request $request, $container_id)
+    {
         $container = Import_op_container::find($container_id);
-            if (!$container) {
-                return response()->json(['msg' => 'Container not found'], 404);
-            }
-            $latest_trans = $container->logs->last();
-            unset($container["logs"]);
-            $transfer = $latest_trans->transfer;
+        if (!$container) {
+            return response()->json(['msg' => 'Container not found'], 404);
+        }
+        $latest_trans = $container->logs->last();
+        unset($container["logs"]);
+        $transfer = $latest_trans->transfer;
 
-            $destination = $transfer->destinationable;
+        $destination = $transfer->destinationable;
+        $employe = $request->employe;
+        $employe = $request->employe;
+        if ($employe->specialization->name != "super_admin") {
+
+            $authorized_in_place = $this->check_if_authorized_in_place($employe, $destination);
+            if (!$authorized_in_place) {
+                return response()->json(["msg" => "Unauthorized - Invalid or missing employe token"], 401);
+            }
+        }
+        if ($container->status == "rejected") {
+
+            return response()->json(["msg" => "this container is rejected and can't be accepted"], 404);
+        }
+        $container->status = "accepted";
+        $container->save();
+        return response()->json(["msg" => "here the details", "container" => $container], 202);
+    }
+    public function move_containers(Request $request)
+    {
+        try {
+            try {
+                $validated_values = $request->validate([
+                    "containers_ids" => "required|array|min:1",
+
+                    "destination_storage_media_id" => "required|integer"
+
+                ]);
+            } catch (ValidationException $e) {
+
+                return response()->json([
+                    'msg' => 'Validation failed',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
+            $storage_element = Import_op_storage_md::find($validated_values["destination_storage_media_id"]);
+            if (!$storage_element) {
+                return response()->json(["msg" => "storage_media not found"], 404);
+            }
             $employe = $request->employe;
-            $employe = $request->employe;
+            $section = $storage_element->section->first();
+            $place = $section->existable;
             if ($employe->specialization->name != "super_admin") {
 
-                $authorized_in_place = $this->check_if_authorized_in_place($employe, $destination);
+                $authorized_in_place = $this->check_if_authorized_in_place($employe, $place);
                 if (!$authorized_in_place) {
                     return response()->json(["msg" => "Unauthorized - Invalid or missing employe token"], 401);
                 }
             }
-         if($container->status=="rejected"){
+            $containers = Import_op_container::whereIn("id", $validated_values["containers_ids"])->get();
+            
+            
+            $avilable_area_on_sto_m = $storage_element->posetions->whereNull("imp_op_contin_id")->count();
+            if ($avilable_area_on_sto_m <= $containers->count()) {
+                return response()->json(["msg" => "there is no avilable area on storage media for all continers", "avilable_area" => $avilable_area_on_sto_m], 400);
+            }
+            foreach ($containers as $container) {
+                if ($container->status != "accepted") {
+                    return response()->json(["msg" => "you cannot move this continer because its status:", "continer" => $container], 400);
+                }
+                $latest_trans = $container->logs->last();
+                unset($container["logs"]);
+                $transfer = $latest_trans->transfer;
 
-            return response()->json(["msg" => "this container is rejected and can't be accepted"], 404);
-         }
-         $container->status="accepted";
-         $container->save();
-         return response()->json(["msg" => "here the details", "container" => $container], 202);
+                $destination = $transfer->destinationable;
+                if ($employe->specialization->name != "super_admin") {
 
+                    $authorized_in_place = $this->check_if_authorized_in_place($employe, $destination);
+                    if (!$authorized_in_place) {
+                        return response()->json(["msg" => "Unauthorized - Invalid or missing employe token"], 401);
+                    }
+                }
+                if ($latest_trans->status != "in_QA" && !$latest_trans->status != "resived") {
+                    return response()->json(["msg" => "you dont have this continer yet!", "continer" => $container], 400);
+                }
+                $parent_continer = $container->parent_continer;
+                $parent_storage_media = $parent_continer->storage_media;
+                if ($storage_element->storage_media_id != $parent_storage_media->id) {
+                    return response()->json(["msg" => "the storage_media not smoth with continer!", "continer" => $container, "storage_media" => $parent_storage_media], 400);
+                }
+
+                $first_empty_posetion_on_sto_m = $storage_element->posetions()->whereNull("imp_op_contin_id")->first();
+                $first_empty_posetion_on_sto_m->update(["imp_op_contin_id" => $container->id]);
+            }
+            return response()->json(["msg" => "containers moved succesfolly!"], 202);
+        } catch (Exception $e) {
+           return response()->json(["msg" => $e->getMessage()], 500);
     }
+}
 }
