@@ -23,9 +23,10 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
 
     //create type of prods or specializations of employes
 
+
     Route::post("create_new_specification", "create_new_specification");
 
-    //types configrations and featurs 
+    //types configrations and featurs
 
     Route::get("show_all_types", "show_all_types");
 
@@ -37,7 +38,7 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
 
     Route::get("delete_type/{type_id}", "delete_type");
     //end
-    //Specializations configration 
+    //Specializations configration
     Route::get("show_all_specializations", "show_all_specializations");
 
     Route::get("delete_Specialization/{spec_id}", "delete_Specialization");
@@ -45,6 +46,8 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
     Route::post("edit_Specialization", "edit_Specialization");
 
     Route::get("show_employees_of_spec/{spec_id}", "show_employees_of_spec");
+
+
 
     //end
     //show_all_specializations
@@ -59,6 +62,7 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
     Route::post("edit_product", "edit_product");
 
     Route::get("delete_product/{product_id}", "delete_product");
+
 
     Route::post("edit_storage_media", "edit_storage_media");
 
@@ -83,7 +87,7 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
     Route::post("edit_garage", "edit_garage");
 
     Route::get("delete_garage/{garage_id}", "delete_garage");
-    //employees configrations 
+    //employees configrations
     Route::get("show_all_employees", "show_all_employees");
 
     Route::post("create_new_employe", "create_new_employe");
@@ -92,7 +96,7 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
 
     Route::get("cancel_employe/{emp_id}", "cancel_employe");
 
-    //end 
+    //end
     Route::post("create_new_section", "create_new_section");
 
     Route::post("edit_section", "edit_section");
@@ -114,9 +118,9 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
 
     Route::get("delete_supplies_from_supplier/{supplies_id}", "delete_supplies_from_supplier");
 
-    //end 
+    //end
     //show_sections_of_storage_media_on_warehouse($storage_media_id,$warehouse_id)
-    //import operation storage media operations 
+    //import operation storage media operations
     //this api is public can use it in difirent cases here and on show in supplier details
     Route::get("show_storage_media_of_supplier/{id}", "show_storage_media_of_supplier");
 
@@ -137,11 +141,11 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
 
     Route::post("accept_import_op_vehicles", "accept_import_op_vehicles");
 
-    Route::get("show_latest_import_op_vehicles", "show_latest_import_op_vehicles");
+     Route::get("show_latest_import_op_vehicles", "show_latest_import_op_vehicles");
 
 
 
-    //import operation product operations 
+    //import operation product operations
     //this api is public can use it in difirent cases here and on show in supplier details
     Route::post("create_new_import_operation_product", "create_new_import_operation_product");
 
@@ -234,6 +238,6 @@ Route::prefix('warehouses')->group(function () {
     Route::get('{id}/storage-media', [WarehouseController::class, 'show_Storage_Md']);
 });
 
-//mean that the products recievd successfully 
+//mean that the products recievd successfully
 Route::get('confirmReception', [Movecontroller::class, 'confirmReception']);
 Route::post('statusTheProduct', [Movecontroller::class, 'statusTheProduct'])->middleware('auth.api:employee');

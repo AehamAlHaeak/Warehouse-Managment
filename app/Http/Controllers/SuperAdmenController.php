@@ -125,7 +125,7 @@ class SuperAdmenController extends Controller
             "QA"
 
         ];
-        echo "i am here";
+echo "i am here";
         foreach ($requiredSpecs as $spec) {
             Specialization::firstOrCreate(['name' => $spec]);
         }
@@ -333,10 +333,11 @@ class SuperAdmenController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         }
-        try {
-            $validated_values["type_id"] = Warehouse::find($validated_values["warehouse_id"])->type_id;
-            $center = DistributionCenter::create($validated_values);
-        } catch (Exception $e) {
+       try{
+        $validated_values["type_id"]=Warehouse::find($validated_values["warehouse_id"])->type_id;
+        $center = DistributionCenter::create($validated_values);
+       }
+       catch (Exception $e) {
             return response()->json(["error" => $e->getMessage()], 400);
         }
         return response()->json(["msg" => " distribution_center added!", "center_data" => $center], 201);
@@ -1168,11 +1169,11 @@ class SuperAdmenController extends Controller
         $import_operation = Import_operation::create($import_operation);
         Cache::forget($request->import_operation_key);
         Cache::forget($request->storage_media_key);
-         $job=new import_storage_media($import_operation->id, $storage_media);  
-         
+         $job=new import_storage_media($import_operation->id, $storage_media);
+
            $jobId = Queue::later(now()->addMinutes(0), $job);
         return response()->json(["msg" => "storage_media under creating", "job_id" => $jobId], 202);
-    
+
     }
 
 
