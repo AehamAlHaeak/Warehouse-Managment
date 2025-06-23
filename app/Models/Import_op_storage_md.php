@@ -31,5 +31,8 @@ class Import_op_storage_md extends Model
     public function section(){
         return $this->belongsToMany(Section::class,"posetions_on_sections","storage_media_id","section_id");
     }
+    public function continers(){
+        return $this->belongsToMany(Import_op_container::class,"positions_on_sto_m","imp_op_stor_id","imp_op_contin_id");
+    }
     
 }
