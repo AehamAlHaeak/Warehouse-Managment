@@ -157,7 +157,50 @@ class SuperAdmenController extends Controller
 
         return response()->json(["msg" => "succesfuly adding"], 201);
     }
+    public function create_new_type(Request $request){
+        try {
+            $validated_values = $request->validate([
+                "name" => "required"
+            ]);
+        }
+        catch (ValidationException $e) {
+           return response()->json([
+                'msg' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+        $type=type::where("name",$validated_values["name"])->first();
+        if($type){
+         return response()->json(["msg"=>"type already exist"],409);
+        }
+      
+            $type=type::create($validated_values);
+            return response()->json(["msg"=>"type added","type_data"=>$type],201);
+      
+    }
+    
 
+    public function create_new_specialization(Request $request){
+        try {
+            $validated_values = $request->validate([
+                "name" => "required"
+            ]);
+        }
+        catch (ValidationException $e) {
+           return response()->json([
+                'msg' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+        $spec=specialization::where("name",$validated_values["name"])->first();
+        if($spec){
+         return response()->json(["msg"=>"specialization already exist"],409);
+        }
+      
+             $spec=specialization::create($validated_values);
+            return response()->json(["msg"=>"specialization added","specialization_data"=>$spec],201);
+      
+    }
 
     public function create_new_warehouse(Request $request)
     {
