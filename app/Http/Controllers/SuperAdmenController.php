@@ -772,7 +772,6 @@ class SuperAdmenController extends Controller
 
 
 
-
     public function show_products()
     {
         $products = Product::all();
@@ -786,13 +785,26 @@ class SuperAdmenController extends Controller
             $max_load_in_distribution_centers = 0;
             $average_in_warehouses = 0;
             $deviation_in_warehouses = 0;
+            $salled_load=0;
+            $rejected_load=0;
+            $reserved_load=0;
             $sections = $product->sections;
+           /*
+ $section->selled_load=$selled_load;
+       $section->rejected_load=$rejected_load;
+       $section->reserved_load=$reserved_load;
+       $section->actual_load_product=$actual_load_product;
+        $section->avilable_area=$avilable_area_product; 
+        $section->avilable_storage_media_area = $max_storage_media_area - $actual_storage_elements_count;
+        $section->max_capacity_products = $actual_storage_elements_count * $storage_media->num_floors * $storage_media->num_classes * $storage_media->num_positions_on_class * $continer->capacity;
+        */
+
             foreach ($sections as $section) {
                 $areas_on_section = $this->calculate_areas($section);
                 if ($section->existable_type == "App\\Models\\Warehouse") {
-                    $actual_load_in_warehouses += $areas_on_section["max_capacity"] - $areas_on_section["avilable_area"];
-                    $max_load_in_warehouses += $areas_on_section["max_capacity"];
-                    $avilable_load_in_warehouses += $areas_on_section["avilable_area"];
+                    $actual_load_in_warehouses +=  $section->actual_load_product;
+                    $max_load_in_warehouses +=  $section->max_capacity_products;
+                    $avilable_load_in_warehouses += $section->avilable_area;
                     $date = Carbon::parse($section->created_at);
 
                     $now = Carbon::now();
@@ -805,10 +817,14 @@ class SuperAdmenController extends Controller
                     $average_in_warehouses += ($product->import_cycle / 7) * $section->average;
                 }
                 if ($section->existable_type == "App\\Models\\DistributionCenter") {
-                    $actual_load_in_distribution_centers += $areas_on_section["max_capacity"] - $areas_on_section["avilable_area"];
-                    $max_load_in_distribution_centers += $areas_on_section["max_capacity"];
-                    $max_load_in_distribution_centers += $areas_on_section["avilable_area"];
+                    $actual_load_in_distribution_centers +=  $section->actual_load_product;
+                    $max_load_in_distribution_centers += $section->max_capacity_products;
+                    $max_load_in_distribution_centers += $section->avilable_area;
                 }
+                $salled_load+=$section->selled_load;
+                $rejected_load+=$section->rejected_load;
+                $reserved_load+=$section->reserved_load;
+
             }
             $product->avilable_load_on_warehouses = $avilable_load_in_warehouses;
             $product->avilable_load_on_distribution_centers = $max_load_in_distribution_centers;
@@ -820,6 +836,9 @@ class SuperAdmenController extends Controller
             $product->deviation = $deviation_in_warehouses;
             $product->max_load_on_company = $max_load_in_warehouses + $max_load_in_distribution_centers;
             $product->load_on_company == $actual_load_in_warehouses + $actual_load_in_distribution_centers;
+            $product->salled_load=$salled_load;
+            $product->rejected_load=$rejected_load;
+            $product->reserved_load=$reserved_load;
             unset($product["sections"]);
         }
         return response()->json(["msg" => "sucessfull", "products" => $products], 202);
