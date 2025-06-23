@@ -68,7 +68,8 @@ class Kernel extends HttpKernel
         "is_warehouse_admin"=>\App\Http\Middleware\check_warehouse_admin::class,
         "is_dist_c_admin"=>\App\Http\Middleware\check_dist_c_admin::class,
         "is_driver"=>\App\Http\Middleware\check_driver::class,
-        "is_QA"=>\App\Http\Middleware\check_QA::class
+        "is_QA"=>\App\Http\Middleware\check_QA::class,
+        "is_employe"=>\App\Http\Middleware\check_employe::class,
 
     ];
 }

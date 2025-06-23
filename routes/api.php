@@ -184,7 +184,11 @@ Route::controller(Distribution_Center_controller::class)->middleware('is_QA')->g
 });
 // move_containers
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
-Route::middleware('auth.api:employee')->group(function () {});
+
+Route::controller(EmployeController::class)->middleware('is_employe')->group(function () {
+
+    Route::get("logout_employe",  'logout_employe');
+});
 Route::controller(DriverController::class)->middleware('is_driver')->group(function () {
 
     Route::get("show_my_curent_transfers", "show_my_curent_transfers");
