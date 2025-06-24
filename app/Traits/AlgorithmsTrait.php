@@ -2,14 +2,13 @@
 
 namespace App\Traits;
 
-use App\Models\Positions_on_sto_m;
 use App\Models\Bill;
 use App\Models\type;
 use App\Models\User;
-use App\Models\Storage_media;
 use App\Models\Garage;
 use App\Models\Employe;
 use App\Models\Product;
+use App\Models\Section;
 use App\Models\Vehicle;
 use App\Models\Favorite;
 use App\Models\Supplier;
@@ -17,17 +16,19 @@ use App\Models\Transfer;
 use App\Models\Warehouse;
 use App\Models\Bill_Detail;
 use Illuminate\Http\Request;
+use App\Models\Storage_media;
 use App\Models\Specialization;
+use Illuminate\Support\Carbon;
+use App\Models\reserved_details;
 use App\Models\Supplier_Product;
 use App\Models\Transfer_Vehicle;
-use App\Models\Section;
 use App\Models\DistributionCenter;
+use App\Models\Positions_on_sto_m;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Models\Posetions_on_section;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Distribution_center_Product;
-use App\Models\Posetions_on_section;
-use App\Models\reserved_details;
 
 trait AlgorithmsTrait
 {
@@ -291,7 +292,7 @@ trait AlgorithmsTrait
        $section->rejected_load=$rejected_load;
        $section->reserved_load=$reserved_load;
        $section->actual_load_product=$actual_load_product;
-        $section->avilable_area=$avilable_area_product;
+       $section->avilable_area=$avilable_area_product;
        
         return $section;
     }
@@ -472,5 +473,53 @@ trait AlgorithmsTrait
           $inventory["remine_load"]+=$load_logs["remine_load"];
        }
       return $inventory;
+    }
+    public function inventry_product_in_place($product,$place){
+        
+            $actual_load = 0;
+            $max_load = 0;
+            $avilable_load = 0;
+            $average = 0;
+            $deviation = 0;
+            $salled_load=0;
+            $rejected_load=0;
+            $reserved_load=0;
+            $sections = $place->sections()->where("product_id", $product->id)->get();
+          
+
+            foreach ($sections as $section) {
+               $section=$this->calculate_areas($section);
+               
+                    $actual_load +=  $section->actual_load_product;
+                    $max_load +=  $section->max_capacity_products;
+                    $avilable_load += $section->avilable_area;
+                    $date = Carbon::parse($section->created_at);
+
+                    $now = Carbon::now();
+                    $weeksPassed = $date->diffInWeeks($now);
+                    if ($weeksPassed != 0) {
+
+                        $deviation += sqrt($product->import_cycle / 7) * sqrt($section->variance / $weeksPassed);
+                    }
+
+                    $average += ($product->import_cycle / 7) * $section->average;
+                
+               
+                $salled_load+=$section->selled_load;
+                $rejected_load+=$section->rejected_load;
+                $reserved_load+=$section->reserved_load;
+
+            }
+           
+            $product->actual_load = $actual_load;
+            $product->max_load = $max_load;
+            $product->avilable_load = $avilable_load;
+            $product->average = $average;
+            $product->deviation = $deviation;
+            $product->salled_load=$salled_load;
+            $product->rejected_load=$rejected_load;
+            $product->reserved_load=$reserved_load;
+            unset($product["sections"]);
+            return $product;
     }
 }

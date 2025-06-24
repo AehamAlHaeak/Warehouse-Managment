@@ -570,4 +570,38 @@ class Distribution_Center_controller extends Controller
        return response()->json(["msg"=>$e->getMessage()],500);
        }
     }
+    public function show_products_of_place(Request $request, $place_type, $place_id){
+        try{
+      $model = "App\\Models\\" . $place_type;
+      $place = $model::find($place_id);
+       if (!$place) {
+           return response()->json(["msg" => "the place which you want is not exist"], 404);
+       }
+
+      $employe=$request->employe;
+      if ($employe->specialization->name != "super_admin") {
+          
+          $authorized_in_place = $this->check_if_authorized_in_place($employe, $place);
+          if (!$authorized_in_place) {
+              return response()->json(["msg" => "Unauthorized - Invalid or missing employe token"], 401);
+          }
+      }
+      $products=[];
+      $sections=$place->sections;
+      foreach($sections as $section){
+        $product=$section->product;
+        $products[$product->id]=$product;
+      }
+      if (empty($products)) {
+          return response()->json(["msg" => "there are no products on this place"], 404);
+      }
+     foreach($products as $product){
+      $product=$this->inventry_product_in_place($product,$place);
+     }
+     return response()->json(["msg" => "products on this place", "products" => $products], 202);
+    }
+    catch(Exception $e){
+        return response()->json(["msg"=>$e->getMessage()],500);
+    }
+}
 }

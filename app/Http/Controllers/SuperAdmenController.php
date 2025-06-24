@@ -792,7 +792,7 @@ class SuperAdmenController extends Controller
           
 
             foreach ($sections as $section) {
-              
+              $section=$this->calculate_areas($section);
                 if ($section->existable_type == "App\\Models\\Warehouse") {
                     $actual_load_in_warehouses +=  $section->actual_load_product;
                     $max_load_in_warehouses +=  $section->max_capacity_products;
@@ -827,7 +827,7 @@ class SuperAdmenController extends Controller
             $product->average = $average_in_warehouses;
             $product->deviation = $deviation_in_warehouses;
             $product->max_load_on_company = $max_load_in_warehouses + $max_load_in_distribution_centers;
-            $product->load_on_company == $actual_load_in_warehouses + $actual_load_in_distribution_centers;
+            $product->load_on_company = $actual_load_in_warehouses + $actual_load_in_distribution_centers;
             $product->salled_load=$salled_load;
             $product->rejected_load=$rejected_load;
             $product->reserved_load=$reserved_load;

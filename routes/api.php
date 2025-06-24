@@ -176,8 +176,10 @@ Route::controller(Distribution_Center_controller::class)->middleware("is_dist_c_
     Route::get("show_garages_on_place/{place_type}/{place_id}", "show_garages_on_place");
 
     Route::get("show_vehicles_of_garage/{garage_id}", "show_vehicles_of_garage");
+
+    Route::get("show_products_of_place/{place_type}/{place_id}", "show_products_of_place");
 });
-//show_vehicles_of_garage
+//show_products_of_place
 
 Route::controller(Distribution_Center_controller::class)->middleware('is_QA')->group(function () {
     Route::get("show_actual_loads", "show_actual_loads");
@@ -241,5 +243,3 @@ Route::prefix('warehouses')->group(function () {
 });
 
 //mean that the products recievd successfully 
-Route::get('confirmReception', [Movecontroller::class, 'confirmReception']);
-Route::post('statusTheProduct', [Movecontroller::class, 'statusTheProduct'])->middleware('auth.api:employee');
