@@ -64,6 +64,10 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
     Route::post("edit_storage_media", "edit_storage_media");
 
     Route::post("edit_continer", "edit_continer");
+
+    Route::get("show_storage_media_of_product/{product_id}", "show_storage_media_of_product");
+
+    Route::get("show_container_of_product/{product_id}", "show_container_of_product");
     //end
 
     //constract the structur  delete_warehouse

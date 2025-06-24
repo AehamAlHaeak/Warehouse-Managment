@@ -2208,4 +2208,35 @@ class SuperAdmenController extends Controller
         }
         return response()->json(["trucks" => $truks_continers], 202);
     }
+    public function show_storage_media_of_product($product_id){
+        try{
+     $product = Product::find($product_id);
+     if(!$product){
+        return response()->json(["msg" => "product not found"], 404);
+     }
+     $storage_media = $product->storage_media;
+     if(!$storage_media){
+        return response()->json(["msg" => "storage_media not found"], 404);
+     }else{
+        return response()->json(["storage_media" => $storage_media], 202);
+
+     }
+    }
+    catch(\Exception $e){
+        return response()->json(["msg" => $e->getMessage()], 404);
+    }
+}
+    public function show_container_of_product($product_id){
+        $product = Product::find($product_id);
+        if(!$product){
+           return response()->json(["msg" => "product not found"], 404);
+        }
+        $container = $product->container;
+        if(!$container){
+           return response()->json(["msg" => "container not found"], 404);
+        }else{
+           return response()->json(["container" => $container], 202);
+ 
+        }
+    }
 }
