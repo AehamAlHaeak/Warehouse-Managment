@@ -41,7 +41,7 @@ class EmployeController extends Controller
            return response()->json(["msg" => "wrong password"], 400);
        }
         if(!empty($validated_values["email"]) && !empty($validated_values["phone_number"])){
-          if($validated_values["email"]!=$employee->email && $validated_values["phone_number"]!=$employee->phone_number){
+          if($validated_values["email"]!=$employee->email || $validated_values["phone_number"]!=$employee->phone_number){
             return response()->json(["msg" => "you enter wrong email or phone number you can sign in with email or phone number or if all right!"], 400);
 
           }

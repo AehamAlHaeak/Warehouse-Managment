@@ -789,18 +789,10 @@ class SuperAdmenController extends Controller
             $rejected_load=0;
             $reserved_load=0;
             $sections = $product->sections;
-           /*
- $section->selled_load=$selled_load;
-       $section->rejected_load=$rejected_load;
-       $section->reserved_load=$reserved_load;
-       $section->actual_load_product=$actual_load_product;
-        $section->avilable_area=$avilable_area_product; 
-        $section->avilable_storage_media_area = $max_storage_media_area - $actual_storage_elements_count;
-        $section->max_capacity_products = $actual_storage_elements_count * $storage_media->num_floors * $storage_media->num_classes * $storage_media->num_positions_on_class * $continer->capacity;
-        */
+          
 
             foreach ($sections as $section) {
-                $areas_on_section = $this->calculate_areas($section);
+              
                 if ($section->existable_type == "App\\Models\\Warehouse") {
                     $actual_load_in_warehouses +=  $section->actual_load_product;
                     $max_load_in_warehouses +=  $section->max_capacity_products;
