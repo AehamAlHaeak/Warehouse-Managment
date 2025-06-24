@@ -19,13 +19,14 @@ use App\Models\DistributionCenter;
 
 Route::post("start_application", [SuperAdmenController::class, "start_application"]);
 
-Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->group(function () {
+
+ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->group(function () {
 
     //create type of prods or specializations of employes
 
-   // Route::post("create_new_specification", "create_new_specification");
-     Route::post("create_new_type", "create_new_type");
-     Route::post("create_new_specialization", "create_new_specialization");
+    // Route::post("create_new_specification", "create_new_specification");
+    Route::post("create_new_type", "create_new_type");
+    Route::post("create_new_specialization", "create_new_specialization");
     //types configrations and featurs 
     Route::get("show_all_types", "show_all_types");
 
@@ -209,7 +210,7 @@ Route::controller(DriverController::class)->middleware('is_driver')->group(funct
 Route::controller(UserController::class)->group(function () {
     Route::post('register_user', 'register_user');
     Route::post('login_user', 'login_user');
-   
+
 
     Route::middleware('auth.api')->group(function () {
         Route::post('logout_user', 'logout_user');
@@ -218,7 +219,7 @@ Route::controller(UserController::class)->group(function () {
 
         Route::post('updateUser', 'updateUser');
 
-         Route::post('near_by_centers', 'near_by_centers');
+        Route::post('near_by_centers', 'near_by_centers');
     });
 });
 
