@@ -1965,7 +1965,7 @@ class SuperAdmenController extends Controller
         $products_of_type = $type->products;
 
         
-        if (!$warehouse_of_type->isEmpty() || !$products_of_type->isEmpty() || !$vehicles_of_type->isEmpty()) {
+        if (!$warehouse_of_type->isEmpty() || !$products_of_type->isEmpty() ) {
             return response()->json([
                 "msg" => "the type hase a data",
                 "warehouses" => $warehouse_of_type,
