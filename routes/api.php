@@ -184,11 +184,17 @@ Route::controller(Distribution_Center_controller::class)->middleware('is_QA')->g
     Route::post("reject_content_from_continer", "reject_content_from_continer");
     Route::get("accept_continer/{container_id}", "accept_continer");
     Route::get("show_sections_on_place/{place_type}/{place_id}", "show_sections_on_place");
+    Route::get("show_storage_elements_on_section/{section_id}", "show_storage_elements_on_section");
+    Route::get("show_continers_on_storage_element/{storage_element_id}", "show_continers_on_storage_element");
     Route::post("move_containers", "move_containers");
 });
-// move_containers
+// move_containers show_continers_on_storage_element(Request $request, $storage_element_id)
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
-Route::middleware('auth.api:employee')->group(function () {});
+
+Route::controller(EmployeController::class)->middleware('is_employe')->group(function () {
+
+    Route::get("logout_employe",  'logout_employe');
+});
 Route::controller(DriverController::class)->middleware('is_driver')->group(function () {
 
     Route::get("show_my_curent_transfers", "show_my_curent_transfers");
@@ -202,29 +208,23 @@ Route::controller(DriverController::class)->middleware('is_driver')->group(funct
 Route::controller(UserController::class)->group(function () {
     Route::post('register_user', 'register_user');
     Route::post('login_user', 'login_user');
-    Route::post('near_by_centers', 'near_by_centers');
+
+
     Route::middleware('auth.api')->group(function () {
         Route::post('logout_user', 'logout_user');
 
-        Route::post('updateUser', 'updateUser
-        ');
+        Route::post('updateUser', 'updateUser');
 
         Route::post('updateUser', 'updateUser');
+
+         Route::post('near_by_centers', 'near_by_centers');
     });
 });
 
 
-
-
-Route::middleware("is_distrebution_center_manager")->controller(Distribution_Center_controller::class)->group(function () {
-
-    Route::get("show_my_suppurted_products", "show_my_suppurted_products");
-});
-
 //creeate_bil
 
 //mean that the products recievd successfully
-Route::get('confirmReception', [Movecontroller::class, 'confirmReception']);
 
 
 

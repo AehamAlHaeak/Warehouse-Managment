@@ -113,6 +113,41 @@ class Distribution_Center_controller extends Controller
         return response()->json(["msg" => "storage elements on this section", "parent_storage_media" => $parent_storage_media, "storage_elements" => $storage_elements], 202);
     }
 
+    public function show_continers_on_storage_element(Request $request, $storage_element_id){
+        try{
+            
+        $storage_element = Import_op_storage_md::find($storage_element_id);
+        if (!$storage_element) {
+            return response()->json(["msg" => "the storage element which you want is not exist"], 404);
+        }
+        $section = $storage_element->section()->first();
+          if(!$section){
+            return response()->json(["msg" => "the section which you want is not exist"], 404);
+          }
+        $place=$section->existable;
+      
+        $employe = $request->employe;
+       if ($employe->specialization->name != "super_admin") {
+
+            $authorized_in_place = $this->check_if_authorized_in_place($employe, $place);
+            if (!$authorized_in_place) {
+                return response()->json(["msg" => "Unauthorized - Invalid or missing employe token"], 401);
+            }
+        }
+       
+        $continers = $storage_element->continers->makeHidden(['pivot']);
+   
+        if ($continers->isEmpty()) {
+            return response()->json(["msg" => "there are no continers on this storage element"], 404);
+        }
+       
+        return response()->json(["msg" => "continers on this storage element", "continers" => $continers], 202);
+    }
+    catch(Exception $e){
+        
+        return response()->json(["msg" => $e->getMessage()], 404);
+    }
+}
 
 
     public function show_actual_loads(Request $request)
