@@ -174,30 +174,31 @@ trait TransferTraitAeh
         }
         if ($continers->isEmpty()) {
 
-            $parent_transfer = Transfer::create([
-                "sourceable_type" => get_class($destination),
-                "sourceable_id" => $destination->id,
-                "destinationable_type" => get_class($source),
-                "date_of_resiving" => now(),
-                "destinationable_id" => $source->id,
-            ]);
-            $related_transfer = Transfer::create([
+             $parent_transfer = Transfer::create([
                 "sourceable_type" => get_class($source),
                 "sourceable_id" => $source->id,
                 "destinationable_type" => get_class($destination),
                 "destinationable_id" => $destination->id,
 
             ]);
+            $related_transfer = Transfer::create([
+                "sourceable_type" => get_class($destination),
+                "sourceable_id" => $destination->id,
+                "destinationable_type" => get_class($source),
+                "date_of_resiving" => now(),
+                "destinationable_id" => $source->id,
+            ]);
+           
 
             $related_transfer->parent_trans = $parent_transfer->id;
             $related_transfer->save();
             $parent_transfer->related_trans = $related_transfer->id;
             $parent_transfer->save();
 
-            if ($source instanceof \App\Models\Import_operation) {
-                $this->load_vehicles($related_transfer->id, $parent_transfer->id, $transfer_details, "wait", "under_work");
+            if ($source instanceof \App\Models\Import_operation ) {
+                $this->load_vehicles( $related_transfer->id,$parent_transfer->id, $transfer_details, "wait", "under_work");
             } else {
-                $this->load_vehicles($parent_transfer->id, $related_transfer->id, $transfer_details, "under_work", "wait");
+                $this->load_vehicles($parent_transfer->id,$related_transfer->id , $transfer_details, "under_work", "wait");
             }
 
 
