@@ -1971,7 +1971,7 @@ class SuperAdmenController extends Controller
                 "warehouses" => $warehouse_of_type,
                 "products" => $products_of_type,
                 
-            ]);
+            ],400);
         }
         $type->delete($type->id);
         return response()->json(["msg" => "type deleted succesfuly!"], 202);
