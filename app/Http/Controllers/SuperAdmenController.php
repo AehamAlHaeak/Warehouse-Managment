@@ -1954,7 +1954,8 @@ class SuperAdmenController extends Controller
 
 
     public function delete_type($type_id)
-    {
+    { 
+        try{
         $type = type::find($type_id);
         if (!$type) {
             return response()->json(["msg" => "type not found"], 404);
@@ -1963,18 +1964,23 @@ class SuperAdmenController extends Controller
 
         $products_of_type = $type->products;
 
-        $vehicles_of_type = $type->vehicles;
+        
         if (!$warehouse_of_type->isEmpty() || !$products_of_type->isEmpty() || !$vehicles_of_type->isEmpty()) {
             return response()->json([
                 "msg" => "the type hase a data",
                 "warehouses" => $warehouse_of_type,
                 "products" => $products_of_type,
-                "vehicles" => $vehicles_of_type
+                
             ]);
         }
         $type->delete($type->id);
         return response()->json(["msg" => "type deleted succesfuly!"], 202);
     }
+    catch(\Exception $e){
+        
+        return response()->json(["msg" => $e->getMessage()], 404);
+    }
+}
 
 
     public function show_warehouse_of_type($type_id)
