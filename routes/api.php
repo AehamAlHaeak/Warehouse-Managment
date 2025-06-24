@@ -24,8 +24,8 @@ Route::controller(SuperAdmenController::class)->group(function () {
     //create type of prods or specializations of employes
 
    // Route::post("create_new_specification", "create_new_specification");
-    Route::post("create_new_type", "create_new_type");
-    Route::post("create_new_specialization", "create_new_specialization");
+     Route::post("create_new_type", "create_new_type");
+     Route::post("create_new_specialization", "create_new_specialization");
     //types configrations and featurs 
     Route::get("show_all_types", "show_all_types");
 
