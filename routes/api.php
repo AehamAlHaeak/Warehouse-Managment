@@ -19,11 +19,13 @@ use App\Models\DistributionCenter;
 
 Route::post("start_application", [SuperAdmenController::class, "start_application"]);
 
+
+
 Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->group(function () {
 
     //create type of prods or specializations of employes
 
-
+Route::post("create_new_type", "create_new_type");
     Route::post("create_new_specification", "create_new_specification");
 
     //types configrations and featurs
