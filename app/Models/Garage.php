@@ -10,20 +10,14 @@ class Garage extends Model
     use HasFactory;
     protected $guarded;
 
-
-     
-
-
-    //  protected $fillable = ['name', 'available_space', 'vehicle_type', 'warehouse_id'];
-
         public function vehicles()
     {
         return $this->hasMany(Vehicle::class,"garage_id");
     }
 
-        public function warehouse()
+       public function existable()
     {
-        return $this->belongsTo(Warehouse::class);
+        return $this->morphTo();
     }
 
 

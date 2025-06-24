@@ -6,6 +6,7 @@ use App\Http\Controllers\IDUController;
 use App\Http\Controllers\EmployeController;
 use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\SuperAdmenController;
+use App\Http\Controllers\Distribution_Center_controller;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -22,10 +23,10 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
 
     //create type of prods or specializations of employes
 
-    Route::post("create_new_specification", "create_new_specification");
-
+   // Route::post("create_new_specification", "create_new_specification");
+    Route::post("create_new_type", "create_new_type");
+    Route::post("create_new_specialization", "create_new_specialization");
     //types configrations and featurs 
-
     Route::get("show_all_types", "show_all_types");
 
     Route::post("edit_type", "edit_type");
@@ -58,8 +59,6 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
     Route::post("edit_product", "edit_product");
 
     Route::get("delete_product/{product_id}", "delete_product");
-    // end 
-    //create logistic things 
 
     Route::post("edit_storage_media", "edit_storage_media");
 
@@ -76,7 +75,7 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
     Route::post("create_new_distribution_center", "create_new_distribution_center");
 
     Route::post("edit_distribution_center", "edit_distribution_center");
-     
+
     Route::get("delete_distribution_center/{dest_id}", "delete_distribution_center");
 
     Route::post("create_new_garage", "create_new_garage");
@@ -108,13 +107,13 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
     Route::post("create_new_supplier", "create_new_supplier");
 
     Route::post("add_new_supplies_to_supplier", "add_new_supplies_to_supplier");
-     
+
     Route::post("edit_supplier", "edit_supplier");
 
     Route::get("delete_supplier/{supplier_id}", "delete_supplier");
 
     Route::get("delete_supplies_from_supplier/{supplies_id}", "delete_supplies_from_supplier");
-    
+
     //end 
     //show_sections_of_storage_media_on_warehouse($storage_media_id,$warehouse_id)
     //import operation storage media operations 
@@ -133,10 +132,14 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
 
 
     Route::post("accept_import_op_storage_media", "accept_import_op_storage_media");
-    //  end
+    //  end  show_latest_import_op_vehicles
     Route::post("create_import_op_vehicles", "create_import_op_vehicles");
 
     Route::post("accept_import_op_vehicles", "accept_import_op_vehicles");
+
+    Route::get("show_latest_import_op_vehicles", "show_latest_import_op_vehicles");
+
+
 
     //import operation product operations 
     //this api is public can use it in difirent cases here and on show in supplier details
@@ -153,15 +156,25 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
     Route::get("show_latest_import_op_products", "show_latest_import_op_products");
     //end
     Route::post("reject_import_op", "reject_import_op");
-});
-//show_warehouse_of_storage_media($storage_media_id)
 
-Route::controller(WarehouseController::class)->group(function () {
+    Route::get("try_choise_trucks/{warehouse_id}/{import_operation_id}", "try_choise_trucks");
+});
+//try_choise_trucks($warehouse_id,$import_operation_id)
+
+Route::controller(WarehouseController::class)->middleware('is_warehouse_admin')->group(function () {
 
     Route::get("show_distrebution_centers_of_product/{warehouse_id}/{product_id}", "show_distrebution_centers_of_product");
     Route::get("show_distribution_centers_of_storage_media_in_warehouse/{warehouse_id}/{storage_media_id}", "show_distribution_centers_of_storage_media_in_warehouse");
 });
-//show_distribution_centers_of_storage_media_in_warehouse($warehouse_id,$storage_media_id)
 
+
+Route::controller(Distribution_Center_controller::class)->middleware("is_dist_c_admin")->group(function () {
+
+    Route::get("show_employees_on_place/{place_type}/{place_id}");
+
+    Route::get("show_garages_on_place/{place_type}/{place_id}", "show_garages_on_place");
+
+    Route::get("show_vehicles_of_garage/{garage_id}", "show_vehicles_of_garage");
+});
 
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
