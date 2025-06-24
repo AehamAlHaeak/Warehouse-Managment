@@ -173,12 +173,12 @@ echo "i am here";
         if($type){
          return response()->json(["msg"=>"type already exist"],409);
         }
-      
+
             $type=type::create($validated_values);
             return response()->json(["msg"=>"type added","type_data"=>$type],201);
-      
+
     }
-    
+
 
     public function create_new_specialization(Request $request){
         try {
@@ -196,10 +196,10 @@ echo "i am here";
         if($spec){
          return response()->json(["msg"=>"specialization already exist"],409);
         }
-      
+
              $spec=specialization::create($validated_values);
             return response()->json(["msg"=>"specialization added","specialization_data"=>$spec],201);
-      
+
     }
 
     public function create_new_warehouse(Request $request)
@@ -790,10 +790,10 @@ echo "i am here";
             $rejected_load=0;
             $reserved_load=0;
             $sections = $product->sections;
-          
+
 
             foreach ($sections as $section) {
-              
+
                 if ($section->existable_type == "App\\Models\\Warehouse") {
                     $actual_load_in_warehouses +=  $section->actual_load_product;
                     $max_load_in_warehouses +=  $section->max_capacity_products;
@@ -1973,7 +1973,7 @@ echo "i am here";
                 "vehicles" => $vehicles_of_type
             ]);
         }
-        $type->delete($type->id);
+        $type->delete();
         return response()->json(["msg" => "type deleted succesfuly!"], 202);
     }
 
