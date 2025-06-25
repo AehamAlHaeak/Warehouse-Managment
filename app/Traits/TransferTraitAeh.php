@@ -74,7 +74,7 @@ trait TransferTraitAeh
         $destination = $this->calcute_areas_on_place_for_a_specific_product($destination, $product->id);
         $destination = $this->calculate_ready_vehiscles($destination, $product);
         $avilable_sections = $destination->sections()->where("product_id", $product->id)->get();
-        while ($continers->isNotEmpty() && $destination->avilable_area > 0) {
+        while ($continers->isNotEmpty() || $destination->avilable_area > 0) {
 
             foreach ($avilable_sections as $section) {
 
@@ -82,7 +82,7 @@ trait TransferTraitAeh
                 foreach ($storage_elaments as $storage_element) {
 
                     try {
-                        $avilablie_posetions = $storage_element->posetions()->whereNull("imp_op_contin_id")->get();
+                        $avilablie_posetions = $storage_element->posetions()->whereNull("imp_op_contin_id")->orderBy("id", "desc")->get();
                     } catch (\Exception $e) {
                         return $e->getMessage();
                     }
@@ -96,6 +96,9 @@ trait TransferTraitAeh
                 }
             }
         }
+         
+
+
 
         return  $destination;
     }
