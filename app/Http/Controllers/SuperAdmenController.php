@@ -2020,7 +2020,9 @@ echo "i am here";
 
 
     public function delete_Specialization($spec_id)
+    
     {
+        try{
         $spec = Specialization::find($spec_id);
         if (!$spec) {
             return response()->json(["msg" => "specialization not found"], 404);
@@ -2029,17 +2031,21 @@ echo "i am here";
             $spec->name == "super_admin" || $spec->name == "warehouse_admin"
             || $spec->name == "distribution_center_admin" ||
             $spec->name == "QA" || $spec->name == "driver"
-        ) {
+        )
+         {
             return response()->json(["msg" => "you want to delete basic specialization {$spec->name} delete denied"], 403);
         }
         $employees_of_spec = $spec->employees;
         if (!$employees_of_spec->isEmpty()) {
             return response()->json(["msg" => "the specialization has emplyees you cannot delete it", "employes" => $employees_of_spec], 403);
         }
-        $employees_of_spec->delete($employees_of_spec->id);
+       $spec->delete($spec->id);
         return response()->json(["msg" => "deleted succesfuly!"], 202);
     }
-
+    catch(Exception $e){
+          return response()->json(["msg" => $e->getMessage()], 404);
+    }
+    }
     public function edit_Specialization(Request $request)
     {
         try {
