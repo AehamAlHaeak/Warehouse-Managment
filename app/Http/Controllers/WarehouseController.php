@@ -198,8 +198,24 @@ class WarehouseController extends Controller
             if (!$has_dest_this_product) {
                 return response()->json(["msg" => "the destination cannot resieve this product"], 404);
             }
+            
+             $source=$this->calcute_areas_on_place_for_a_specific_product($source, $product->id);
+             if($validated_values["quantity"]>$source->actual_load_product){
+                return response()->json(["msg" => "the source dont have enough of this product"], 404);
+             }
 
-
+             $destination=$this->calcute_areas_on_place_for_a_specific_product($destination, $product->id);
+              
+             if($validated_values["quantity"]>$destination->avilable_area_product){
+                  return response()->json(["msg" => "the destination dont have enough space for this product"], 404);
+             }
+                $sections_in_source = $source->sections()->where("product_id", $product->id)->get();
+                 $contaners=collect();
+                foreach( $sections_in_source as $section ){
+                   foreach($section->storage_elements as $storage_element){
+                     
+                   }
+                }
 
 
 
