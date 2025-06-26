@@ -41,6 +41,7 @@ use App\Jobs\importing_operation;
 use App\Jobs\import_storage_media;
 use App\Models\DistributionCenter;
 
+use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Models\Import_op_storage_md;
 use App\Models\Posetions_on_section;
@@ -52,8 +53,8 @@ use App\Http\Resources\ProductResource;
 use function PHPUnit\Framework\isEmpty;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Import_operation_product;
-use Illuminate\Support\Facades\Validator;
 
+use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\storeProductRequest;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use App\Http\Requests\storeEmployeeRequest;
@@ -125,7 +126,7 @@ class SuperAdmenController extends Controller
             "QA"
 
         ];
-echo "i am here";
+        echo "i am here";
         foreach ($requiredSpecs as $spec) {
             Specialization::firstOrCreate(['name' => $spec]);
         }
@@ -157,37 +158,36 @@ echo "i am here";
 
         return response()->json(["msg" => "succesfuly adding"], 201);
     }
-    public function create_new_type(Request $request){
+    public function create_new_type(Request $request)
+    {
         try {
             $validated_values = $request->validate([
                 "name" => "required"
             ]);
-        }
-        catch (ValidationException $e) {
-           return response()->json([
+        } catch (ValidationException $e) {
+            return response()->json([
                 'msg' => 'Validation failed',
                 'errors' => $e->errors(),
             ], 422);
         }
-        $type=type::where("name",$validated_values["name"])->first();
-        if($type){
-         return response()->json(["msg"=>"type already exist"],409);
+        $type = type::where("name", $validated_values["name"])->first();
+        if ($type) {
+            return response()->json(["msg" => "type already exist"], 409);
         }
 
-            $type=type::create($validated_values);
-            return response()->json(["msg"=>"type added","type_data"=>$type],201);
-
+        $type = type::create($validated_values);
+        return response()->json(["msg" => "type added", "type_data" => $type], 201);
     }
 
 
-    public function create_new_specialization(Request $request){
+    public function create_new_specialization(Request $request)
+    {
         try {
             $validated_values = $request->validate([
                 "name" => "required"
             ]);
-        }
-        catch (ValidationException $e) {
-           return response()->json([
+        } catch (ValidationException $e) {
+            return response()->json([
                 'msg' => 'Validation failed',
                 'errors' => $e->errors(),
             ], 422);
@@ -200,14 +200,13 @@ echo "i am here";
             return response()->json(["msg" => "you want to renter basic specialization {$request->name} edit denied"], 403);
         }
 
-        $spec=specialization::where("name",$validated_values["name"])->first();
-        if($spec){
-         return response()->json(["msg"=>"specialization already exist"],409);
+        $spec = specialization::where("name", $validated_values["name"])->first();
+        if ($spec) {
+            return response()->json(["msg" => "specialization already exist"], 409);
         }
 
-             $spec=specialization::create($validated_values);
-            return response()->json(["msg"=>"specialization added","specialization_data"=>$spec],201);
-
+        $spec = specialization::create($validated_values);
+        return response()->json(["msg" => "specialization added", "specialization_data" => $spec], 201);
     }
 
     public function create_new_warehouse(Request $request)
@@ -384,11 +383,10 @@ echo "i am here";
                 'errors' => $e->errors(),
             ], 422);
         }
-       try{
-        $validated_values["type_id"]=Warehouse::find($validated_values["warehouse_id"])->type_id;
-        $center = DistributionCenter::create($validated_values);
-       }
-       catch (Exception $e) {
+        try {
+            $validated_values["type_id"] = Warehouse::find($validated_values["warehouse_id"])->type_id;
+            $center = DistributionCenter::create($validated_values);
+        } catch (Exception $e) {
             return response()->json(["error" => $e->getMessage()], 400);
         }
         return response()->json(["msg" => " distribution_center added!", "center_data" => $center], 201);
@@ -669,120 +667,120 @@ echo "i am here";
 
     public function suppourt_new_product(Request $request)
     {
-        try{
         try {
-            $validated_values = $request->validate([
-                "name" => "required",
-                "description" => "required",
-                "import_cycle" => "string",
-                "type_id" => "required",
-                "actual_piece_price" => "required|numeric",
-                "unit" => "required",
-                "quantity" => "required",
-                "prod_sup_id" => "numeric",
-                "pr_max_delivery_time_by_days" => "required_with:prod_sup_id|numeric",
-                "lowest_temperature" => "numeric|nullable",
-                "highest_temperature" => "numeric|gte:lowest_temperature|nullable",
-                "lowest_humidity" => "numeric|nullable",
-                "highest_humidity" => "numeric|gte:lowest_humidity|nullable",
-                "lowest_light" => "numeric|nullable",
-                "highest_light" => "numeric|gte:lowest_light|nullable",
-                "lowest_pressure" => "numeric|nullable",
-                "highest_pressure" => "numeric|gte:lowest_pressure|nullable",
-                "lowest_ventilation" => "numeric|nullable",
-                "highest_ventilation" => "numeric|gte:lowest_ventilation|nullable",
-            ]);
+            try {
+                $validated_values = $request->validate([
+                    "name" => "required",
+                    "description" => "required",
+                    "import_cycle" => "string",
+                    "type_id" => "required",
+                    "actual_piece_price" => "required|numeric",
+                    "unit" => "required",
+                    "quantity" => "required",
+                    "prod_sup_id" => "numeric",
+                    "pr_max_delivery_time_by_days" => "required_with:prod_sup_id|numeric",
+                    "lowest_temperature" => "numeric|nullable",
+                    "highest_temperature" => "numeric|gte:lowest_temperature|nullable",
+                    "lowest_humidity" => "numeric|nullable",
+                    "highest_humidity" => "numeric|gte:lowest_humidity|nullable",
+                    "lowest_light" => "numeric|nullable",
+                    "highest_light" => "numeric|gte:lowest_light|nullable",
+                    "lowest_pressure" => "numeric|nullable",
+                    "highest_pressure" => "numeric|gte:lowest_pressure|nullable",
+                    "lowest_ventilation" => "numeric|nullable",
+                    "highest_ventilation" => "numeric|gte:lowest_ventilation|nullable",
+                ]);
 
-            $continer_values = request()->validate([
-                "name_container" => "required",
-                "capacity" => "required|numeric",
+                $continer_values = request()->validate([
+                    "name_container" => "required",
+                    "capacity" => "required|numeric",
 
-            ]);
+                ]);
 
-            $storage_media_values = $request->validate([
-                "name_storage_media" => "required",
-                "num_floors" => "required|integer",
-                "num_classes" => "required|integer",
-                "num_positions_on_class" => "required|integer",
-                "sto_m_id" => "numeric",
-                "st_max_delivery_time_by_days" => "required_with:sto_m_id|numeric"
-            ]);
-        } catch (ValidationException $e) {
+                $storage_media_values = $request->validate([
+                    "name_storage_media" => "required",
+                    "num_floors" => "required|integer",
+                    "num_classes" => "required|integer",
+                    "num_positions_on_class" => "required|integer",
+                    "sto_m_id" => "numeric",
+                    "st_max_delivery_time_by_days" => "required_with:sto_m_id|numeric"
+                ]);
+            } catch (ValidationException $e) {
+
+                return response()->json([
+                    'msg' => 'Validation failed',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
+
+            $prod = Product::where("name", $validated_values["name"])->get();
+
+
+            if ($prod->isNotEmpty()) {
+                return response()->json(["msg" => "product already exist", "product_data" => $prod], 400);
+            }
+            try {
+                $prod_sup = null;
+
+                if (!empty($validated_values["prod_sup_id"])) {
+                    $prod_sup["supplier_id"] = $validated_values["prod_sup_id"];
+                    $prod_sup["max_delivery_time_by_days"] = $validated_values["pr_max_delivery_time_by_days"];
+                }
+                unset($validated_values["prod_sup_id"]);
+                unset($validated_values["pr_max_delivery_time_by_days"]);
+                $product = Product::create($validated_values);
+                $continer_values["name"] = $continer_values["name_container"];
+                unset($continer_values["name_container"]);
+                $continer_values["product_id"] = $product->id;
+                $container = Containers_type::create($continer_values);
+                $storage_media_values["container_id"] = $container->id;
+                $storage_media_values["name"] = $storage_media_values["name_storage_media"];
+                unset($storage_media_values["name_storage_media"]);
+                $sto_m_sup = null;
+                if (!empty($storage_media_values["sto_m_id"])) {
+                    $sto_m_sup["supplier_id"] = $storage_media_values["sto_m_id"];
+
+                    $sto_m_sup["max_delivery_time_by_days"] = $storage_media_values["st_max_delivery_time_by_days"];
+                }
+                unset($storage_media_values["sto_m_id"]);
+                unset($storage_media_values["st_max_delivery_time_by_days"]);
+                $storage_media_values["product_id"] = $product->id;
+                $storage_media = Storage_media::create($storage_media_values);
+                if (!empty($prod_sup)) {
+                    $product_supplier = Supplier::find($prod_sup["supplier_id"]);
+                    if ($product_supplier) {
+                        $prod_sup["suppliesable_type"] = "App\\Models\\Product";
+                        $prod_sup["suppliesable_id"] = $product->id;
+                        $product->supplier = $product_supplier;
+                        Supplier_Details::create($prod_sup);
+                    }
+                }
+                if (!empty($sto_m_sup)) {
+
+                    $sto_m_sup_supplier = Supplier::find($sto_m_sup["supplier_id"]);
+                    if ($sto_m_sup_supplier) {
+                        $sto_m_sup["suppliesable_type"] = "App\\Models\\Storage_media";
+                        $sto_m_sup["suppliesable_id"] = $storage_media->id;
+                        $storage_media->supplier = $sto_m_sup_supplier;
+                        Supplier_Details::create($sto_m_sup);
+                    }
+                }
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return response()->json(["msg" => $e->getMessage()], 500);
+            }
 
             return response()->json([
-                'msg' => 'Validation failed',
-                'errors' => $e->errors(),
-            ], 422);
+                "msg" => "product and logestic things created succesfully!",
+                "product_data" => $product,
+                "container_data" => $container,
+                "storage_media_data" => $storage_media
+            ], 201);
+        } catch (Exception $e) {
+            return response()->json(["msg" => $e->getMessage()], 400);
         }
-
-        $prod = Product::where("name", $validated_values["name"])->get();
-
-
-        if ($prod->isNotEmpty()) {
-            return response()->json(["msg" => "product already exist", "product_data" => $prod], 400);
-        }
-        try {
-            $prod_sup = null;
-
-            if (!empty($validated_values["prod_sup_id"])) {
-                $prod_sup["supplier_id"] = $validated_values["prod_sup_id"];
-                $prod_sup["max_delivery_time_by_days"] = $validated_values["pr_max_delivery_time_by_days"];
-            }
-            unset($validated_values["prod_sup_id"]);
-            unset($validated_values["pr_max_delivery_time_by_days"]);
-            $product = Product::create($validated_values);
-            $continer_values["name"] = $continer_values["name_container"];
-            unset($continer_values["name_container"]);
-            $continer_values["product_id"] = $product->id;
-            $container = Containers_type::create($continer_values);
-            $storage_media_values["container_id"] = $container->id;
-            $storage_media_values["name"] = $storage_media_values["name_storage_media"];
-            unset($storage_media_values["name_storage_media"]);
-            $sto_m_sup = null;
-            if (!empty($storage_media_values["sto_m_id"])) {
-                $sto_m_sup["supplier_id"] = $storage_media_values["sto_m_id"];
-
-                $sto_m_sup["max_delivery_time_by_days"] = $storage_media_values["st_max_delivery_time_by_days"];
-            }
-            unset($storage_media_values["sto_m_id"]);
-            unset($storage_media_values["st_max_delivery_time_by_days"]);
-            $storage_media_values["product_id"] = $product->id;
-            $storage_media = Storage_media::create($storage_media_values);
-            if (!empty($prod_sup)) {
-                $product_supplier = Supplier::find($prod_sup["supplier_id"]);
-                if ($product_supplier) {
-                    $prod_sup["suppliesable_type"] = "App\\Models\\Product";
-                    $prod_sup["suppliesable_id"] = $product->id;
-                    $product->supplier = $product_supplier;
-                    Supplier_Details::create($prod_sup);
-                }
-            }
-            if (!empty($sto_m_sup)) {
-
-                $sto_m_sup_supplier = Supplier::find($sto_m_sup["supplier_id"]);
-                if ($sto_m_sup_supplier) {
-                    $sto_m_sup["suppliesable_type"] = "App\\Models\\Storage_media";
-                    $sto_m_sup["suppliesable_id"] = $storage_media->id;
-                    $storage_media->supplier = $sto_m_sup_supplier;
-                    Supplier_Details::create($sto_m_sup);
-                }
-            }
-        } catch (\Exception $e) {
-            $product->delete($product->id);
-            return response()->json(["msg" => $e->getMessage()]);
-        }
-
-        return response()->json([
-            "msg" => "product and logestic things created succesfully!",
-            "product_data" => $product,
-            "container_data" => $container,
-            "storage_media_data" => $storage_media
-        ], 201);
     }
-    catch(Exception $e ){
-         return response()->json(["msg"=>$e->getMessage()],400);
-    }
-}
 
 
 
@@ -799,9 +797,9 @@ echo "i am here";
             $max_load_in_distribution_centers = 0;
             $average_in_warehouses = 0;
             $deviation_in_warehouses = 0;
-            $salled_load=0;
-            $rejected_load=0;
-            $reserved_load=0;
+            $salled_load = 0;
+            $rejected_load = 0;
+            $reserved_load = 0;
             $sections = $product->sections;
 
 
@@ -827,10 +825,9 @@ echo "i am here";
                     $max_load_in_distribution_centers += $section->max_capacity_products;
                     $max_load_in_distribution_centers += $section->avilable_area;
                 }
-                $salled_load+=$section->selled_load;
-                $rejected_load+=$section->rejected_load;
-                $reserved_load+=$section->reserved_load;
-
+                $salled_load += $section->selled_load;
+                $rejected_load += $section->rejected_load;
+                $reserved_load += $section->reserved_load;
             }
             $product->avilable_load_on_warehouses = $avilable_load_in_warehouses;
             $product->avilable_load_on_distribution_centers = $max_load_in_distribution_centers;
@@ -842,9 +839,9 @@ echo "i am here";
             $product->deviation = $deviation_in_warehouses;
             $product->max_load_on_company = $max_load_in_warehouses + $max_load_in_distribution_centers;
             $product->load_on_company = $actual_load_in_warehouses + $actual_load_in_distribution_centers;
-            $product->salled_load=$salled_load;
-            $product->rejected_load=$rejected_load;
-            $product->reserved_load=$reserved_load;
+            $product->salled_load = $salled_load;
+            $product->rejected_load = $rejected_load;
+            $product->reserved_load = $reserved_load;
             unset($product["sections"]);
         }
         return response()->json(["msg" => "sucessfull", "products" => $products], 202);
@@ -1236,11 +1233,10 @@ echo "i am here";
         $import_operation = Import_operation::create($import_operation);
         Cache::forget($request->import_operation_key);
         Cache::forget($request->storage_media_key);
-         $job=new import_storage_media($import_operation->id, $storage_media);
+        $job = new import_storage_media($import_operation->id, $storage_media);
 
-           $jobId = Queue::later(now()->addMinutes(0), $job);
+        $jobId = Queue::later(now()->addMinutes(0), $job);
         return response()->json(["msg" => "storage_media under creating", "job_id" => $jobId], 202);
-
     }
 
 
@@ -1969,32 +1965,31 @@ echo "i am here";
 
     public function delete_type($type_id)
     {
-        try{
-        $type = type::find($type_id);
-        if (!$type) {
-            return response()->json(["msg" => "type not found"], 404);
+        try {
+            $type = type::find($type_id);
+            if (!$type) {
+                return response()->json(["msg" => "type not found"], 404);
+            }
+            $warehouse_of_type = $type->warehouses;
+
+            $products_of_type = $type->products;
+
+
+            if (!$warehouse_of_type->isEmpty() || !$products_of_type->isEmpty()) {
+                return response()->json([
+                    "msg" => "the type hase a data",
+                    "warehouses" => $warehouse_of_type,
+                    "products" => $products_of_type,
+
+                ], 400);
+            }
+            $type->delete();
+            return response()->json(["msg" => "type deleted succesfuly!"], 202);
+        } catch (\Exception $e) {
+
+            return response()->json(["msg" => $e->getMessage()], 404);
         }
-        $warehouse_of_type = $type->warehouses;
-
-        $products_of_type = $type->products;
-
-
-        if (!$warehouse_of_type->isEmpty() || !$products_of_type->isEmpty() ) {
-            return response()->json([
-                "msg" => "the type hase a data",
-                "warehouses" => $warehouse_of_type,
-                "products" => $products_of_type,
-
-            ],400);
-        }
-        $type->delete();
-        return response()->json(["msg" => "type deleted succesfuly!"], 202);
     }
-    catch(\Exception $e){
-
-        return response()->json(["msg" => $e->getMessage()], 404);
-    }
-}
 
 
     public function show_warehouse_of_type($type_id)
@@ -2033,31 +2028,29 @@ echo "i am here";
 
 
     public function delete_Specialization($spec_id)
-    
+
     {
-        try{
-        $spec = Specialization::find($spec_id);
-        if (!$spec) {
-            return response()->json(["msg" => "specialization not found"], 404);
+        try {
+            $spec = Specialization::find($spec_id);
+            if (!$spec) {
+                return response()->json(["msg" => "specialization not found"], 404);
+            }
+            if (
+                $spec->name == "super_admin" || $spec->name == "warehouse_admin"
+                || $spec->name == "distribution_center_admin" ||
+                $spec->name == "QA" || $spec->name == "driver"
+            ) {
+                return response()->json(["msg" => "you want to delete basic specialization {$spec->name} delete denied"], 403);
+            }
+            $employees_of_spec = $spec->employees;
+            if (!$employees_of_spec->isEmpty()) {
+                return response()->json(["msg" => "the specialization has emplyees you cannot delete it", "employes" => $employees_of_spec], 403);
+            }
+            $spec->delete($spec->id);
+            return response()->json(["msg" => "deleted succesfuly!"], 202);
+        } catch (Exception $e) {
+            return response()->json(["msg" => $e->getMessage()], 404);
         }
-        if (
-            $spec->name == "super_admin" || $spec->name == "warehouse_admin"
-            || $spec->name == "distribution_center_admin" ||
-            $spec->name == "QA" || $spec->name == "driver"
-        )
-         {
-            return response()->json(["msg" => "you want to delete basic specialization {$spec->name} delete denied"], 403);
-        }
-        $employees_of_spec = $spec->employees;
-        if (!$employees_of_spec->isEmpty()) {
-            return response()->json(["msg" => "the specialization has emplyees you cannot delete it", "employes" => $employees_of_spec], 403);
-        }
-       $spec->delete($spec->id);
-        return response()->json(["msg" => "deleted succesfuly!"], 202);
-    }
-    catch(Exception $e){
-          return response()->json(["msg" => $e->getMessage()], 404);
-    }
     }
     public function edit_Specialization(Request $request)
     {
@@ -2235,35 +2228,34 @@ echo "i am here";
         }
         return response()->json(["trucks" => $truks_continers], 202);
     }
-    public function show_storage_media_of_product($product_id){
-        try{
-     $product = Product::find($product_id);
-     if(!$product){
-        return response()->json(["msg" => "product not found"], 404);
-     }
-     $storage_media = $product->storage_media;
-     if(!$storage_media){
-        return response()->json(["msg" => "storage_media not found"], 404);
-     }else{
-        return response()->json(["storage_media" => $storage_media], 202);
-
-     }
+    public function show_storage_media_of_product($product_id)
+    {
+        try {
+            $product = Product::find($product_id);
+            if (!$product) {
+                return response()->json(["msg" => "product not found"], 404);
+            }
+            $storage_media = $product->storage_media;
+            if (!$storage_media) {
+                return response()->json(["msg" => "storage_media not found"], 404);
+            } else {
+                return response()->json(["storage_media" => $storage_media], 202);
+            }
+        } catch (\Exception $e) {
+            return response()->json(["msg" => $e->getMessage()], 404);
+        }
     }
-    catch(\Exception $e){
-        return response()->json(["msg" => $e->getMessage()], 404);
-    }
-}
-    public function show_container_of_product($product_id){
+    public function show_container_of_product($product_id)
+    {
         $product = Product::find($product_id);
-        if(!$product){
-           return response()->json(["msg" => "product not found"], 404);
+        if (!$product) {
+            return response()->json(["msg" => "product not found"], 404);
         }
         $container = $product->container;
-        if(!$container){
-           return response()->json(["msg" => "container not found"], 404);
-        }else{
-           return response()->json(["container" => $container], 202);
-
+        if (!$container) {
+            return response()->json(["msg" => "container not found"], 404);
+        } else {
+            return response()->json(["container" => $container], 202);
         }
     }
 }
