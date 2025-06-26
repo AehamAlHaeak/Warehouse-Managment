@@ -669,6 +669,7 @@ echo "i am here";
 
     public function suppourt_new_product(Request $request)
     {
+        try{
         try {
             $validated_values = $request->validate([
                 "name" => "required",
@@ -778,6 +779,10 @@ echo "i am here";
             "storage_media_data" => $storage_media
         ], 201);
     }
+    catch(Exception $e ){
+         return response()->json(["msg"=>$e->getMessage()],422);
+    }
+}
 
 
 
