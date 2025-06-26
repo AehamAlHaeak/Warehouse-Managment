@@ -828,7 +828,7 @@ echo "i am here";
             $product->average = $average_in_warehouses;
             $product->deviation = $deviation_in_warehouses;
             $product->max_load_on_company = $max_load_in_warehouses + $max_load_in_distribution_centers;
-            $product->load_on_company == $actual_load_in_warehouses + $actual_load_in_distribution_centers;
+            $product->load_on_company = $actual_load_in_warehouses + $actual_load_in_distribution_centers;
             $product->salled_load=$salled_load;
             $product->rejected_load=$rejected_load;
             $product->reserved_load=$reserved_load;
@@ -1955,7 +1955,7 @@ echo "i am here";
 
 
     public function delete_type($type_id)
-    { 
+    {
         try{
         $type = type::find($type_id);
         if (!$type) {
@@ -1965,20 +1965,20 @@ echo "i am here";
 
         $products_of_type = $type->products;
 
-        
+
         if (!$warehouse_of_type->isEmpty() || !$products_of_type->isEmpty() ) {
             return response()->json([
                 "msg" => "the type hase a data",
                 "warehouses" => $warehouse_of_type,
                 "products" => $products_of_type,
-                
+
             ],400);
         }
         $type->delete();
         return response()->json(["msg" => "type deleted succesfuly!"], 202);
     }
     catch(\Exception $e){
-        
+
         return response()->json(["msg" => $e->getMessage()], 404);
     }
 }
@@ -2208,5 +2208,36 @@ echo "i am here";
             return response()->json(["msg" => $e->getMessage()], 404);
         }
         return response()->json(["trucks" => $truks_continers], 202);
+    }
+    public function show_storage_media_of_product($product_id){
+        try{
+     $product = Product::find($product_id);
+     if(!$product){
+        return response()->json(["msg" => "product not found"], 404);
+     }
+     $storage_media = $product->storage_media;
+     if(!$storage_media){
+        return response()->json(["msg" => "storage_media not found"], 404);
+     }else{
+        return response()->json(["storage_media" => $storage_media], 202);
+
+     }
+    }
+    catch(\Exception $e){
+        return response()->json(["msg" => $e->getMessage()], 404);
+    }
+}
+    public function show_container_of_product($product_id){
+        $product = Product::find($product_id);
+        if(!$product){
+           return response()->json(["msg" => "product not found"], 404);
+        }
+        $container = $product->container;
+        if(!$container){
+           return response()->json(["msg" => "container not found"], 404);
+        }else{
+           return response()->json(["container" => $container], 202);
+
+        }
     }
 }

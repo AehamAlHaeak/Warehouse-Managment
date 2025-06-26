@@ -20,16 +20,15 @@ use App\Models\DistributionCenter;
 Route::post("start_application", [SuperAdmenController::class, "start_application"]);
 
 
-
 Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->group(function () {
 
     //create type of prods or specializations of employes
 
-Route::post("create_new_type", "create_new_type");
-    Route::post("create_new_specification", "create_new_specification");
 
+    Route::post("create_new_type", "create_new_type");
+
+     Route::post("create_new_specialization", "create_new_specialization");
     //types configrations and featurs
-
     Route::get("show_all_types", "show_all_types");
 
     Route::post("edit_type", "edit_type");
@@ -49,8 +48,6 @@ Route::post("create_new_type", "create_new_type");
 
     Route::get("show_employees_of_spec/{spec_id}", "show_employees_of_spec");
 
-
-
     //end
     //show_all_specializations
 
@@ -65,10 +62,13 @@ Route::post("create_new_type", "create_new_type");
 
     Route::get("delete_product/{product_id}", "delete_product");
 
-
     Route::post("edit_storage_media", "edit_storage_media");
 
     Route::post("edit_continer", "edit_continer");
+
+    Route::get("show_storage_media_of_product/{product_id}", "show_storage_media_of_product");
+
+    Route::get("show_container_of_product/{product_id}", "show_container_of_product");
     //end
 
     //constract the structur  delete_warehouse
@@ -143,7 +143,7 @@ Route::post("create_new_type", "create_new_type");
 
     Route::post("accept_import_op_vehicles", "accept_import_op_vehicles");
 
-     Route::get("show_latest_import_op_vehicles", "show_latest_import_op_vehicles");
+    Route::get("show_latest_import_op_vehicles", "show_latest_import_op_vehicles");
 
 
 
@@ -171,13 +171,21 @@ Route::controller(WarehouseController::class)->middleware('is_warehouse_admin')-
 
     Route::get("show_distrebution_centers_of_product/{warehouse_id}/{product_id}", "show_distrebution_centers_of_product");
     Route::get("show_distribution_centers_of_storage_media_in_warehouse/{warehouse_id}/{storage_media_id}", "show_distribution_centers_of_storage_media_in_warehouse");
-});
+      Route::post("send_products_from_To", "send_products_from_To");
+});//send_products_from_To
 
 
 Route::controller(Distribution_Center_controller::class)->middleware("is_dist_c_admin")->group(function () {
 
     Route::get("show_employees_on_place/{place_type}/{place_id}");
+
+    Route::get("show_garages_on_place/{place_type}/{place_id}", "show_garages_on_place");
+
+    Route::get("show_vehicles_of_garage/{garage_id}", "show_vehicles_of_garage");
+
+    Route::get("show_products_of_place/{place_type}/{place_id}", "show_products_of_place");
 });
+//show_products_of_place
 
 Route::controller(Distribution_Center_controller::class)->middleware('is_QA')->group(function () {
     Route::get("show_actual_loads", "show_actual_loads");
@@ -219,7 +227,7 @@ Route::controller(UserController::class)->group(function () {
 
         Route::post('updateUser', 'updateUser');
 
-         Route::post('near_by_centers', 'near_by_centers');
+        Route::post('near_by_centers', 'near_by_centers');
     });
 });
 
@@ -241,5 +249,3 @@ Route::prefix('warehouses')->group(function () {
 });
 
 //mean that the products recievd successfully
-Route::get('confirmReception', [Movecontroller::class, 'confirmReception']);
-Route::post('statusTheProduct', [Movecontroller::class, 'statusTheProduct'])->middleware('auth.api:employee');
