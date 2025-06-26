@@ -715,11 +715,11 @@ echo "i am here";
             ], 422);
         }
 
-        $product = Product::where("name", $validated_values["name"])->get();
+        $prod = Product::where("name", $validated_values["name"])->get();
 
 
-        if ($product->isNotEmpty()) {
-            return response()->json(["msg" => "product already exist", "product_data" => $product], 400);
+        if ($prod->isNotEmpty()) {
+            return response()->json(["msg" => "product already exist", "product_data" => $prod], 400);
         }
         try {
             $prod_sup = null;
@@ -780,7 +780,7 @@ echo "i am here";
         ], 201);
     }
     catch(Exception $e ){
-         return response()->json(["msg"=>$e->getMessage()],422);
+         return response()->json(["msg"=>$e->getMessage()],400);
     }
 }
 
