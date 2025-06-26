@@ -192,6 +192,14 @@ echo "i am here";
                 'errors' => $e->errors(),
             ], 422);
         }
+        if (
+            $request->name == "super_admin" || $request->name == "warehouse_admin"
+            || $request->name == "distribution_center_admin" ||
+            $request->name == "QA" || $request->name == "driver"
+        ) {
+            return response()->json(["msg" => "you want to renter basic specialization {$request->name} edit denied"], 403);
+        }
+
         $spec=specialization::where("name",$validated_values["name"])->first();
         if($spec){
          return response()->json(["msg"=>"specialization already exist"],409);
@@ -2078,7 +2086,7 @@ echo "i am here";
             || $request->name == "distribution_center_admin" ||
             $request->name == "QA" || $request->name == "driver"
         ) {
-            return response()->json(["msg" => "you want to renter basic specialization {$spec->name} edit denied"], 403);
+            return response()->json(["msg" => "you want to renter basic specialization {$request->name} edit denied"], 403);
         }
         $now = Carbon::now();
         $createdAt = Carbon::parse($spec->created_at);
