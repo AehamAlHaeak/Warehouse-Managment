@@ -2073,6 +2073,13 @@ echo "i am here";
         ) {
             return response()->json(["msg" => "you want to edit basic specialization {$spec->name} edit denied"], 403);
         }
+        if (
+            $request->name == "super_admin" || $request->name == "warehouse_admin"
+            || $request->name == "distribution_center_admin" ||
+            $request->name == "QA" || $request->name == "driver"
+        ) {
+            return response()->json(["msg" => "you want to renter basic specialization {$spec->name} edit denied"], 403);
+        }
         $now = Carbon::now();
         $createdAt = Carbon::parse($spec->created_at);
         $isOlderThan30Min = $createdAt->diffInMinutes($now) > 30;
