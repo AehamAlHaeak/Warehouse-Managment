@@ -32,7 +32,7 @@ class DriverController extends Controller
         $curent_transfer->to=$destination->location;
         }
         else{
-             $curent_transfer->from=$curent_transfer->location;
+             $curent_transfer->to=$curent_transfer->location;
         }
         unset($curent_transfer["location"]);
         unset($curent_transfer["sourceable"]);
@@ -51,9 +51,9 @@ class DriverController extends Controller
               $next_transfer->to=$destination->location;
               }
               else{
-                   $next_transfer->from=$next_transfer->location;
+                   $next_transfer->to=$next_transfer->location;
               }
-              
+
               unset($next_transfer["location"]);
               unset($next_transfer["sourceable"]);
               unset($next_transfer["destinationable"]);
