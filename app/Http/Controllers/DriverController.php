@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transfer_detail;
+use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
 use App\Traits\AlgorithmsTrait;
@@ -17,16 +18,43 @@ class DriverController extends Controller
         $driver = $request->employe;
         $vehicle = $driver->vehicle;
         $curent_transfer = $vehicle->actual_transfer;
+        
         $source=$curent_transfer->sourceable;
+         if(!($source instanceof \App\Models\User)){
         $curent_transfer->from=$source->location;
+        }
+        else{
+             $curent_transfer->from= $curent_transfer->location;
+        }
+        
         $destination=$curent_transfer->destinationable;
+        if(!($destination instanceof \App\Models\User)){
         $curent_transfer->to=$destination->location;
+        }
+        else{
+             $curent_transfer->from=$curent_transfer->location;
+        }
+        unset($curent_transfer["location"]);
         unset($curent_transfer["sourceable"]);
         unset($curent_transfer["destinationable"]);
         if ($curent_transfer) {
               $next_transfer = $curent_transfer->next_transfer;
-              $next_transfer->from=$next_transfer->sourceable->location;
-              $next_transfer->to=$next_transfer->destinationable->location;
+              $source=$next_transfer->sourceable;
+              $destination=$next_transfer->destinationable;
+              if(!($source instanceof \App\Models\User)){
+              $next_transfer->from=$source->location;
+              }
+              else{
+                   $next_transfer->from= $next_transfer->location;
+              }
+              if(!($destination instanceof \App\Models\User)){
+              $next_transfer->to=$destination->location;
+              }
+              else{
+                   $next_transfer->from=$next_transfer->location;
+              }
+              
+              unset($next_transfer["location"]);
               unset($next_transfer["sourceable"]);
               unset($next_transfer["destinationable"]);
             unset($curent_transfer["next_transfer"]);
