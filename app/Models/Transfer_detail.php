@@ -8,7 +8,7 @@ class Transfer_detail extends Model
 {
     //
     protected $guarded;
-
+      protected $hidden = ['pivot'];
     protected $primaryKey = 'id';
     public $incrementing = true; 
     protected $keyType = 'int';
@@ -18,5 +18,8 @@ class Transfer_detail extends Model
     }
     public function transfer(){
         return $this->belongsTo(Transfer::class,"transfer_id");
+    }
+    public function vehicle(){
+        return $this->belongsTo(Vehicle::class,"vehicle_id");
     }
 }

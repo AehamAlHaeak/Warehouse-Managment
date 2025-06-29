@@ -545,13 +545,14 @@ class Distribution_Center_controller extends Controller
         }
     }
 
-    public function show_vehicles_of_garage(Request $request,$garage_id){
-       try{
+    public function show_vehicles_of_garage(Request $request, $garage_id)
+    {
+        try {
             $garage = Garage::find($garage_id);
             if (!$garage) {
                 return response()->json(["msg" => "garage not found"], 404);
             }
-            $place=$garage->existable;
+            $place = $garage->existable;
             $employe = $request->employe;
             if ($employe->specialization->name != "super_admin") {
 
@@ -565,45 +566,93 @@ class Distribution_Center_controller extends Controller
                 return response()->json(["msg" => "there are no vehicles on this garage"], 404);
             }
             return response()->json(["msg" => "vehicles on this garage", "vehicles" => $vehicles], 202);
+        } catch (Exception $e) {
+            return response()->json(["msg" => $e->getMessage()], 500);
+        }
+    }
+    public function show_products_of_place(Request $request, $place_type, $place_id)
+    {
+        try {
+            $model = "App\\Models\\" . $place_type;
+            $place = $model::find($place_id);
+            if (!$place) {
+                return response()->json(["msg" => "the place which you want is not exist"], 404);
+            }
 
-       }catch(Exception $e){
-       return response()->json(["msg"=>$e->getMessage()],500);
-       }
-    }
-    public function show_products_of_place(Request $request, $place_type, $place_id){
-        try{
-      $model = "App\\Models\\" . $place_type;
-      $place = $model::find($place_id);
-       if (!$place) {
-           return response()->json(["msg" => "the place which you want is not exist"], 404);
-       }
+            $employe = $request->employe;
+            if ($employe->specialization->name != "super_admin") {
 
-      $employe=$request->employe;
-      if ($employe->specialization->name != "super_admin") {
-          
-          $authorized_in_place = $this->check_if_authorized_in_place($employe, $place);
-          if (!$authorized_in_place) {
-              return response()->json(["msg" => "Unauthorized - Invalid or missing employe token"], 401);
-          }
-      }
-      $products=[];
-      $sections=$place->sections;
-      foreach($sections as $section){
-        $product=$section->product;
-        $products[$product->id]=$product;
-      }
-      if (empty($products)) {
-          return response()->json(["msg" => "there are no products on this place"], 404);
-      }
-     foreach($products as $product){
-      $product=$this->inventry_product_in_place($product,$place);
-     }
-     return response()->json(["msg" => "products on this place", "products" => $products], 202);
+                $authorized_in_place = $this->check_if_authorized_in_place($employe, $place);
+                if (!$authorized_in_place) {
+                    return response()->json(["msg" => "Unauthorized - Invalid or missing employe token"], 401);
+                }
+            }
+            $products = [];
+            $sections = $place->sections;
+            foreach ($sections as $section) {
+                $product = $section->product;
+                $products[$product->id] = $product;
+            }
+            if (empty($products)) {
+                return response()->json(["msg" => "there are no products on this place"], 404);
+            }
+            foreach ($products as $product) {
+                $product = $this->inventry_product_in_place($product, $place);
+            }
+            return response()->json(["msg" => "products on this place", "products" => $products], 202);
+        } catch (Exception $e) {
+            return response()->json(["msg" => $e->getMessage()], 500);
+        }
     }
-    catch(Exception $e){
-        return response()->json(["msg"=>$e->getMessage()],500);
+    public function show_incoming_transfers(Request $request, $place_type, $place_id) {
+        try {
+            $model = "App\\Models\\" . $place_type;
+            $place = $model::find($place_id);
+            if (!$place) {
+                return response()->json(["msg" => "the place which you want is not exist"], 404);
+            }
+            $employe = $request->employe;
+            if ($employe->specialization->name != "super_admin") {          
+
+                $authorized_in_place = $this->check_if_authorized_in_place($employe, $place);
+                if (!$authorized_in_place) {
+                    return response()->json(["msg" => "Unauthorized - Invalid or missing employe token"], 401);
+                }
+            }
+            $live=collect();
+            $archiv=collect();
+            $wait=collect();
+
+            $incoming_transfers = $place->resived_transfers()->with("sourceable")->get();
+              foreach($incoming_transfers as $incoming_transfer) {
+                if(!$incoming_transfer->contents()) {
+                  $incoming_transfer->status="return";
+                  
+                }
+                else {
+                  $incoming_transfer->status="contained";
+                }
+               if($incoming_transfer->date_of_resiving!=null && $incoming_transfer->date_of_finishing==null) {
+                $live->push($incoming_transfer);
+               }
+               elseif($incoming_transfer->date_of_resiving!=null && $incoming_transfer->date_of_finishing!=null){
+                   $archiv->push($incoming_transfer); 
+               }
+               elseif($incoming_transfer->date_of_resiving==null && $incoming_transfer->date_of_finishing==null) {
+                $wait->push($incoming_transfer);
+               }
+              }
+               
+
+            if ($incoming_transfers->isEmpty()) {
+                return response()->json(["msg" => "there are no incoming transfers on this place"], 404);
+            }
+            return response()->json(["msg" => "incoming transfers on this place","live"=>$live,"archiv"=>$archiv,"wait"=>$wait], 202);
+
+    }catch (Exception $e) {
+        return response()->json(["msg" => $e->getMessage()], 500);
     }
+
 }
-
 
 }

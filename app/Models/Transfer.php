@@ -41,4 +41,7 @@ class Transfer extends Model
     {
         return $this->belongsTo(Transfer::class, "parent_trans");
     }
+    public function contents(){
+         return $this->transfer_details()->whereHas('continers')->exists();
+    }
 }

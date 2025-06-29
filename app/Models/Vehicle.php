@@ -44,5 +44,8 @@ class Vehicle extends Model
     public function driver(){
         return $this->belongsTo(Employe::class,"driver_id");
     }
-
+      
+    public function  product(){
+        return $this->belongsTo(Product::class,"product_id");
+    }
 }

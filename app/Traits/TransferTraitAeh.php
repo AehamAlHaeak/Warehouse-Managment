@@ -52,10 +52,18 @@ trait TransferTraitAeh
                 ]);
             }
             foreach ($block["container_ids"] as $continer_id) {
+                 $continer=Import_op_container::find($continer_id);
+                $posetion=$continer->posetion_on_stom;
+                if($posetion){
+                 $posetion->update([
+                     "imp_op_contin_id"=>null
+                 ]);
+                }
                 Continer_transfer::create([
                     "transfer_detail_id" =>  $transfer_detail_l->id,
                     "imp_op_contin_id" => $continer_id
                 ]);
+               
             }
         }
         return "loading succesfully!";
@@ -181,6 +189,7 @@ trait TransferTraitAeh
                 "sourceable_type" => get_class($source),
                 "sourceable_id" => $source->id,
                 "destinationable_type" => get_class($destination),
+                "date_of_resiving" => now(),
                 "destinationable_id" => $destination->id,
 
             ]);
@@ -188,7 +197,6 @@ trait TransferTraitAeh
                 "sourceable_type" => get_class($destination),
                 "sourceable_id" => $destination->id,
                 "destinationable_type" => get_class($source),
-                "date_of_resiving" => now(),
                 "destinationable_id" => $source->id,
             ]);
            

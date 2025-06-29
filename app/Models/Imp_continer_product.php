@@ -9,6 +9,7 @@ class Imp_continer_product extends Model
 {
     use HasFactory;
      protected $guarded;
+       
      public function sell_load(){
         return $this->hasMany(Sell_detail::class,"imp_cont_prod_id");
      }

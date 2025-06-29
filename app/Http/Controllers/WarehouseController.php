@@ -8,13 +8,17 @@ use App\Models\Vehicle;
 use App\Models\Warehouse;
 use Illuminate\Http\Request;
 use App\Models\Storage_media;
+use Illuminate\Support\Carbon;
 use App\Traits\AlgorithmsTrait;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Validation\ValidationException;
+use App\Models\Import_op_container;
+use App\Traits\TransferTraitAeh;
 
 class WarehouseController extends Controller
 {
     use AlgorithmsTrait;
+    use TransferTraitAeh;
     public function showGarage($id)
     {
         $garage = Warehouse::find($id)->garages;
@@ -186,7 +190,7 @@ class WarehouseController extends Controller
                     return response()->json(["msg" => "un authorized in this destination"], 401);
                 }
             }
-            $product = Product::find($validated_values["product_id"]);
+           
             if (!$product) {
                 return response()->json(["msg" => "product not found"], 404);
             }
@@ -198,32 +202,95 @@ class WarehouseController extends Controller
             if (!$has_dest_this_product) {
                 return response()->json(["msg" => "the destination cannot resieve this product"], 404);
             }
-            
-             $source=$this->calcute_areas_on_place_for_a_specific_product($source, $product->id);
-             if($validated_values["quantity"]>$source->actual_load_product){
+
+            $source = $this->calcute_areas_on_place_for_a_specific_product($source, $product->id);
+
+            if ($validated_values["quantity"] > $source->actual_load_product) {
                 return response()->json(["msg" => "the source dont have enough of this product"], 404);
-             }
+            }
 
-             $destination=$this->calcute_areas_on_place_for_a_specific_product($destination, $product->id);
-              
-             if($validated_values["quantity"]>$destination->avilable_area_product){
-                  return response()->json(["msg" => "the destination dont have enough space for this product"], 404);
-             }
-                $sections_in_source = $source->sections()->where("product_id", $product->id)->get();
-                 $contaners=collect();
-                foreach( $sections_in_source as $section ){
-                   foreach($section->storage_elements as $storage_element){
-                     
-                   }
+            $destination = $this->calcute_areas_on_place_for_a_specific_product($destination, $product->id);
+
+            if ($validated_values["quantity"] > $destination->avilable_area_product) {
+                return response()->json(["msg" => "the destination dont have enough space for this product"], 404);
+            }
+
+            $inventory_of_incoming = 0;
+            $product_continer = $product->container;
+            $transfers=$destination->resived_transfers()->whereNull("date_of_finishing")->get();
+            foreach ($transfers as $transfer) {
+                
+                foreach ($transfer->transfer_details as $detail) {
+                    $containers_count = $detail->continers()->where("container_type_id", $product_continer->id)->where("status", "accepted")->whereDoesntHave("posetion_on_stom")->count();
+                  
+                        $inventory_of_incoming += $containers_count*$product_continer->capacity;
+                    
                 }
+            }
+            $destination = $this->calcute_areas_on_place_for_a_specific_product($destination, $product->id);
+            $may_be_a_load_in_des = $inventory_of_incoming + $validated_values["quantity"];
+            if ($may_be_a_load_in_des > $destination->avilable_area_product) {
+                return response()->json([
+                    "msg" => "The total of containers already incoming and the new quantity exceeds the available space in the destination."
+                ], 409);
+            }
+             
+            $sections_in_source = $source->sections()->where("product_id", $product->id)->get();
+            $all_containers = collect();
+            $seven_days_from_now = Carbon::now()->addDays(7);
+            foreach ($sections_in_source as $section) {
+                if ($validated_values["quantity"] <= 0) {
+                    break;
+                }
+                $section_containers = collect();
+                foreach ($section->storage_elements as $storage_element) {
 
 
+                    $containers = $storage_element->continers()->whereDoesntHave('loads.reserved_load')
+                        ->whereDoesntHave('loads.sell_load')
+                        ->whereHas('loads', function ($query) use ($seven_days_from_now) {
+
+                            $query->whereHas('impo_op_product', function ($q) use ($seven_days_from_now) {
+                                $q->where('expiration', '<=', $seven_days_from_now);
+                            });
+                        })
+                        ->with(['loads.impo_op_product' => function ($query) use ($seven_days_from_now) {
+
+                            $query->where('expiration', '<=', $seven_days_from_now)
+                                ->orderBy('expiration', 'asc');
+                        }])
+                        ->get();
+                    $section_containers = $section_containers->merge($containers);
+                }
+                $section_containers = $section_containers->sortByDesc(function ($container) {
+                    $inventory = $this->inventory_on_continer($container);
+                    $container->remine_load = $inventory['remine_load'];
+                    return $inventory['remine_load'];
+                });
+                foreach ($section_containers as $container) {
 
 
-            return response()->json(["msg" => "done"], 202);
+                    $all_containers->push($container);
+                    $validated_values["quantity"] -= $container->remine_load;
+                    if ($validated_values["quantity"] <= 0) {
+                        break 2;
+                    }
+                }
+            }
+            if ($validated_values["quantity"] > 0) {
+                return response()->json(["msg" => "you dont have enough containers"], 404);
+            }
+            $transfer_details = $this->resive_transfers($source, $destination, $all_containers);
+            if ($transfer_details == "the vehicles is not enough for the load") {
+                return response()->json(["msg" => $transfer_details], 400);
+            } elseif ($transfer_details == "No containers to transfer") {
+                return response()->json(["msg" => $transfer_details], 400);
+            }
+
+            return response()->json(["msg" => $transfer_details], 202);
         } catch (Exception $e) {
             return response()->json([
-                'msg' => 'Validation failed',
+
                 'errors' => $e->getMessage(),
             ], 422);
         }

@@ -251,8 +251,9 @@ trait AlgorithmsTrait
         $avilable_area_product = 0;
        
         $product = $section->product;
-        $continer = $product->continer;
-        $storage_media = $continer->storage_media;
+        $continer = $product->container;
+        
+        $storage_media = $product->storage_media;
         $storage_elements = $section->storage_elements;
         unset($section["product"]);
         unset($section["continer"]);
@@ -274,6 +275,7 @@ trait AlgorithmsTrait
             $posetions=$storage_element->posetions;
             foreach( $posetions as $posetion){
               if($posetion->imp_op_contin_id==null){
+                
                 $avilable_area_product+=$continer->capacity;
               }
               else{
@@ -292,7 +294,7 @@ trait AlgorithmsTrait
        $section->rejected_load=$rejected_load;
        $section->reserved_load=$reserved_load;
        $section->actual_load_product=$actual_load_product;
-       $section->avilable_area=$avilable_area_product;
+       $section->avilable_area_product=$avilable_area_product;
        
         return $section;
     }
@@ -462,6 +464,8 @@ trait AlgorithmsTrait
     }
     public function inventory_on_continer($container){
        $loads=$container->loads;
+       unset($container["loads"]);
+       
        $inventory=["selled_load"=>0,"reserved_load"=>0,"rejected_load"=>0,"remine_load"=>0];
        foreach($loads as $load){
           $load_logs=$this->calculate_load_logs($load);

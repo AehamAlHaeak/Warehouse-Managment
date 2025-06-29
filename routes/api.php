@@ -197,8 +197,9 @@ Route::controller(Distribution_Center_controller::class)->middleware('is_QA')->g
     Route::get("show_storage_elements_on_section/{section_id}", "show_storage_elements_on_section");
     Route::get("show_continers_on_storage_element/{storage_element_id}", "show_continers_on_storage_element");
     Route::post("move_containers", "move_containers");
+    Route::get("show_incoming_transfers/{place_type}/{place_id}", "show_incoming_transfers");
 });
-// move_containers show_continers_on_storage_element(Request $request, $storage_element_id)
+//show_incoming_transfers
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
 
 Route::controller(EmployeController::class)->middleware('is_employe')->group(function () {

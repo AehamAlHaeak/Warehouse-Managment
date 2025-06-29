@@ -9,4 +9,5 @@ class Continer_transfer extends Model
 {
     use HasFactory;
     protected $guarded;
+    protected $hidden = ['pivot'];
 }
