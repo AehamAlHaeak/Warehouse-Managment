@@ -52,8 +52,8 @@ trait TransferTraitAeh
                 ]);
             }
             foreach ($block["container_ids"] as $continer_id) {
-                    $continer=Import_op_container::find($continer_id);
-                    $posetion=$continer->posetion_on_stom;
+                        $continer=Import_op_container::find($continer_id);
+                        $posetion=$continer->posetion_on_stom;
                     if($posetion){
                     $posetion->update([
                         "imp_op_contin_id"=>null
