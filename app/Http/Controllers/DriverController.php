@@ -18,7 +18,7 @@ class DriverController extends Controller
         $driver = $request->employe;
         $vehicle = $driver->vehicle;
         $curent_transfer = $vehicle->actual_transfer;
-        
+        $array=$curent_transfer->toArray();
         $source=$curent_transfer->sourceable;
          if(!($source instanceof \App\Models\User)){
         $curent_transfer->from=$source->location;
@@ -34,9 +34,12 @@ class DriverController extends Controller
         else{
              $curent_transfer->to=$curent_transfer->location;
         }
+        $curent_transfer->sourceable_type=str_replace("App\\Models\\","",$curent_transfer->sourceable_type);
+        $curent_transfer->destinationable_type=str_replace("App\\Models\\","",$curent_transfer->destinationable_type);
         unset($curent_transfer["location"]);
         unset($curent_transfer["sourceable"]);
         unset($curent_transfer["destinationable"]);
+        
         if ($curent_transfer) {
               $next_transfer = $curent_transfer->next_transfer;
               $source=$next_transfer->sourceable;
@@ -53,10 +56,12 @@ class DriverController extends Controller
               else{
                    $next_transfer->to=$next_transfer->location;
               }
-
+              $next_transfer->sourceable_type=str_replace("App\\Models\\","",$next_transfer->sourceable_type);
+              $next_transfer->destinationable_type=str_replace("App\\Models\\","",$next_transfer->destinationable_type);
               unset($next_transfer["location"]);
               unset($next_transfer["sourceable"]);
               unset($next_transfer["destinationable"]);
+             
             unset($curent_transfer["next_transfer"]);
             return response()->json(["msg" => "here the actual transfer deer!", "actual_transfer" => $curent_transfer, "next_transfer" => $next_transfer], 202);
         }
