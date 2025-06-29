@@ -52,12 +52,12 @@ trait TransferTraitAeh
                 ]);
             }
             foreach ($block["container_ids"] as $continer_id) {
-                 $continer=Import_op_container::find($continer_id);
-                $posetion=$continer->posetion_on_stom;
-                if($posetion){
-                 $posetion->update([
-                     "imp_op_contin_id"=>null
-                 ]);
+                    $continer=Import_op_container::find($continer_id);
+                    $posetion=$continer->posetion_on_stom;
+                    if($posetion){
+                    $posetion->update([
+                        "imp_op_contin_id"=>null
+                    ]);
                 }
                 Continer_transfer::create([
                     "transfer_detail_id" =>  $transfer_detail_l->id,
