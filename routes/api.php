@@ -72,6 +72,8 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
     //end
 
     //constract the structur  delete_warehouse
+    Route::get("show_all_warehouses","show_all_warehouses");
+
     Route::post("create_new_warehouse", "create_new_warehouse");
 
     Route::post("edit_warehouse", "edit_warehouse");

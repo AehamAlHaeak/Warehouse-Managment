@@ -208,7 +208,39 @@ class SuperAdmenController extends Controller
         $spec = specialization::create($validated_values);
         return response()->json(["msg" => "specialization added", "specialization_data" => $spec], 201);
     }
+    public function show_all_warehouses()
+    {
+        try {
+           
+       
+             
+            $warehouses = Warehouse::with('type')
+                ->get([
+                    'id',
+                    'name',
+                    'location',
+                    'latitude',
+                    'longitude',
+                    'status',
+                    'num_sections',
+                    'type_id'
+                ])
+                ->map(function ($warehouse) {
+                    $warehouse->type_name = $warehouse->type?->name ?? 'Unknown';
+                    unset($warehouse->type);
+                    return $warehouse;
+                });
+            if ($warehouses->isEmpty()) {
+                return response()->json(["msg" => "you dont have warehouses yet"]);
+            }
+            return response()->json(["msg" => "here the warehouses", "warehouses" => $warehouses]);
+        } catch (Exception $e) {
+            return response()->json([
 
+                'errors' => $e->getMessage(),
+            ], 422);
+        }
+    }
     public function create_new_warehouse(Request $request)
     {
         try {
