@@ -212,8 +212,9 @@ class SuperAdmenController extends Controller
     {
         try {
            
-       
-             
+          
+              
+
             $warehouses = Warehouse::with('type')
                 ->get([
                     'id',
@@ -224,12 +225,8 @@ class SuperAdmenController extends Controller
                     'status',
                     'num_sections',
                     'type_id'
-                ])
-                ->map(function ($warehouse) {
-                    $warehouse->type_name = $warehouse->type?->name ?? 'Unknown';
-                    unset($warehouse->type);
-                    return $warehouse;
-                });
+                ]);
+                
             if ($warehouses->isEmpty()) {
                 return response()->json(["msg" => "you dont have warehouses yet"]);
             }

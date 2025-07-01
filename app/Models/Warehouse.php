@@ -5,19 +5,21 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property-read string|null $type_name
+ */
 class Warehouse extends Model
 {
     use HasFactory;
     protected $guarded;
 
-    //    protected $fillable = [ 'name', 'location', 'capacity'];
+    protected $appends = ['type_name'];
 
-
-
-
-
-
-
+    public function getTypeNameAttribute()
+    {   $type_name=$this->type;
+        unset($this["type"]);
+        return $type_name?->name ?? 'Unknown';
+    }
 
     public function employees()
     {
@@ -48,7 +50,8 @@ class Warehouse extends Model
         return $this->morphMany(Transfer::class, "destinationable");
     }
 
-    public function sent_transfers(){
+    public function sent_transfers()
+    {
         return $this->morphMany(Transfer::class, "sourceable");
     }
 }
