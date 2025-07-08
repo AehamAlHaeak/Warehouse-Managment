@@ -28,6 +28,43 @@ use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
 class Distribution_Center_controller extends Controller
 {
     use AlgorithmsTrait;
+    public function show_my_work_place(Request $request)
+    {
+        try {
+
+            $employe = $request->employe;
+
+            if ($employe->specialization->name == "super_admin") {
+                return response()->json(["msg" => "you dont have specific work place you are the super admin"], 401);
+            }
+
+            $work_place = $employe->workable;
+            $work_place->place_type = str_replace("App\\Models\\", "", get_class($work_place));
+
+
+            $products = [];
+            $sections = $work_place->sections()->distinct('product_id')
+                ->get();
+            unset($work_place["sections"]);
+            foreach ($sections as $section) {
+
+
+                $product = $section->product;
+                $products[$product->id] = $this->inventry_product_in_place($product, $work_place);
+            }
+            if (empty($products)) {
+                return response()->json(["msg" => "there are no products on this place"], 404);
+            }
+            foreach ($products as $product) {
+                $product = $this->inventry_product_in_place($product, $work_place);
+            }
+        } catch (Exception $e) {
+            return response()->json(["msg" => $e->getMessage()], 500);
+        }
+        return response()->json(["msg" => "here your work place ", "work_place" => $work_place, 'products' => $products], 202);
+    }
+
+
     public function show_employees_on_place(Request $request, $place_type, $place_id)
     {
         $model = "App\\Models\\" . $place_type;
@@ -588,10 +625,13 @@ class Distribution_Center_controller extends Controller
                 }
             }
             $products = [];
-            $sections = $place->sections;
+            $sections = $place->sections()->distinct('product_id')
+                ->get();
             foreach ($sections as $section) {
-                $product = $section->product;
-                $products[$product->id] = $product;
+                
+                    $product = $section->product;
+                    $products[$product->id] = $this->inventry_product_in_place($product, $place);
+             
             }
             if (empty($products)) {
                 return response()->json(["msg" => "there are no products on this place"], 404);
@@ -604,7 +644,8 @@ class Distribution_Center_controller extends Controller
             return response()->json(["msg" => $e->getMessage()], 500);
         }
     }
-    public function show_incoming_transfers(Request $request, $place_type, $place_id) {
+    public function show_incoming_transfers(Request $request, $place_type, $place_id)
+    {
         try {
             $model = "App\\Models\\" . $place_type;
             $place = $model::find($place_id);
@@ -612,47 +653,40 @@ class Distribution_Center_controller extends Controller
                 return response()->json(["msg" => "the place which you want is not exist"], 404);
             }
             $employe = $request->employe;
-            if ($employe->specialization->name != "super_admin") {          
+            if ($employe->specialization->name != "super_admin") {
 
                 $authorized_in_place = $this->check_if_authorized_in_place($employe, $place);
                 if (!$authorized_in_place) {
                     return response()->json(["msg" => "Unauthorized - Invalid or missing employe token"], 401);
                 }
             }
-            $live=collect();
-            $archiv=collect();
-            $wait=collect();
+            $live = collect();
+            $archiv = collect();
+            $wait = collect();
 
             $incoming_transfers = $place->resived_transfers()->with("sourceable")->get();
-              foreach($incoming_transfers as $incoming_transfer) {
-                if(!$incoming_transfer->contents()) {
-                  $incoming_transfer->status="return";
-                  
+            foreach ($incoming_transfers as $incoming_transfer) {
+                if (!$incoming_transfer->contents()) {
+                    $incoming_transfer->status = "return";
+                } else {
+                    $incoming_transfer->status = "contained";
                 }
-                else {
-                  $incoming_transfer->status="contained";
+                if ($incoming_transfer->date_of_resiving != null && $incoming_transfer->date_of_finishing == null) {
+                    $live->push($incoming_transfer);
+                } elseif ($incoming_transfer->date_of_resiving != null && $incoming_transfer->date_of_finishing != null) {
+                    $archiv->push($incoming_transfer);
+                } elseif ($incoming_transfer->date_of_resiving == null && $incoming_transfer->date_of_finishing == null) {
+                    $wait->push($incoming_transfer);
                 }
-               if($incoming_transfer->date_of_resiving!=null && $incoming_transfer->date_of_finishing==null) {
-                $live->push($incoming_transfer);
-               }
-               elseif($incoming_transfer->date_of_resiving!=null && $incoming_transfer->date_of_finishing!=null){
-                   $archiv->push($incoming_transfer); 
-               }
-               elseif($incoming_transfer->date_of_resiving==null && $incoming_transfer->date_of_finishing==null) {
-                $wait->push($incoming_transfer);
-               }
-              }
-               
+            }
+
 
             if ($incoming_transfers->isEmpty()) {
                 return response()->json(["msg" => "there are no incoming transfers on this place"], 404);
             }
-            return response()->json(["msg" => "incoming transfers on this place","live"=>$live,"archiv"=>$archiv,"wait"=>$wait], 202);
-
-    }catch (Exception $e) {
-        return response()->json(["msg" => $e->getMessage()], 500);
+            return response()->json(["msg" => "incoming transfers on this place", "live" => $live, "archiv" => $archiv, "wait" => $wait], 202);
+        } catch (Exception $e) {
+            return response()->json(["msg" => $e->getMessage()], 500);
+        }
     }
-
-}
-
 }

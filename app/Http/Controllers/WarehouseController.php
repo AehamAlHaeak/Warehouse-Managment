@@ -190,7 +190,7 @@ class WarehouseController extends Controller
                     return response()->json(["msg" => "un authorized in this destination"], 401);
                 }
             }
-           
+
             if (!$product) {
                 return response()->json(["msg" => "product not found"], 404);
             }
@@ -217,14 +217,13 @@ class WarehouseController extends Controller
 
             $inventory_of_incoming = 0;
             $product_continer = $product->container;
-            $transfers=$destination->resived_transfers()->whereNull("date_of_finishing")->get();
+            $transfers = $destination->resived_transfers()->whereNull("date_of_finishing")->get();
             foreach ($transfers as $transfer) {
-                
+
                 foreach ($transfer->transfer_details as $detail) {
                     $containers_count = $detail->continers()->where("container_type_id", $product_continer->id)->where("status", "accepted")->whereDoesntHave("posetion_on_stom")->count();
-                  
-                        $inventory_of_incoming += $containers_count*$product_continer->capacity;
-                    
+
+                    $inventory_of_incoming += $containers_count * $product_continer->capacity;
                 }
             }
             $destination = $this->calcute_areas_on_place_for_a_specific_product($destination, $product->id);
@@ -234,7 +233,7 @@ class WarehouseController extends Controller
                     "msg" => "The total of containers already incoming and the new quantity exceeds the available space in the destination."
                 ], 409);
             }
-             
+
             $sections_in_source = $source->sections()->where("product_id", $product->id)->get();
             $all_containers = collect();
             $seven_days_from_now = Carbon::now()->addDays(7);
@@ -288,6 +287,41 @@ class WarehouseController extends Controller
             }
 
             return response()->json(["msg" => $transfer_details], 202);
+        } catch (Exception $e) {
+            return response()->json([
+
+                'errors' => $e->getMessage(),
+            ], 422);
+        }
+    }
+    public function show_distrebution_centers_of_warehouse(Request $request, $warehouse_id)
+    {
+        try {
+            $employe = $request->employe;
+            $warehouse = warehouse::find($warehouse_id);
+            if ($employe->specialization->name != "super_admin") {
+
+                $authorized_in_place = $this->check_if_authorized_in_place($employe,      $warehouse);
+                if (!$authorized_in_place) {
+                    return response()->json(["msg" => "un authorized in this source"], 401);
+                }
+            }
+            $distribution_centers = $warehouse->distribution_centers()->get([
+                'id',
+                'name',
+                'location',
+                'latitude',
+                'longitude',
+
+                'num_sections',
+                'type_id'
+            ]);
+
+
+            if ($distribution_centers->isEmpty()) {
+                return response()->json(["msg" => "distribution_centers not found"], 404);
+            }
+            return response()->json(["msg" => "here the centers", "distribuction_centers" => $distribution_centers], 202);
         } catch (Exception $e) {
             return response()->json([
 

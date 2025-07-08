@@ -10,7 +10,14 @@ class DistributionCenter extends Model
     use HasFactory;
     protected $guarded;
 
+    protected $appends = ['type_name'];
 
+    public function getTypeNameAttribute()
+    {
+        $type_name = $this->type;
+        unset($this["type"]);
+        return $type_name?->name ?? 'Unknown';
+    }
 
 
 
@@ -43,7 +50,8 @@ class DistributionCenter extends Model
     {
         return $this->morphMany(Transfer::class, "sourceable");
     }
-    public function warehouse(){
-        return $this->belongsTo(Warehouse::class,"warehouse_id");
+    public function warehouse()
+    {
+        return $this->belongsTo(Warehouse::class, "warehouse_id");
     }
 }

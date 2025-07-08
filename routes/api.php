@@ -174,7 +174,9 @@ Route::controller(WarehouseController::class)->middleware('is_warehouse_admin')-
     Route::get("show_distrebution_centers_of_product/{warehouse_id}/{product_id}", "show_distrebution_centers_of_product");
     Route::get("show_distribution_centers_of_storage_media_in_warehouse/{warehouse_id}/{storage_media_id}", "show_distribution_centers_of_storage_media_in_warehouse");
       Route::post("send_products_from_To", "send_products_from_To");
-});//send_products_from_To
+      Route::get("show_distrebution_centers_of_warehouse/{warehouse_id}", "show_distrebution_centers_of_warehouse");
+    
+});//show_distrebution_centers_of_warehouse(Request $request,$warehouse_id)
 
 
 Route::controller(Distribution_Center_controller::class)->middleware("is_dist_c_admin")->group(function () {
@@ -186,8 +188,10 @@ Route::controller(Distribution_Center_controller::class)->middleware("is_dist_c_
     Route::get("show_vehicles_of_garage/{garage_id}", "show_vehicles_of_garage");
 
     Route::get("show_products_of_place/{place_type}/{place_id}", "show_products_of_place");
+
+    Route::get("show_my_work_place", "show_my_work_place");
 });
-//show_products_of_place
+//show_my_work_place
 
 Route::controller(Distribution_Center_controller::class)->middleware('is_QA')->group(function () {
     Route::get("show_actual_loads", "show_actual_loads");
