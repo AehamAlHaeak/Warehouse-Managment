@@ -262,8 +262,8 @@ trait AlgorithmsTrait
         
         $actual_storage_elements_count = $storage_elements->count();
 
-        $max_storage_media_area = $section->num_floors * $section->num_classes * $section->num_positions_on_class;
-        $section->avilable_storage_media_area = $max_storage_media_area - $actual_storage_elements_count;
+        $section->max_storage_media_area = $section->num_floors * $section->num_classes * $section->num_positions_on_class;
+        $section->avilable_storage_media_area = $section->max_storage_media_area - $actual_storage_elements_count;
         $section->max_capacity_products = $actual_storage_elements_count * $storage_media->num_floors * $storage_media->num_classes * $storage_media->num_positions_on_class * $continer->capacity;
         $selled_load=0;
         $reserved_load=0;
@@ -389,7 +389,7 @@ trait AlgorithmsTrait
             $avilable_area_product += $section->avilable_area_product;
             $max_capacity_product+= $section->max_capacity_products;
             $avilable_storage_media_area +=  $section->avilable_storage_media_area;
-            $max_storage_media_area +=  $section->storage_media_max_area;
+            $max_storage_media_area +=  $section->max_storage_media_area;
             $selled_load+= $section->selled_load;
             $reserved_load+= $section->reserved_load;
             $rejected_load+= $section->rejected_load;
@@ -443,7 +443,7 @@ trait AlgorithmsTrait
     }
     public function move_reserved_from_to($another_contents, $load)
     {
-        echo " in move reserved from to \n";
+       
         foreach ($another_contents as $another_load) {
             $logs = $this->calculate_load_logs($another_load);
 

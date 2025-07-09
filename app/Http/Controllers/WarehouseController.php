@@ -92,13 +92,22 @@ class WarehouseController extends Controller
         ]);
     }
 
-    public function show_distrebution_centers_of_product($warehouse_id, $product_id)
+    public function show_distrebution_centers_of_product(Request $request,$warehouse_id, $product_id)
     {
-
+        
         $warehous = Warehouse::find($warehouse_id);
         if (!$warehous) {
             return response()->json(["msg" => "warehouse not found"], 404);
         }
+        $employe = $request->employe;
+        if ($employe->specialization->name != "super_admin") {
+
+            $authorized_in_place = $this->check_if_authorized_in_place($employe, $warehous);
+            if (!$authorized_in_place) {
+                return response()->json(["msg" => "Unauthorized - Invalid or missing employe token"], 401);
+            }
+        }
+
         $product = Product::find($product_id);
         if (!$product) {
             return response()->json(["msg" => "product not found"], 404);
@@ -111,11 +120,11 @@ class WarehouseController extends Controller
         }
         $i = 0;
         foreach ($distributionCenters as $distC) {
-            $has_a_section_of_product = $distC->sections()->where("product_id", $product_id)->get();
-
+            $has_a_section_of_product = $distC->sections()->where("product_id", $product_id)->exists();
+             if($has_a_section_of_product){
             $distC = $this->calcute_areas_on_place_for_a_specific_product($distC, $product_id);
             $distribution_centers_of_product[$i] = $distC;
-
+             }
             $i++;
         }
         if (empty($distribution_centers_of_product)) {
@@ -129,7 +138,7 @@ class WarehouseController extends Controller
     }
 
 
-    public function show_distribution_centers_of_storage_media_in_warehouse($warehouse_id, $storage_media_id)
+    public function show_distribution_centers_of_storage_media_in_warehouse(Request $request,$warehouse_id, $storage_media_id)
     {
         $storage_media = Storage_media::find($storage_media_id);
         if (!$storage_media) {
@@ -139,19 +148,28 @@ class WarehouseController extends Controller
         if (!$warehous) {
             return response()->json(["msg" => "warehouse not found"], 404);
         }
+         $employe = $request->employe;
+        if ($employe->specialization->name != "super_admin") {
+
+            $authorized_in_place = $this->check_if_authorized_in_place($employe, $warehous);
+            if (!$authorized_in_place) {
+                return response()->json(["msg" => "Unauthorized - Invalid or missing employe token"], 401);
+            }
+        }
+
+
         $product = $storage_media->product;
 
-        return $this->show_distrebution_centers_of_product($warehous->id, $product->id);
+        return $this->show_distrebution_centers_of_product($request,$warehous->id, $product->id);
     }
     public function send_products_from_To(Request $request)
     {
         try {
             try {
-
                 $validated_values = $request->validate([
-                    "source_type" => "required|in:Warehouse,DistributionCenter",
-                    "destination_type" => "required|in:Warehouse,DistributionCenter",
+                    "source_type" => "required|in:Warehouse,DistributionCenter",    
                     "source_id" => "required",
+                    "destination_type" => "required|in:Warehouse,DistributionCenter",
                     "destination_id" => "required",
                     "product_id" => "required|numeric",
                     "quantity" => "required|integer"
@@ -209,12 +227,6 @@ class WarehouseController extends Controller
                 return response()->json(["msg" => "the source dont have enough of this product"], 404);
             }
 
-            $destination = $this->calcute_areas_on_place_for_a_specific_product($destination, $product->id);
-
-            if ($validated_values["quantity"] > $destination->avilable_area_product) {
-                return response()->json(["msg" => "the destination dont have enough space for this product"], 404);
-            }
-
             $inventory_of_incoming = 0;
             $product_continer = $product->container;
             $transfers = $destination->resived_transfers()->whereNull("date_of_finishing")->get();
@@ -227,6 +239,10 @@ class WarehouseController extends Controller
                 }
             }
             $destination = $this->calcute_areas_on_place_for_a_specific_product($destination, $product->id);
+
+            if ($validated_values["quantity"] > $destination->avilable_area_product) {
+                return response()->json(["msg" => "the destination dont have enough space for this product"], 404);
+            }
             $may_be_a_load_in_des = $inventory_of_incoming + $validated_values["quantity"];
             if ($may_be_a_load_in_des > $destination->avilable_area_product) {
                 return response()->json([

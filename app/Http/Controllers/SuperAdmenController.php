@@ -211,9 +211,9 @@ class SuperAdmenController extends Controller
     public function show_all_warehouses()
     {
         try {
-           
-          
-              
+
+
+
 
             $warehouses = Warehouse::with('type')
                 ->get([
@@ -226,7 +226,7 @@ class SuperAdmenController extends Controller
                     'num_sections',
                     'type_id'
                 ]);
-                
+
             if ($warehouses->isEmpty()) {
                 return response()->json(["msg" => "you dont have warehouses yet"]);
             }
@@ -1179,8 +1179,14 @@ class SuperAdmenController extends Controller
                 'storage_media' => 'required|array|min:1',
                 'storage_media.*.storage_media_id' => 'required|integer',
                 'storage_media.*.quantity' => 'required|integer|min:1',
-                'storage_media.*.section_id' => 'required|integer|min:1'
+                'storage_media.*.section_id' => 'required|integer|min:1',
+                'storage_media.*.position_id' => 'integer|min:1'
             ]);
+             
+                
+            
+
+           
         } catch (ValidationException $e) {
 
             return response()->json([
@@ -1188,8 +1194,17 @@ class SuperAdmenController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         }
-        $storage_media = $validated_items["storage_media"];
 
+
+
+        $storage_media = $validated_items["storage_media"];
+           foreach( $storage_media as $storage_element){
+            if(!empty($storage_element["position_id"])){
+              if($storage_element["quantity"]>1){
+                 return response()->json(["msg"=>"you can't import more than one item on the same position"],422);
+              }
+            }
+           }
 
         $storage_media_key = null;
         $import_operation_key = null;
@@ -1492,6 +1507,7 @@ class SuperAdmenController extends Controller
 
             $import_operations[$i] = $element;
         }
+
 
         return response()->json(["import_operations" => $import_operations]);
     }

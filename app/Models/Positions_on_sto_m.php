@@ -13,6 +13,10 @@ class Positions_on_sto_m extends Model
     public function container(){
         return $this->belongsTo(Import_op_container::class,"imp_op_contin_id");
     }
+    public function storage_element(){
+        return $this->belongsTo(Import_op_storage_md::class,"imp_op_stor_id");
+    }
+    
     
 }
 

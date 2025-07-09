@@ -20,7 +20,7 @@ use App\Models\Transfer_detail;
 use App\Models\Warehouse;
 use App\Models\Continer_transfer;
 use App\Traits\AlgorithmsTrait;
-
+use App\Models\container_movments;
 trait TransferTraitAeh
 {
 
@@ -55,6 +55,13 @@ trait TransferTraitAeh
                         $continer=Import_op_container::find($continer_id);
                         $posetion=$continer->posetion_on_stom;
                     if($posetion){
+                      container_movments::create([
+                          "imp_op_cont_id"=>$continer_id,
+                          "prev_position_id"=>$posetion->id,
+                          
+                          "moved_why"=>"loaded"
+                      ]);
+                      
                     $posetion->update([
                         "imp_op_contin_id"=>null
                     ]);
