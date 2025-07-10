@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('transfer__details', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
-            $table->unsignedBigInteger("vehicle_id");
+            $table->unsignedBigInteger("vehicle_id")->nullable();
             $table->unsignedBigInteger("transfer_id");
             $table->foreign("vehicle_id")->references("id")->on("vehicles");
             $table->foreign("transfer_id")->references("id")->on("transfers");

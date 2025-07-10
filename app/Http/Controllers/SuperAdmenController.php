@@ -1380,7 +1380,8 @@ class SuperAdmenController extends Controller
                 'products.*.imported_load' => 'numeric|min:0',
                 "products.*.distribution" => "required|array",
                 "products.*.distribution.*.warehouse_id" => "required|integer",
-                "products.*.distribution.*.load" => "required|min:1"
+                "products.*.distribution.*.load" => "required|min:1",
+                "products.*.distribution.*.send_vehicles" => "required|boolean"
 
             ]);
         } catch (ValidationException $e) {
