@@ -22,7 +22,7 @@ class import_storage_media implements ShouldQueue
   protected $import_operation_id;
   protected $storage_media;
   public function __construct($import_operation_id, $storage_media)
-  {
+  {//is_array($storage_media) ? array_values($storage_media) : [];
     $this->import_operation_id = $import_operation_id;
     $this->storage_media = $storage_media;
   }
@@ -54,7 +54,7 @@ class import_storage_media implements ShouldQueue
 
         ]);
         $section_empty_posetion = $section->posetions()->whereNull('storage_media_id')->first();
-        $section_empty_posetion->storage_media_id = $storage_unit->id;
+        
         if (!empty($storage_element["position_id"])) {
           $position = Posetions_on_section::find($storage_element["position_id"]);
           if ($position && $position->storage_media_id == null) {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+
 use Exception;
 use Carbon\Carbon;
 use App\Models\Bill;
@@ -39,10 +40,11 @@ use App\Models\Supplier_Product;
 use App\Traits\TransferTraitAeh;
 use App\Jobs\importing_operation;
 use App\Jobs\import_storage_media;
-use App\Models\DistributionCenter;
 
+use App\Models\DistributionCenter;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Log;
 use App\Models\Import_op_storage_md;
 use App\Models\Posetions_on_section;
 use Illuminate\Support\Facades\Auth;
@@ -51,9 +53,9 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Queue;
 use App\Http\Resources\ProductResource;
 use function PHPUnit\Framework\isEmpty;
+
 use Illuminate\Support\Facades\Storage;
 use App\Models\Import_operation_product;
-
 use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\storeProductRequest;
 use Tymon\JWTAuth\Exceptions\JWTException;
@@ -1182,11 +1184,6 @@ class SuperAdmenController extends Controller
                 'storage_media.*.section_id' => 'required|integer|min:1',
                 'storage_media.*.position_id' => 'integer|min:1'
             ]);
-             
-                
-            
-
-           
         } catch (ValidationException $e) {
 
             return response()->json([
@@ -1198,13 +1195,36 @@ class SuperAdmenController extends Controller
 
 
         $storage_media = $validated_items["storage_media"];
-           foreach( $storage_media as $storage_element){
-            if(!empty($storage_element["position_id"])){
-              if($storage_element["quantity"]>1){
-                 return response()->json(["msg"=>"you can't import more than one item on the same position"],422);
-              }
+
+        foreach ($storage_media as $storage_element) {
+            $section = Section::find($storage_element["section_id"]);
+            if ($section == null) {
+                return response()->json(["msg" => "section not found"], 404);
             }
-           }
+            $product = $section->product;
+            $storage_ele = $product->storage_media;
+            if ($storage_ele->id != $storage_element["storage_media_id"]) {
+                return response()->json(["msg" => "storage media is not smoth with section"], 409);
+            }
+
+
+            if (!empty($storage_element["position_id"])) {
+                $position = Posetions_on_section::find($storage_element["position_id"]);
+                if ($position == null) {
+                    return response()->json(["msg" => "position not found"], 404);
+                }
+                if ($position->section_id != $storage_element["section_id"]) {
+                    return response()->json(["msg" => "position not in this section"], 422);
+                }
+
+                if ($storage_element["quantity"] > 1) {
+                    return response()->json(["msg" => "you can't import more than one item on the same position"], 422);
+                }
+                if ($position->storage_media_id != null) {
+                    return response()->json(["msg" => "position already has storage media"], 422);
+                }
+            }
+        }
 
         $storage_media_key = null;
         $import_operation_key = null;
@@ -1259,30 +1279,30 @@ class SuperAdmenController extends Controller
             "location" => $validated_values["location"],
             "latitude" =>  $validated_values["latitude"],
             "longitude" =>  $validated_values["longitude"],
-            "storage_media" => $storage_media
+            "storage_media" => $validated_items["storage_media"]
         ], 201);
     }
 
 
 
-    public function accept_import_op_storage_media(Request $request)
+   public function accept_import_op_storage_media(Request $request)
     {
 
         $storage_media = Cache::get($request->storage_media_key);
         $import_operation = Cache::get($request->import_operation_key);
-
+       
         if (!$storage_media || !$import_operation) {
             return response()->json(["msg" => "already accepted or deleted"], 400);
         }
         $import_operation = Import_operation::create($import_operation);
         Cache::forget($request->import_operation_key);
         Cache::forget($request->storage_media_key);
+
         $job = new import_storage_media($import_operation->id, $storage_media);
-
+         echo "job id: " . "\n";
         $jobId = Queue::later(now()->addMinutes(0), $job);
-        return response()->json(["msg" => "storage_media under creating", "job_id" => $jobId], 202);
+        return response()->json(["msg" => "storage_media under creating", "job_id" => $jobId,"storage_media"=>$storage_media], 202);
     }
-
 
 
     public function show_latest_import_op_storage_media()
