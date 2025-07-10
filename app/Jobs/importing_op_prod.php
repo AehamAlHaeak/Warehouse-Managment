@@ -102,12 +102,19 @@ class importing_op_prod implements ShouldQueue
                         "imp_op_product_id" => $imported_product->id,
                         "load" => $load
                     ]);
-                    $destinations_loads_by_product[$distrebute["send_vehicles"]][$distrebute["warehouse_id"]][$product["product_id"]][$continer->id] = $continer;
+                     if($distrebute["send_vehicles"]==true){
+                       $destinations_loads_by_product["send_vehicles"][$distrebute["warehouse_id"]][$product["product_id"]][$continer->id] = $continer;
+                     }
+                     else{
+                       $destinations_loads_by_product["dont_send_vehicles"][$distrebute["warehouse_id"]][$product["product_id"]][$continer->id] = $continer;
+                    
+                     }
+                    
                     $distrebute["load"] -= $load;
                 }
             }
-        }
-        foreach ($destinations_loads_by_product[false] as $warehouse_id => $products) {
+        } if(array_key_exists("dont_send_vehicles",$destinations_loads_by_product)){
+        foreach ($destinations_loads_by_product["dont_send_vehicles"] as $warehouse_id => $products) {
             $warehouse = Warehouse::find($warehouse_id);
             if (!$warehouse) {
                 Log::error("No warehouse found for ID: {$warehouse_id}");
@@ -144,7 +151,9 @@ class importing_op_prod implements ShouldQueue
                 }
             }
         }
-        foreach ($destinations_loads_by_product[true] as $warehouse_id => $products) {
+    }
+    if(array_key_exists("send_vehicles",$destinations_loads_by_product)){
+        foreach ($destinations_loads_by_product["send_vehicles"] as $warehouse_id => $products) {
             $warehouse = Warehouse::find($warehouse_id);
             if (!$warehouse) {
                  
@@ -168,6 +177,7 @@ class importing_op_prod implements ShouldQueue
                 }
             }
         }
+    }
     DB::commit(); 
     } catch (\Throwable $e) {
         DB::rollBack(); 

@@ -206,8 +206,9 @@ Route::controller(Distribution_Center_controller::class)->middleware('is_QA')->g
     Route::get("show_incoming_transfers/{place_type}/{place_id}", "show_incoming_transfers");
     Route::get("show_empty_posetions_on_storage_element/{storage_element_id}", "show_empty_posetions_on_storage_element");
     Route::post("move_to_position", "move_to_position");
+    Route::post("pass_load", "pass_load");
 });
-//move_to_position
+//pass_load(Request $request,$load_id)
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
 
 Route::controller(EmployeController::class)->middleware('is_employe')->group(function () {

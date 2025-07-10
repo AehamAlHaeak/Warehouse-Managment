@@ -6,6 +6,7 @@ use Exception;
 use App\Models\User;
 use App\Models\Garage;
 use App\Models\Employe;
+use App\Models\Product;
 use App\Models\Section;
 use App\Models\Transfer;
 use App\Traits\LoadingTrait;
@@ -15,22 +16,25 @@ use App\Models\reject_details;
 use App\Models\Transfer_detail;
 use App\Traits\AlgorithmsTrait;
 use App\Models\reserved_details;
+use App\Models\container_movments;
 use App\Models\DistributionCenter;
+use App\Models\Positions_on_sto_m;
+use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Models\Import_op_container;
 use App\Models\Imp_continer_product;
 use App\Models\Import_op_storage_md;
+use App\Models\Posetions_on_section;
+use App\Traits\TransferTraitAeh;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
-use App\Models\container_movments;
-use App\Models\Posetions_on_section;
-use App\Models\Positions_on_sto_m;
-use App\Models\Product;
+
 class Distribution_Center_controller extends Controller
 {
     use AlgorithmsTrait;
+    use TransferTraitAeh;
     public function show_my_work_place(Request $request)
     {
         try {
@@ -870,6 +874,61 @@ class Distribution_Center_controller extends Controller
             return response()->json(["msg" => $e->getMessage()], 500);
         }
 
+     }
+
+     public function pass_load(Request $request){
+        try{
+           try{
+             $validated_values = $request->validate([
+                 "load_id"=>"required|integer"
+             ]);
+           } catch (ValidationException $e) {
+
+                return response()->json([
+                    'msg' => 'Validation failed',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
+
+
+
+            $load=Transfer_detail::find($validated_values["load_id"]);
+            
+            $transfer=$load->transfer;
+            $destination=$transfer->destinationable;
+            $employe=$request->employe;
+           
+            if ($employe->specialization->name != "super_admin") {
+    
+                $authorized_in_place = $this->check_if_authorized_in_place($employe, $destination);
+                if (!$authorized_in_place) {
+                    return response()->json(["msg" => "Unauthorized - Invalid or missing employe token"], 401);
+                }
+            }
+            if($load->status!="in_QA"){
+               return response()->json(["msg" => "the load is not in QA"], 409);
+            }
+            DB::beginTransaction();
+            try{
+                
+            $continers=$this->unload($load,$destination);
+          
+            
+            $load->update(["status"=>"received"]);
+            DB::commit();
+             return response()->json(["msg" => "load passed successfully","destination"=>$destination,"continers"=>$continers], 200);
+            }
+            catch(Exception $e){
+                 DB::rollBack(); 
+                 return response()->json(["msg" => $e->getMessage()], 500);
+            }
+            
+            
+
+        }
+        catch (Exception $e) {
+            return response()->json(["msg" => $e->getMessage()], 500);
+        }
      }
 
 

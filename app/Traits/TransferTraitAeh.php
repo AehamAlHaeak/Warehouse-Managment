@@ -79,21 +79,26 @@ trait TransferTraitAeh
 
     public function unload($transfer_detail, $destination)
     {
-
+         
         $continers = $transfer_detail->continers()
             ->whereDoesntHave('posetion_on_stom')
             ->whereNotIn('status', ['rejected', 'auto_reject'])
             ->get();
-        $product =  $continers[0]->parent_continer->product;
+       
+        $product =  $continers->first()->parent_continer->product;
+        
         $continers = $continers->pluck('id');
+       
         $destination = $this->calcute_areas_on_place_for_a_specific_product($destination, $product->id);
-        $destination = $this->calculate_ready_vehiscles($destination, $product);
+        
+         
         $avilable_sections = $destination->sections()->where("product_id", $product->id)->get();
-        while ($continers->isNotEmpty() || $destination->avilable_area > 0) {
+        while ($continers->isNotEmpty() || $destination->avilable_area_product > 0) {
 
             foreach ($avilable_sections as $section) {
 
                 $storage_elaments = $section->storage_elements;
+                
                 foreach ($storage_elaments as $storage_element) {
 
                     try {
@@ -106,7 +111,7 @@ trait TransferTraitAeh
                         $continer_id = $continers->splice(0, 1)->first();
                         $position->imp_op_contin_id = $continer_id;
                         $position->save();
-                        $destination->avilable_area -= 1;
+                        $destination->avilable_area_product -= 1;
                     }
                 }
             }
@@ -115,7 +120,7 @@ trait TransferTraitAeh
 
 
 
-        return  $destination;
+        return  $continers;
     }
 
     public function resive_transfers($source, $destination, $continers = null)
