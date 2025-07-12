@@ -21,6 +21,7 @@ use App\Models\Warehouse;
 use App\Models\Continer_transfer;
 use App\Traits\AlgorithmsTrait;
 use App\Models\container_movments;
+
 trait TransferTraitAeh
 {
 
@@ -52,25 +53,24 @@ trait TransferTraitAeh
                 ]);
             }
             foreach ($block["container_ids"] as $continer_id) {
-                        $continer=Import_op_container::find($continer_id);
-                        $posetion=$continer->posetion_on_stom;
-                    if($posetion){
-                      container_movments::create([
-                          "imp_op_cont_id"=>$continer_id,
-                          "prev_position_id"=>$posetion->id,
-                          
-                          "moved_why"=>"loaded"
-                      ]);
-                      
+                $continer = Import_op_container::find($continer_id);
+                $posetion = $continer->posetion_on_stom;
+                if ($posetion) {
+                    container_movments::create([
+                        "imp_op_cont_id" => $continer_id,
+                        "prev_position_id" => $posetion->id,
+
+                        "moved_why" => "loaded"
+                    ]);
+
                     $posetion->update([
-                        "imp_op_contin_id"=>null
+                        "imp_op_contin_id" => null
                     ]);
                 }
                 Continer_transfer::create([
                     "transfer_detail_id" =>  $transfer_detail_l->id,
                     "imp_op_contin_id" => $continer_id
                 ]);
-               
             }
         }
         return "loading succesfully!";
@@ -79,45 +79,58 @@ trait TransferTraitAeh
 
     public function unload($transfer_detail, $destination)
     {
-         
+
         $continers = $transfer_detail->continers()
             ->whereDoesntHave('posetion_on_stom')
             ->whereNotIn('status', ['rejected', 'auto_reject'])
             ->get();
-       
-        $product =  $continers->first()->parent_continer->product;
-        
+        $parent_cont = $continers->first()->parent_continer;
+        $product =  $parent_cont->product;
+
         $continers = $continers->pluck('id');
-       
+
         $destination = $this->calcute_areas_on_place_for_a_specific_product($destination, $product->id);
-        
-         
+        if ($destination->avilable_area_product < $continers->count()) {
+            throw new \Exception("the destination is full");
+        }
+       
         $avilable_sections = $destination->sections()->where("product_id", $product->id)->get();
-        while ($continers->isNotEmpty() || $destination->avilable_area_product > 0) {
-
+        while ($continers->isNotEmpty() && $destination->avilable_area_product > 0) {
             foreach ($avilable_sections as $section) {
-
                 $storage_elaments = $section->storage_elements;
-                
-                foreach ($storage_elaments as $storage_element) {
 
+                foreach ($storage_elaments as $storage_element) {
                     try {
                         $avilablie_posetions = $storage_element->posetions()->whereNull("imp_op_contin_id")->orderBy("id", "desc")->get();
+                         
                     } catch (\Exception $e) {
                         return $e->getMessage();
                     }
+
                     foreach ($avilablie_posetions as $position) {
 
+                        if ($continers->isEmpty()) {
+                            break 3;
+                        }
+                         
+                        
                         $continer_id = $continers->splice(0, 1)->first();
+                        if($position->imp_op_contin_id !== null){
+                         
+                         continue;
+                        }
                         $position->imp_op_contin_id = $continer_id;
                         $position->save();
-                        $destination->avilable_area_product -= 1;
+
+                        
                     }
                 }
             }
+            $destination = $this->calcute_areas_on_place_for_a_specific_product($destination, $product->id);
         }
-         
-
+        if ($continers->isNotEmpty()) {
+            throw new \Exception("the destination is full there are another load unloaded here");
+        }
 
 
         return  $continers;
@@ -197,33 +210,33 @@ trait TransferTraitAeh
         }
         if ($continers->isEmpty()) {
 
-             $parent_transfer = Transfer::create([
-                "sourceable_type" => get_class($source),//imp_op // war
+            $parent_transfer = Transfer::create([
+                "sourceable_type" => get_class($source), //imp_op // war
                 "sourceable_id" => $source->id,
-                "destinationable_type" => get_class($destination),//warehouse with load user or dist
+                "destinationable_type" => get_class($destination), //warehouse with load user or dist
                 "date_of_resiving" => now(),
                 "destinationable_id" => $destination->id,
 
             ]);
             $related_transfer = Transfer::create([
-                "sourceable_type" => get_class($destination),//warehouse user or dest 
+                "sourceable_type" => get_class($destination), //warehouse user or dest 
                 "sourceable_id" => $destination->id,
-                "destinationable_type" => get_class($source),//imp_op without load  warehouse 
+                "destinationable_type" => get_class($source), //imp_op without load  warehouse 
                 "destinationable_id" => $source->id,
             ]);
-           
+
 
             $related_transfer->parent_trans = $parent_transfer->id;
             $related_transfer->save();
             $parent_transfer->related_trans = $related_transfer->id;
             $parent_transfer->save();
 
-            if ($source instanceof \App\Models\Import_operation ) {
-                 $parent_transfer->update(["date_of_resiving" => null]);
-                 $related_transfer->update(["date_of_resiving" => now()]);
-                $this->load_vehicles( $parent_transfer->id,$related_transfer->id, $transfer_details, "wait", "under_work");
+            if ($source instanceof \App\Models\Import_operation) {
+                $parent_transfer->update(["date_of_resiving" => null]);
+                $related_transfer->update(["date_of_resiving" => now()]);
+                $this->load_vehicles($parent_transfer->id, $related_transfer->id, $transfer_details, "wait", "under_work");
             } else {
-                $this->load_vehicles($parent_transfer->id,$related_transfer->id , $transfer_details, "under_work", "wait");
+                $this->load_vehicles($parent_transfer->id, $related_transfer->id, $transfer_details, "under_work", "wait");
             }
 
 

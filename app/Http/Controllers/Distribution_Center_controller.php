@@ -916,7 +916,7 @@ class Distribution_Center_controller extends Controller
             
             $load->update(["status"=>"received"]);
             DB::commit();
-             return response()->json(["msg" => "load passed successfully","destination"=>$destination,"continers"=>$continers], 200);
+             return response()->json(["msg" => "load passed successfully","destination"=>$destination,"continers"=>$continers], 202);
             }
             catch(Exception $e){
                  DB::rollBack(); 

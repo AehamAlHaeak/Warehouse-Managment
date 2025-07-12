@@ -277,6 +277,7 @@ trait AlgorithmsTrait
               if($posetion->imp_op_contin_id==null){
                 
                 $avilable_area_product+=$continer->capacity;
+               
               }
               else{
                 $container=$posetion->container;
@@ -388,6 +389,7 @@ trait AlgorithmsTrait
             $section = $this->calculate_areas($section);
             $avilable_area_product += $section->avilable_area_product;
             $max_capacity_product+= $section->max_capacity_products;
+             
             $avilable_storage_media_area +=  $section->avilable_storage_media_area;
             $max_storage_media_area +=  $section->max_storage_media_area;
             $selled_load+= $section->selled_load;
@@ -398,7 +400,9 @@ trait AlgorithmsTrait
 
         $object->max_capacity_product = $max_capacity_product;
         $object->avilable_area_product = $avilable_area_product;
+      
         $object->avilable_storage_media_area = $avilable_storage_media_area;
+        
         $object->max_storage_media_area = $max_storage_media_area;
         $object->selled_load=$selled_load;
         $object->reserved_load=$reserved_load;
