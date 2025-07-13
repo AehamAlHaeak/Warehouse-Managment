@@ -15,11 +15,11 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log as l;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-
+use App\Traits\ViolationsTrait;
 class StoreVehiclesJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-
+    use ViolationsTrait;
     protected $vehicles;
     protected $import_operation;
     protected $latitude;
@@ -72,7 +72,8 @@ class StoreVehiclesJob implements ShouldQueue
                         $driver = $avilable_drivers->splice(0, 1)->first();
                         $vehicleData["driver_id"] = $driver->id;
                     }
-                    Vehicle::create($vehicleData);
+                   $vehicle=Vehicle::create($vehicleData);
+                   $this->reset_conditions_on_object($vehicle);
                     break;
                 }
             }

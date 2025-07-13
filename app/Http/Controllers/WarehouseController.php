@@ -123,6 +123,7 @@ class WarehouseController extends Controller
             $has_a_section_of_product = $distC->sections()->where("product_id", $product_id)->exists();
              if($has_a_section_of_product){
             $distC = $this->calcute_areas_on_place_for_a_specific_product($distC, $product_id);
+            $distC= $this->calculate_ready_vehicles($distC,$product);
             $distribution_centers_of_product[$i] = $distC;
              }
             $i++;
@@ -345,4 +346,21 @@ class WarehouseController extends Controller
             ], 422);
         }
     }
+     
+
+    public function calculate_ready_vehicles($warehouse_id){
+        try{
+     $warehouse=Warehouse::find($warehouse_id);
+     $product=Product::find(1);
+      $warehouse=$this->calculate_ready_vehiscles($warehouse, $product);
+      return   $warehouse;
+        }catch(Exception $e){
+            return response()->json([
+                'errors' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+
+
 }

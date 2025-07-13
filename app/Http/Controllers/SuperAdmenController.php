@@ -362,14 +362,26 @@ class SuperAdmenController extends Controller
             ], 422);
         }
 
-        $employe = Employe::where(function ($query) use ($validated_values) {
-            $query->where("email", $validated_values["email"])
-                ->orWhere("phone_number", $validated_values["phone_number"]);
-        })->first();
+        $checkEmploy = null;
+       
+                $checkEmploy = Employe::where("email", $validated_values["email"])->first();
+            
+            if ($checkEmploy) {
+                
+                    return response()->json(["msg" => "you enter email already exists why?? !editing denied"], 403);
+              
+            }
+          
+                $checkEmploy = Employe::where("phone_number", $validated_values["phone_number"])->first();
+            
 
-        if ($employe) {
-            return response()->json(['msg' => 'employe already exist'], 400);
-        }
+            if ($checkEmploy) {
+               
+                    return response()->json(["msg" => "you enter phone number already exists why?? !editing denied"], 403);
+            
+            }
+
+        
 
         $password = Hash::make($validated_values["password"]);
 
@@ -826,20 +838,25 @@ class SuperAdmenController extends Controller
             $max_load_in_distribution_centers = 0;
             $avilable_load_in_warehouses = 0;
             $max_load_in_distribution_centers = 0;
+            $avilable_load_in_distribution_centers=0;
             $average_in_warehouses = 0;
             $deviation_in_warehouses = 0;
             $salled_load = 0;
             $rejected_load = 0;
             $reserved_load = 0;
             $sections = $product->sections;
-
+            $auto_rejected_load=0;
+           
 
             foreach ($sections as $section) {
-
+                   $section=$this->calculate_areas($section);
                 if ($section->existable_type == "App\\Models\\Warehouse") {
+                   
                     $actual_load_in_warehouses +=  $section->actual_load_product;
                     $max_load_in_warehouses +=  $section->max_capacity_products;
-                    $avilable_load_in_warehouses += $section->avilable_area;
+                    $avilable_load_in_warehouses += $section->avilable_area_product;
+                  
+                    $auto_rejected_load+=$section->auto_rejected_load;
                     $date = Carbon::parse($section->created_at);
 
                     $now = Carbon::now();
@@ -854,14 +871,14 @@ class SuperAdmenController extends Controller
                 if ($section->existable_type == "App\\Models\\DistributionCenter") {
                     $actual_load_in_distribution_centers +=  $section->actual_load_product;
                     $max_load_in_distribution_centers += $section->max_capacity_products;
-                    $max_load_in_distribution_centers += $section->avilable_area;
+                    $avilable_load_in_distribution_centers += $section->avilable_area_product;
                 }
                 $salled_load += $section->selled_load;
                 $rejected_load += $section->rejected_load;
                 $reserved_load += $section->reserved_load;
             }
             $product->avilable_load_on_warehouses = $avilable_load_in_warehouses;
-            $product->avilable_load_on_distribution_centers = $max_load_in_distribution_centers;
+            $product->avilable_load_on_distribution_centers = $avilable_load_in_distribution_centers;
             $product->max_load_on_warehouse = $max_load_in_warehouses;
             $product->max_load_in_distribution_centers = $max_load_in_distribution_centers;
             $product->actual_load_in_warehouses = $actual_load_in_warehouses;
@@ -873,6 +890,7 @@ class SuperAdmenController extends Controller
             $product->salled_load = $salled_load;
             $product->rejected_load = $rejected_load;
             $product->reserved_load = $reserved_load;
+            $product->auto_rejected_load=$auto_rejected_load;
             unset($product["sections"]);
         }
         return response()->json(["msg" => "sucessfull", "products" => $products], 202);
@@ -1285,12 +1303,12 @@ class SuperAdmenController extends Controller
 
 
 
-   public function accept_import_op_storage_media(Request $request)
+    public function accept_import_op_storage_media(Request $request)
     {
 
         $storage_media = Cache::get($request->storage_media_key);
         $import_operation = Cache::get($request->import_operation_key);
-       
+
         if (!$storage_media || !$import_operation) {
             return response()->json(["msg" => "already accepted or deleted"], 400);
         }
@@ -1299,9 +1317,9 @@ class SuperAdmenController extends Controller
         Cache::forget($request->storage_media_key);
 
         $job = new import_storage_media($import_operation->id, $storage_media);
-         echo "job id: " . "\n";
+      
         $jobId = Queue::later(now()->addMinutes(0), $job);
-        return response()->json(["msg" => "storage_media under creating", "job_id" => $jobId,"storage_media"=>$storage_media], 202);
+        return response()->json(["msg" => "storage_media under creating", "job_id" => $jobId, "storage_media" => $storage_media], 202);
     }
 
 
@@ -1780,7 +1798,7 @@ class SuperAdmenController extends Controller
         foreach ($warehouses as $warehouse) {
 
             $warehouse = $this->calcute_areas_on_place_for_a_specific_product($warehouse, $id);
-
+            $warehouse = $this->calculate_ready_vehiscles($warehouse, $product);
             $warehouses_with_details[$i] = $warehouse;
 
             $i++;
@@ -2217,60 +2235,59 @@ class SuperAdmenController extends Controller
     public function edit_employe(Request $request)
     {
         try {
+            try {
 
-            $validated_values = $request->validate([
-                'employe_id' => "required",
-                "name" => "string",
-                "email" => "email",
-                "password" => "min:8",
-                "phone_number" => "max:10",
-                "specialization_id" => "integer",
-                "salary" => "numeric",
-                "birth_day" => "date",
-                "country" => "string",
-                "start_time" => "date_format:H:i",
-                "work_hours" => "numeric",
-                "workable_type" => "in:Warehouse,DistributionCenter",
-                "workable_id" => "integer"
-            ]);
-        } catch (ValidationException $e) {
+                $validated_values = $request->validate([
+                    'employe_id' => "required",
+                    "name" => "string",
+                    "email" => "email",
+                    "password" => "min:8",
+                    "phone_number" => "max:10",
+                    "specialization_id" => "integer",
+                    "salary" => "numeric",
+                    "birth_day" => "date",
+                    "country" => "string",
+                    "start_time" => "date_format:H:i",
+                    "work_hours" => "numeric",
+                    "workable_type" => "in:Warehouse,DistributionCenter",
+                    "workable_id" => "integer"
+                ]);
+            } catch (ValidationException $e) {
 
-            return response()->json([
-                'msg' => 'Validation failed',
-                'errors' => $e->errors(),
-            ], 422);
-        }
-        $employe = Employe::find($validated_values["employe_id"]);
-
-        if (!$employe) {
-            return response()->json(["msg" => "emplye not found"], 404);
-        }
-
-        unset($validated_values["employe_id"]);
-        $specialization = Specialization::find($validated_values["specialization_id"]);
-        if (!empty($validated_values["specialization_id"])) {
-            if ($specialization->name == "super_admin") {
-                return response()->json(["msg" => "you cannot set specialization to super admin !editing denied"], 403);
+                return response()->json([
+                    'msg' => 'Validation failed',
+                    'errors' => $e->errors(),
+                ], 422);
             }
-        }
-        $checkEmploy = Employe::where(function ($query) use ($validated_values) {
-            $query->where("email", $validated_values["email"])
-                ->orWhere("phone_number", $validated_values["phone_number"]);
-        })->first();
-        if ($checkEmploy) {
+            $employe = Employe::find($validated_values["employe_id"]);
 
-            return response()->json(["msg" => "you enter phone number or email already exists why?? !editing denied"], 403);
-        }
+            if (!$employe) {
+                return response()->json(["msg" => "emplye not found"], 404);
+            }
 
-        if (!empty($validated_values["password"])) {
-            $validated_values["password"] = Hash::make($validated_values["password"]);
-        }
-        try {
-            $employe = $employe->update($validated_values);
+            unset($validated_values["employe_id"]);
+            $specialization = Specialization::find($validated_values["specialization_id"]);
+            if (!empty($validated_values["specialization_id"])) {
+                if ($specialization->name == "super_admin") {
+                    return response()->json(["msg" => "you cannot set specialization to super admin !editing denied"], 403);
+                }
+            }
+
+           
+            
+
+            if (!empty($validated_values["password"])) {
+                $validated_values["password"] = Hash::make($validated_values["password"]);
+            }
+            try {
+                $employe = $employe->update($validated_values);
+            } catch (Exception $e) {
+                return response()->json(["error" => $e->getMessage()]);
+            }
+            return response()->json(["msg" => "editing succesfully!"], 202);
         } catch (Exception $e) {
-            return response()->json(["error" => $e->getMessage()]);
+            return response()->json(["msg" => $e->getMessage()], 404);
         }
-        return response()->json(["msg" => "editing succesfully!"], 202);
     }
     public function try_choise_trucks($warehouse_id, $import_operation_id)
     {

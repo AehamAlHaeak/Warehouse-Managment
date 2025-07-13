@@ -14,11 +14,13 @@ use App\Models\Positions_on_sto_m;
 use App\Models\Section;
 use App\Models\Storage_media;
 use App\Models\Posetions_on_section;
+use App\Traits\ViolationsTrait;
 
 class import_storage_media implements ShouldQueue
 {
   use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
   use AlgorithmsTrait;
+  use ViolationsTrait;
   protected $import_operation_id;
   protected $storage_media;
   public function __construct($import_operation_id, $storage_media)
@@ -72,12 +74,14 @@ class import_storage_media implements ShouldQueue
           $section_empty_posetion->storage_media_id = $storage_unit->id;
           $section_empty_posetion->save();
         }
+        $this->reset_conditions_on_object($storage_unit);
         $storage_unit->num_floors = $parent_storage_media->num_floors;
         $storage_unit->num_classes = $parent_storage_media->num_classes;
         $storage_unit->num_positions_on_class = $parent_storage_media->num_positions_on_class;
 
         $created_storage_units[$storage_unit->id] = $storage_unit;
         $this->create_postions("App\\Models\\Positions_on_sto_m", $storage_unit, "imp_op_stor_id");
+        
       }
     }
   }

@@ -14,6 +14,7 @@ use App\Http\Controllers\SuperAdmenController;
 use App\Http\Controllers\Distribution_Center_controller;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\QAController;
+use App\Http\Controllers\ViolationController;
 use App\Models\DistributionCenter;
 
 
@@ -175,8 +176,8 @@ Route::controller(WarehouseController::class)->middleware('is_warehouse_admin')-
     Route::get("show_distribution_centers_of_storage_media_in_warehouse/{warehouse_id}/{storage_media_id}", "show_distribution_centers_of_storage_media_in_warehouse");
       Route::post("send_products_from_To", "send_products_from_To");
       Route::get("show_distrebution_centers_of_warehouse/{warehouse_id}", "show_distrebution_centers_of_warehouse");
-    
-});//show_distrebution_centers_of_warehouse(Request $request,$warehouse_id)
+     Route::get("calculate_ready_vehicles/{warehouse_id}", "calculate_ready_vehicles");
+});//remove_driver(Request $request,$vehicle_id)
 
 
 Route::controller(Distribution_Center_controller::class)->middleware("is_dist_c_admin")->group(function () {
@@ -190,8 +191,13 @@ Route::controller(Distribution_Center_controller::class)->middleware("is_dist_c_
     Route::get("show_products_of_place/{place_type}/{place_id}", "show_products_of_place");
 
     Route::get("show_my_work_place", "show_my_work_place");
+    
+    Route::get("remove_driver/{vehicle_id}", "remove_driver");
+    
+    Route::post("set_driver_for_vehicle", "set_driver_for_vehicle");
+
 });
-//show_my_work_place
+//set_driver_for_vehicle
 
 Route::controller(Distribution_Center_controller::class)->middleware('is_QA')->group(function () {
     Route::get("show_actual_loads", "show_actual_loads");
@@ -207,8 +213,9 @@ Route::controller(Distribution_Center_controller::class)->middleware('is_QA')->g
     Route::get("show_empty_posetions_on_storage_element/{storage_element_id}", "show_empty_posetions_on_storage_element");
     Route::post("move_to_position", "move_to_position");
     Route::post("pass_load", "pass_load");
+   
 });
-//pass_load(Request $request,$load_id)
+//calculate_ready_vehicles
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
 
 Route::controller(EmployeController::class)->middleware('is_employe')->group(function () {
@@ -220,7 +227,11 @@ Route::controller(DriverController::class)->middleware('is_driver')->group(funct
     Route::get("show_my_curent_transfers", "show_my_curent_transfers");
     Route::get("set_status_my_transfer", "set_status_my_transfer");
 });
-//set_status_my_transfer
+
+Route::controller(ViolationController::class)->group(function () {
+    Route::post("set_temp","set_temp");
+});
+
 
 
 

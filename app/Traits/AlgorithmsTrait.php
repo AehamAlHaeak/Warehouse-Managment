@@ -2,7 +2,7 @@
 
 namespace App\Traits;
 
-use App\Models\Bill;
+use App\Models\Imp_continer_product;
 use App\Models\type;
 use App\Models\User;
 use App\Models\Garage;
@@ -243,60 +243,73 @@ trait AlgorithmsTrait
         }
     }
 
-
+/*$section->selled_load = $selled_load;
+        $section->rejected_load = $rejected_load;
+        $section->reserved_load = $reserved_load;
+        $section->actual_load_product = $actual_load_product;
+        $section->avilable_area_product = $avilable_area_product;
+        $section->auto_rejected_load=$auto_rejected_load; 
+        $section->max_storage_media_area
+         $section->avilable_storage_media_area
+         $section->max_capacity_products*/
 
 
     public function calculate_areas($section)
     {
         $avilable_area_product = 0;
-       
+
         $product = $section->product;
         $continer = $product->container;
-        
+
         $storage_media = $product->storage_media;
         $storage_elements = $section->storage_elements;
         unset($section["product"]);
         unset($section["continer"]);
         unset($section["storage_media"]);
         unset($section["storage_elements"]);
-        
-        $actual_storage_elements_count = $storage_elements->count();
 
+        $actual_storage_elements_count = $storage_elements->count();
+        $auto_rejected_load=0;
         $section->max_storage_media_area = $section->num_floors * $section->num_classes * $section->num_positions_on_class;
         $section->avilable_storage_media_area = $section->max_storage_media_area - $actual_storage_elements_count;
         $section->max_capacity_products = $actual_storage_elements_count * $storage_media->num_floors * $storage_media->num_classes * $storage_media->num_positions_on_class * $continer->capacity;
-        $selled_load=0;
-        $reserved_load=0;
-        $rejected_load=0;
-        $actual_load_product=0;
+        $selled_load = 0;
+        $reserved_load = 0;
+        $rejected_load = 0;
+        $actual_load_product = 0;
         foreach ($storage_elements as $storage_element) {
-            
-           
-            $posetions=$storage_element->posetions;
-            foreach( $posetions as $posetion){
-              if($posetion->imp_op_contin_id==null){
-                
-                $avilable_area_product+=$continer->capacity;
-               
-              }
-              else{
-                $container=$posetion->container;
-                
-                $inventory=$this->inventory_on_continer($container);
-                $selled_load+=$inventory["selled_load"];
-                
-                $rejected_load+=$inventory["rejected_load"];
-                $reserved_load+=$inventory["reserved_load"];
-                $actual_load_product+=$inventory["remine_load"];
-              }
+
+
+            $posetions = $storage_element->posetions;
+            foreach ($posetions as $posetion) {
+                if ($posetion->imp_op_contin_id == null) {
+
+                    $avilable_area_product += $continer->capacity;
+                } else {
+                    $container = $posetion->container;
+                     
+                    $inventory = $this->inventory_on_continer($container);
+                    $selled_load += $inventory["selled_load"];
+                     
+                    $rejected_load += $inventory["rejected_load"];
+                    $reserved_load += $inventory["reserved_load"];
+                    /*'accepted', 'rejected', 'sold','auto_reject' */
+                    if($container->status=="accepted"){
+                    $actual_load_product += $inventory["remine_load"];
+                    }
+                    elseif($container->status=="auto_reject"){
+                     $auto_rejected_load+=$inventory["remine_load"];
+
+                    }
+                }
             }
         }
-       $section->selled_load=$selled_load;
-       $section->rejected_load=$rejected_load;
-       $section->reserved_load=$reserved_load;
-       $section->actual_load_product=$actual_load_product;
-       $section->avilable_area_product=$avilable_area_product;
-       
+        $section->selled_load = $selled_load;
+        $section->rejected_load = $rejected_load;
+        $section->reserved_load = $reserved_load;
+        $section->actual_load_product = $actual_load_product;
+        $section->avilable_area_product = $avilable_area_product;
+        $section->auto_rejected_load=$auto_rejected_load;
         return $section;
     }
 
@@ -307,11 +320,11 @@ trait AlgorithmsTrait
         $activ_vehicles_count = 0;
         $avilable_vehicles_count = 0;
         $can_to_trans_load = 0;
-        $continer = $product->continer;
+        $continer = $product->container;
 
         foreach ($garages as $garage) {
             $avilable_vehicles_on_garage = $garage->vehicles()->where("product_id", $product->id)
-                ->whereNull("transfer_id")->get();
+                ->whereNull("transfer_id")->where("driver_id", "!=", Null)->get();
             $activ_vehicles_count += $garage->vehicles()->where("product_id", $product->id)
                 ->where("transfer_id", "!=", null)->count();
             $avilable_vehicles_count += $avilable_vehicles_on_garage->count();
@@ -337,7 +350,7 @@ trait AlgorithmsTrait
         foreach ($garage_of_type as $garage) {
             $fullarea = $garage->vehicles->count();
 
-            $fullarea = $garage->vehicles->count();
+
             if ($garage->size_of_vehicle == "big") {
                 $max_capacity_big += $garage->max_capacity;
                 $full_area_in_palce_big += $fullarea;
@@ -362,11 +375,11 @@ trait AlgorithmsTrait
     {
         $avilable_area_product = 0;
         $max_capacity_product = 0;
-        
-        $selled_load=0;
-        $reserved_load=0;
-        $rejected_load=0;
-        $actual_load_product=0;
+        $auto_rejected_load=0;
+        $selled_load = 0;
+        $reserved_load = 0;
+        $rejected_load = 0;
+        $actual_load_product = 0;
         $avilable_storage_media_area = 0;
         $max_storage_media_area = 0;
         $sections_of_the_product_in_object = $object->sections()
@@ -388,27 +401,27 @@ trait AlgorithmsTrait
 
             $section = $this->calculate_areas($section);
             $avilable_area_product += $section->avilable_area_product;
-            $max_capacity_product+= $section->max_capacity_products;
-             
+            $max_capacity_product += $section->max_capacity_products;
+            $auto_rejected_load+=$section->auto_rejected_load;
             $avilable_storage_media_area +=  $section->avilable_storage_media_area;
             $max_storage_media_area +=  $section->max_storage_media_area;
-            $selled_load+= $section->selled_load;
-            $reserved_load+= $section->reserved_load;
-            $rejected_load+= $section->rejected_load;
-            $actual_load_product+= $section->actual_load_product;
+            $selled_load += $section->selled_load;
+            $reserved_load += $section->reserved_load;
+            $rejected_load += $section->rejected_load;
+            $actual_load_product += $section->actual_load_product;
         }
 
         $object->max_capacity_product = $max_capacity_product;
         $object->avilable_area_product = $avilable_area_product;
-      
+
         $object->avilable_storage_media_area = $avilable_storage_media_area;
-        
+
         $object->max_storage_media_area = $max_storage_media_area;
-        $object->selled_load=$selled_load;
-        $object->reserved_load=$reserved_load;
-        $object->rejected_load=$rejected_load;
-        $object->actual_load_product=$actual_load_product;
-       
+        $object->selled_load = $selled_load;
+        $object->reserved_load = $reserved_load;
+        $object->rejected_load = $rejected_load;
+        $object->actual_load_product = $actual_load_product;
+        $object->auto_rejected_load=$auto_rejected_load;
         return $object;
     }
     public function check_if_authorized_in_place($employe, $place)
@@ -447,7 +460,7 @@ trait AlgorithmsTrait
     }
     public function move_reserved_from_to($another_contents, $load)
     {
-       
+
         foreach ($another_contents as $another_load) {
             $logs = $this->calculate_load_logs($another_load);
 
@@ -460,74 +473,138 @@ trait AlgorithmsTrait
 
             $load->reserved_load = $load->reserved_load - $moved_reserved;
             $load->save();
-            if($load->reserved_load == 0){
+            if ($load->reserved_load == 0) {
                 $load->delete($load->id);
             }
         }
         return $load;
     }
-    public function inventory_on_continer($container){
-       $loads=$container->loads;
-       unset($container["loads"]);
-       
-       $inventory=["selled_load"=>0,"reserved_load"=>0,"rejected_load"=>0,"remine_load"=>0];
-       foreach($loads as $load){
-          $load_logs=$this->calculate_load_logs($load);
-          
-          $inventory["selled_load"]+=$load_logs["selled_load"];
-          
-          $inventory["reserved_load"]+=$load_logs["reserved_load"];
-          $inventory["rejected_load"]+=$load_logs["rejected_load"];
-          $inventory["remine_load"]+=$load_logs["remine_load"];
-       }
-      return $inventory;
+    public function inventory_on_continer($container)
+    {
+        $loads = $container->loads;
+        unset($container["loads"]);
+
+        $inventory = ["selled_load" => 0, "reserved_load" => 0, "rejected_load" => 0, "remine_load" => 0];
+        foreach ($loads as $load) {
+            $load_logs = $this->calculate_load_logs($load);
+
+            $inventory["selled_load"] += $load_logs["selled_load"];
+
+            $inventory["reserved_load"] += $load_logs["reserved_load"];
+            $inventory["rejected_load"] += $load_logs["rejected_load"];
+            $inventory["remine_load"] += $load_logs["remine_load"];
+        }
+        return $inventory;
     }
-    public function inventry_product_in_place($product,$place){
-        
-            $actual_load = 0;
-            $max_load = 0;
-            $avilable_load = 0;
-            $average = 0;
-            $deviation = 0;
-            $salled_load=0;
-            $rejected_load=0;
-            $reserved_load=0;
-            $sections = $place->sections()->where("product_id", $product->id)->get();
-          
+    public function inventry_product_in_place($product, $place)
+    {
 
-            foreach ($sections as $section) {
-               $section=$this->calculate_areas($section);
-               
-                    $actual_load +=  $section->actual_load_product;
-                    $max_load +=  $section->max_capacity_products;
-                    $avilable_load += $section->avilable_area;
-                    $date = Carbon::parse($section->created_at);
+        $actual_load = 0;
+        $max_load = 0;
+        $auto_rejected_load=0;
+        $avilable_load = 0;
+        $average = 0;
+        $deviation = 0;
+        $salled_load = 0;
+        $rejected_load = 0;
+        $reserved_load = 0;
+        $sections = $place->sections()->where("product_id", $product->id)->get();
 
-                    $now = Carbon::now();
-                    $weeksPassed = $date->diffInWeeks($now);
-                    if ($weeksPassed != 0) {
 
-                        $deviation += sqrt($product->import_cycle / 7) * sqrt($section->variance / $weeksPassed);
-                    }
+        foreach ($sections as $section) {
+            $section = $this->calculate_areas($section);
 
-                    $average += ($product->import_cycle / 7) * $section->average;
-                
-               
-                $salled_load+=$section->selled_load;
-                $rejected_load+=$section->rejected_load;
-                $reserved_load+=$section->reserved_load;
+            $actual_load +=  $section->actual_load_product;
+            $max_load +=  $section->max_capacity_products;
+            $avilable_load += $section->avilable_area_product;
+            $auto_rejected_load += $section->auto_rejected_load;
+            $date = Carbon::parse($section->created_at);
 
+            $now = Carbon::now();
+            $weeksPassed = $date->diffInWeeks($now);
+            if ($weeksPassed != 0) {
+
+                $deviation += sqrt($product->import_cycle / 7) * sqrt($section->variance / $weeksPassed);
             }
+
+            $average += ($product->import_cycle / 7) * $section->average;
+
+
+            $salled_load += $section->selled_load;
+            $rejected_load += $section->rejected_load;
+            $reserved_load += $section->reserved_load;
+        }
+
+        $product->actual_load = $actual_load;
+        $product->max_load = $max_load;
+        $product->avilable_load = $avilable_load;
+        $product->average = $average;
+        $product->deviation = $deviation;
+        $product->salled_load = $salled_load;
+        $product->rejected_load = $rejected_load;
+        $product->reserved_load = $reserved_load;
+        $product->auto_rejected_load=$auto_rejected_load;
+        unset($product["sections"]);
+        return $product;
+    }
+
+
+    public function move_reserved_from_containers($storage_elements,$container)
+    { 
+        $loads = $container->loads;
+       
+        
+        foreach ($loads as $load) {
+            
            
-            $product->actual_load = $actual_load;
-            $product->max_load = $max_load;
-            $product->avilable_load = $avilable_load;
-            $product->average = $average;
-            $product->deviation = $deviation;
-            $product->salled_load=$salled_load;
-            $product->rejected_load=$rejected_load;
-            $product->reserved_load=$reserved_load;
-            unset($product["sections"]);
-            return $product;
+            $res_loads = $load->reserved_load;
+           
+            foreach ($res_loads as $res_load) {
+              
+                foreach ($storage_elements as $storage_element) {
+                   
+                    $containers = $storage_element->impo_container()
+                        ->with('imp_op_product')
+                        ->get()
+                        ->sortBy(function ($container) {
+                            return $container->imp_op_product
+                                ->pluck('expiration')
+                                ->filter()
+                                ->min();
+                        })
+                        ->values();
+
+                    foreach ($containers as $continer) {
+                         echo  $continer->id;
+                         echo "\n";
+                        $contents_in_continer = Imp_continer_product::where("imp_op_cont_id", $continer->id)->get();
+                            
+
+                        //  $res_load=$this->move_reserved_from_to($contents_in_continer, $res_load);
+                        foreach ($contents_in_continer as $another_load) {
+                            $logs = $this->calculate_load_logs($another_load);
+
+                            $moved_reserved = min($logs["remine_load"], $res_load->reserved_load);
+
+                            $res = reserved_details::create([
+                                "transfer_details_id" => $res_load->transfer_details_id,
+                                "reserved_load" => $moved_reserved,
+                                "imp_cont_prod_id" => $another_load->id
+                            ]);
+
+                            $res_load->reserved_load = $res_load->reserved_load - $moved_reserved;
+
+                            $res_load->save();
+                            if ($res_load->reserved_load == 0) {
+
+                                $res_load->delete($res_load->id);
+                                break 3;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return true;
     }
 }

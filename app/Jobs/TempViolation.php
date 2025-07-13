@@ -2,11 +2,12 @@
 
 namespace App\Jobs;
 
+use App\Models\Violation;
 use Illuminate\Bus\Queueable;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 
 class TempViolation implements ShouldQueue
 {
@@ -15,9 +16,12 @@ class TempViolation implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct()
+       protected $violation_id;
+
+
+    public function __construct($violation_id)
     {
-        //
+      $this->violation_id = $violation_id;
     }
 
     /**
@@ -25,6 +29,7 @@ class TempViolation implements ShouldQueue
      */
     public function handle(): void
     {
-        //
+      
+        $violation=Violation::find($this->violation_id);
     }
 }

@@ -16,8 +16,9 @@ return new class extends Migration
             $table->timestamps();
             $table->morphs("violable");
             $table->enum("parameter",["temperature", "humidity", "light", "pressure", "ventilation"]);
-            $table->unsignedBigInteger("job_id");
-            $table->foreign("job_id")->references("id")->on("jobs");
+            $table->unsignedBigInteger("job_id")->nullable();
+            $table->enum("status",["wait","handled","effected"])->default("wait");
+            
         });
     }
 

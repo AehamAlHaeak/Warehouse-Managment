@@ -17,8 +17,11 @@ class DriverController extends Controller
         try{
         $driver = $request->employe;
         $vehicle = $driver->vehicle;
+        if(!$vehicle){
+          return response()->json(["msg" => "you dont have vehicle"], 404);
+        }
         $curent_transfer = $vehicle->actual_transfer;
-        $array=$curent_transfer->toArray();
+       
         $source=$curent_transfer->sourceable;
          if(!($source instanceof \App\Models\User)){
         $curent_transfer->from=$source->location;
