@@ -27,6 +27,7 @@ use App\Models\Import_op_container;
 use App\Models\Imp_continer_product;
 use App\Models\Import_op_storage_md;
 use App\Models\Posetions_on_section;
+use App\Traits\ViolationsTrait;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -36,6 +37,7 @@ class Distribution_Center_controller extends Controller
 {
     use AlgorithmsTrait;
     use TransferTraitAeh;
+    use ViolationsTrait;
     public function show_my_work_place(Request $request)
     {
         try {
@@ -1021,4 +1023,67 @@ class Distribution_Center_controller extends Controller
             return response()->json(["msg" => $e->getMessage()], 500);
         }
     }
+   public function reset_conditions_in_place(Request $request){
+     DB::beginTransaction();
+    try{
+     try{
+       $valedated_values=$request->validate([
+         "place_id"=>"required|integer",
+         "place_type"=>"required|in:Vehicle,Import_op_storage_md",
+       ]);
+     }
+     catch(ValidationException $e){
+
+       return response()->json([
+         'msg' => 'Validation failed',
+         'errors' => $e->errors(),
+       ], 422);
+     }
+     $employe=$request->employe;
+     $model_place = "App\\Models\\" . $valedated_values["place_type"];
+     $place = $model_place::find($valedated_values["place_id"]);
+     if (!$place) {
+         return response()->json(["msg" => "the place which you want is not exist"], 404);
+     }
+     if(get_class($place)=="App\Models\Vehicle"){
+      
+      if($place->transfer_id!=null){
+       return response()->json(["msg" => "the vehicle is in a transfer"], 404);
+      } 
+      $garage=$place->grarage;
+      $existable=$garage->existable;
+     }
+     elseif(get_class($place)=="App\Models\Import_op_storage_md"){
+      $section=$place->section->first();
+      $existable=$section->existable;
+     }
+     if($employe->specialization->name != "super_admin"){
+
+        $authorized_in_place = $this->check_if_authorized_in_place($employe, $existable);
+        if (!$authorized_in_place) {
+            return response()->json(["msg" => "Unauthorized - Invalid or missing employe token"], 401);
+        }
+     }
+      $parameters=["temperature","humidity","light","pressure","ventilation"];
+      $product=$place->product;
+      $place->readiness=1;
+      foreach($parameters as $parameter){
+            
+           $value=($product["highest_".$parameter]+$product["lowest_".$parameter])/2;
+           $this->deal_with_variable_conditions($place, $parameter, $value);
+      }
+       
+    
+      DB::commit();
+     return response()->json(["msg" => "conditions reset successfully"], 202);
+
+    }
+    catch(Exception $e){
+        DB::rollback();
+      return response()->json(["msg"=>$e->getMessage()],500);
+    }
+   }
+
+
+
 }

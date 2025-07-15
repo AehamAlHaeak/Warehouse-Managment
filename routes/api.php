@@ -213,9 +213,10 @@ Route::controller(Distribution_Center_controller::class)->middleware('is_QA')->g
     Route::get("show_empty_posetions_on_storage_element/{storage_element_id}", "show_empty_posetions_on_storage_element");
     Route::post("move_to_position", "move_to_position");
     Route::post("pass_load", "pass_load");
+    Route::post("reset_conditions_in_place", "reset_conditions_in_place");
    
 });
-//calculate_ready_vehicles
+//reset_conditions_in_place
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
 
 Route::controller(EmployeController::class)->middleware('is_employe')->group(function () {
