@@ -17,7 +17,7 @@ return new class extends Migration
             $table->morphs("violable");
             $table->enum("parameter",["temperature", "humidity", "light", "pressure", "ventilation"]);
             $table->unsignedBigInteger("job_id")->nullable();
-            $table->enum("status",["wait","handled","effected"])->default("wait");
+            $table->enum('status', ['wait', 'handled', 'effected'])->default('wait');
             
         });
     }

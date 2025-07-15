@@ -61,6 +61,7 @@ use App\Http\Requests\storeProductRequest;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use App\Http\Requests\storeEmployeeRequest;
 use App\Models\Distribution_center_Product;
+use App\Models\Import_op_container;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
 
@@ -2291,25 +2292,23 @@ class SuperAdmenController extends Controller
     }
     public function try_choise_trucks($warehouse_id, $import_operation_id)
     {
-
+        DB::beginTransaction();
         $warehouse = Warehouse::find($warehouse_id);
         if (!$warehouse) {
             return response()->json(["msg" => "warehouse not found"], 404);
         }
 
-        $import_operation = Import_operation::find($import_operation_id);
-        if (!$import_operation) {
-            return response()->json(["msg" => "import_operation not found"], 404);
-        }
+       $user = User::find($import_operation_id);
+        
 
-        $continers = $import_operation->containers;
+        $continers = Import_op_container::where("id","<=",89)->where("id",">=",86)->get();
 
         try {
-            $truks_continers = $this->resive_transfers($import_operation, $warehouse, $continers);
+            $truks_continers = $this->resive_transfers($warehouse, $user, $continers);
         } catch (\Exception $e) {
             return response()->json(["msg" => $e->getMessage()], 404);
         }
-        return response()->json(["trucks" => $truks_continers], 202);
+        return response()->json(["trucks" => $truks_continers,"cons"=>$continers], 202);
     }
     public function show_storage_media_of_product($product_id)
     {

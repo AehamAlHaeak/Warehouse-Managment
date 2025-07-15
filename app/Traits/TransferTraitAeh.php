@@ -93,16 +93,15 @@ trait TransferTraitAeh
         if ($destination->avilable_area_product < $continers->count()) {
             throw new \Exception("the destination is full");
         }
-       
+
         $avilable_sections = $destination->sections()->where("product_id", $product->id)->get();
         while ($continers->isNotEmpty() && $destination->avilable_area_product > 0) {
             foreach ($avilable_sections as $section) {
-                $storage_elaments = $section->storage_elements;
+                $storage_elaments = $section->storage_elements()->where("readiness", ">", 0.8)->get();
 
                 foreach ($storage_elaments as $storage_element) {
                     try {
                         $avilablie_posetions = $storage_element->posetions()->whereNull("imp_op_contin_id")->orderBy("id", "desc")->get();
-                         
                     } catch (\Exception $e) {
                         return $e->getMessage();
                     }
@@ -112,17 +111,15 @@ trait TransferTraitAeh
                         if ($continers->isEmpty()) {
                             break 3;
                         }
-                         
-                        
+
+
                         $continer_id = $continers->splice(0, 1)->first();
-                        if($position->imp_op_contin_id !== null){
-                         
-                         continue;
+                        if ($position->imp_op_contin_id !== null) {
+
+                            continue;
                         }
                         $position->imp_op_contin_id = $continer_id;
                         $position->save();
-
-                        
                     }
                 }
             }
@@ -159,11 +156,21 @@ trait TransferTraitAeh
 
             $big_garages = $source->garages->where("size_of_vehicle", "big")->pluck("id");
         }
-        $avilable_vehicles_big = Vehicle::whereIn("garage_id", $big_garages)->whereNull("transfer_id")->where("product_id", $continer_product->id)->where("driver_id", "!=", null)->orderBy('capacity', 'desc')->get();
+        $avilable_vehicles_big = Vehicle::whereIn("garage_id", $big_garages)
+            ->whereNull("transfer_id")
+            ->where("product_id", $continer_product->id)
+            ->where("driver_id", "!=", null)
+            ->where("readiness", ">", 0.8)
+            ->orderBy('capacity', 'desc')
+            ->get();
 
-
-        $avilable_vehicles_medium = Vehicle::whereIn("garage_id", $medium_garages)->whereNull("transfer_id")->where("product_id", $continer_product->id)->where("driver_id", "!=", null)->orderBy('capacity', 'desc')->get();
-
+        $avilable_vehicles_medium = Vehicle::whereIn("garage_id", $medium_garages)
+            ->whereNull("transfer_id")
+            ->where("product_id", $continer_product->id)
+            ->where("driver_id", "!=", null)
+            ->where("readiness", ">", 0.8)
+            ->orderBy('capacity', 'desc')
+            ->get();
 
 
         $total_medium_capacity = $avilable_vehicles_medium->sum('capacity');

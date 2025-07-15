@@ -2,7 +2,6 @@
 
 namespace App\Traits;
 
-use App\Models\Imp_continer_product;
 use App\Models\type;
 use App\Models\User;
 use App\Models\Garage;
@@ -25,6 +24,8 @@ use App\Models\Transfer_Vehicle;
 use App\Models\DistributionCenter;
 use App\Models\Positions_on_sto_m;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Log;
+use App\Models\Imp_continer_product;
 use App\Models\Posetions_on_section;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
@@ -243,15 +244,7 @@ trait AlgorithmsTrait
         }
     }
 
-/*$section->selled_load = $selled_load;
-        $section->rejected_load = $rejected_load;
-        $section->reserved_load = $reserved_load;
-        $section->actual_load_product = $actual_load_product;
-        $section->avilable_area_product = $avilable_area_product;
-        $section->auto_rejected_load=$auto_rejected_load; 
-        $section->max_storage_media_area
-         $section->avilable_storage_media_area
-         $section->max_capacity_products*/
+
 
 
     public function calculate_areas($section)
@@ -269,7 +262,7 @@ trait AlgorithmsTrait
         unset($section["storage_elements"]);
 
         $actual_storage_elements_count = $storage_elements->count();
-        $auto_rejected_load=0;
+        $auto_rejected_load = 0;
         $section->max_storage_media_area = $section->num_floors * $section->num_classes * $section->num_positions_on_class;
         $section->avilable_storage_media_area = $section->max_storage_media_area - $actual_storage_elements_count;
         $section->max_capacity_products = $actual_storage_elements_count * $storage_media->num_floors * $storage_media->num_classes * $storage_media->num_positions_on_class * $continer->capacity;
@@ -287,19 +280,17 @@ trait AlgorithmsTrait
                     $avilable_area_product += $continer->capacity;
                 } else {
                     $container = $posetion->container;
-                     
+
                     $inventory = $this->inventory_on_continer($container);
                     $selled_load += $inventory["selled_load"];
-                     
+
                     $rejected_load += $inventory["rejected_load"];
                     $reserved_load += $inventory["reserved_load"];
                     /*'accepted', 'rejected', 'sold','auto_reject' */
-                    if($container->status=="accepted"){
-                    $actual_load_product += $inventory["remine_load"];
-                    }
-                    elseif($container->status=="auto_reject"){
-                     $auto_rejected_load+=$inventory["remine_load"];
-
+                    if ($container->status == "accepted") {
+                        $actual_load_product += $inventory["remine_load"];
+                    } elseif ($container->status == "auto_reject") {
+                        $auto_rejected_load += $inventory["remine_load"];
                     }
                 }
             }
@@ -309,7 +300,7 @@ trait AlgorithmsTrait
         $section->reserved_load = $reserved_load;
         $section->actual_load_product = $actual_load_product;
         $section->avilable_area_product = $avilable_area_product;
-        $section->auto_rejected_load=$auto_rejected_load;
+        $section->auto_rejected_load = $auto_rejected_load;
         return $section;
     }
 
@@ -375,7 +366,7 @@ trait AlgorithmsTrait
     {
         $avilable_area_product = 0;
         $max_capacity_product = 0;
-        $auto_rejected_load=0;
+        $auto_rejected_load = 0;
         $selled_load = 0;
         $reserved_load = 0;
         $rejected_load = 0;
@@ -402,7 +393,7 @@ trait AlgorithmsTrait
             $section = $this->calculate_areas($section);
             $avilable_area_product += $section->avilable_area_product;
             $max_capacity_product += $section->max_capacity_products;
-            $auto_rejected_load+=$section->auto_rejected_load;
+            $auto_rejected_load += $section->auto_rejected_load;
             $avilable_storage_media_area +=  $section->avilable_storage_media_area;
             $max_storage_media_area +=  $section->max_storage_media_area;
             $selled_load += $section->selled_load;
@@ -421,7 +412,7 @@ trait AlgorithmsTrait
         $object->reserved_load = $reserved_load;
         $object->rejected_load = $rejected_load;
         $object->actual_load_product = $actual_load_product;
-        $object->auto_rejected_load=$auto_rejected_load;
+        $object->auto_rejected_load = $auto_rejected_load;
         return $object;
     }
     public function check_if_authorized_in_place($employe, $place)
@@ -501,7 +492,7 @@ trait AlgorithmsTrait
 
         $actual_load = 0;
         $max_load = 0;
-        $auto_rejected_load=0;
+        $auto_rejected_load = 0;
         $avilable_load = 0;
         $average = 0;
         $deviation = 0;
@@ -543,68 +534,118 @@ trait AlgorithmsTrait
         $product->salled_load = $salled_load;
         $product->rejected_load = $rejected_load;
         $product->reserved_load = $reserved_load;
-        $product->auto_rejected_load=$auto_rejected_load;
+        $product->auto_rejected_load = $auto_rejected_load;
         unset($product["sections"]);
         return $product;
     }
 
 
-    public function move_reserved_from_containers($storage_elements,$container)
-    { 
+
+
+
+
+    public function move_reserved_from_container($storage_elements, $container, $un_wanted_ids = [])
+    {
+        Log::info("move_reserved_from_container called for container ID: " . $container->id);
+        Log::info("Initial un_wanted_ids: " . json_encode($un_wanted_ids));
+
+        $new_continers = [];
+        $un_wanted_ids = array_unique(array_merge($un_wanted_ids, array_keys($new_continers)));
+
         $loads = $container->loads;
-       
-        
+        Log::info("Number of loads in container " . $container->id . ": " . $loads->count());
+
         foreach ($loads as $load) {
-            
-           
+            Log::info("  Processing load ID: " . $load->id);
             $res_loads = $load->reserved_load;
-           
+            Log::info("    Number of reserved loads for load ID " . $load->id . ": " . $res_loads->count());
+
             foreach ($res_loads as $res_load) {
-              
+                Log::info("      Processing reserved_load ID: " . $res_load->id . ", Current Quantity: " . $res_load->reserved_load);
+                $targetTransferId = $res_load->transfer_details_id;
+                if ($res_load->reserved_load <= 0) {
+                    Log::info("        Reserved load ID " . $res_load->id . " is already 0 or less, skipping.");
+                    continue;
+                }
+
+                $current_res_load_moved_completely = false;
+
                 foreach ($storage_elements as $storage_element) {
-                   
-                    $containers = $storage_element->impo_container()
-                        ->with('imp_op_product')
-                        ->get()
-                        ->sortBy(function ($container) {
-                            return $container->imp_op_product
-                                ->pluck('expiration')
-                                ->filter()
-                                ->min();
+                    Log::info("        Checking storage_element ID: " . $storage_element->id);
+                    $containers_in_storage_element = $storage_element->impo_container()
+                        ->where(function ($query) use ($targetTransferId) {
+                            $query
+
+                                ->whereDoesntHave('loads.reserved_load')
+
+                                ->orWhereHas('loads.reserved_load', function ($subquery) use ($targetTransferId) {
+                                    $subquery->where('transfer_details_id', '=', $targetTransferId);
+                                });
                         })
-                        ->values();
+                        ->with('imp_op_product')
+                        ->get();
 
-                    foreach ($containers as $continer) {
-                         echo  $continer->id;
-                         echo "\n";
-                        $contents_in_continer = Imp_continer_product::where("imp_op_cont_id", $continer->id)->get();
-                            
+                    Log::info("          Found " . $containers_in_storage_element->count() . " containers in storage_element " . $storage_element->id);
 
-                        //  $res_load=$this->move_reserved_from_to($contents_in_continer, $res_load);
+                    foreach ($containers_in_storage_element as $continer_item) {
+                        Log::info("            Checking potential replacement container ID: " . $continer_item->id);
+
+                        if (in_array($continer_item->id, $un_wanted_ids) || array_key_exists($continer_item->id, $new_continers)) {
+                            Log::info("              Container ID " . $continer_item->id . " is in un_wanted_ids or already used, skipping.");
+                            continue;
+                        }
+
+                        if ($res_load->reserved_load <= 0) {
+                            Log::info("              Reserved load ID " . $res_load->id . " fulfilled, breaking 2 loops.");
+                            $current_res_load_moved_completely = true;
+                            $res_load->delete($res_load->id);
+                            break 2;
+                        }
+
+                        $contents_in_continer = \App\Models\Imp_continer_product::where("imp_op_cont_id", $continer_item->id)->get();
+                        Log::info("              Found " . $contents_in_continer->count() . " contents in container " . $continer_item->id);
+
                         foreach ($contents_in_continer as $another_load) {
+                            Log::info("                Checking content ID: " . $another_load->id . " in container " . $continer_item->id);
+                            if ($res_load->reserved_load <= 0) {
+                                Log::info("                  Reserved load ID " . $res_load->id . " fulfilled, breaking 3 loops.");
+                                $current_res_load_moved_completely = true;
+                                break 3;
+                            }
+
                             $logs = $this->calculate_load_logs($another_load);
+                            Log::info("                  calculate_load_logs returned remine_load: " . $logs["remine_load"]);
 
                             $moved_reserved = min($logs["remine_load"], $res_load->reserved_load);
 
-                            $res = reserved_details::create([
-                                "transfer_details_id" => $res_load->transfer_details_id,
-                                "reserved_load" => $moved_reserved,
-                                "imp_cont_prod_id" => $another_load->id
-                            ]);
+                            if ($moved_reserved > 0) {
+                                Log::info("                  Moving " . $moved_reserved . " units to container " . $continer_item->id);
+                                \App\Models\reserved_details::create([
+                                    "transfer_details_id" => $res_load->transfer_details_id,
+                                    "reserved_load" => $moved_reserved,
+                                    "imp_cont_prod_id" => $another_load->id
+                                ]);
 
-                            $res_load->reserved_load = $res_load->reserved_load - $moved_reserved;
+                                $res_load->reserved_load -= $moved_reserved;
+                                $res_load->save();
+                                Log::info("                  Reserved load ID " . $res_load->id . " remaining: " . $res_load->reserved_load);
 
-                            $res_load->save();
-                            if ($res_load->reserved_load == 0) {
-
-                                $res_load->delete($res_load->id);
-                                break 3;
+                                $new_continers[$continer_item->id] = $continer_item->id;
+                                $un_wanted_ids[] = $continer_item->id;
+                                $un_wanted_ids = array_unique($un_wanted_ids);
+                                Log::info("                  Added container " . $continer_item->id . " to new_continers/un_wanted_ids. Current new_continers: " . json_encode(array_values($new_continers)));
+                            } else {
+                                Log::info("                  Moved 0 units. Either remine_load is 0 or reserved_load is 0.");
                             }
                         }
                     }
                 }
+                if ($res_load->reserved_load > 0 && !$current_res_load_moved_completely) {
+                    Log::warning("Could not move all reserved load for res_load ID: " . $res_load->id . " Remaining: " . $res_load->reserved_load . ". No more suitable containers found.");
+                }
             }
         }
-        return true;
+        Log::info("Finished move_reserved_from_container for container ID: " . $container->id . ". Returning new_continers: " . json_encode(array_values($new_continers)));
+        return $new_continers;
     }
 }

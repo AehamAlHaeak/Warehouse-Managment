@@ -20,7 +20,7 @@ return new class extends Migration
             $table->foreign("vehicle_id")->references("id")->on("vehicles");
             $table->foreign("transfer_id")->references("id")->on("transfers");
           
- $table->enum("status",["under_work","received","wait","in_QA","Unloading","Packing"]);
+ $table->enum("status",["under_work","received","wait","in_QA","Unloading","Packing","cut"]);
             
             
    

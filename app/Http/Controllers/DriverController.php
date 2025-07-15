@@ -20,9 +20,13 @@ class DriverController extends Controller
         if(!$vehicle){
           return response()->json(["msg" => "you dont have vehicle"], 404);
         }
+        if($vehicle->transfer_id==null){
+          return response()->json(["msg"=>"relax time",404]);
+        }
         $curent_transfer = $vehicle->actual_transfer;
-       
+      
         $source=$curent_transfer->sourceable;
+       
          if(!($source instanceof \App\Models\User)){
         $curent_transfer->from=$source->location;
         }
@@ -44,8 +48,14 @@ class DriverController extends Controller
         unset($curent_transfer["destinationable"]);
         
         if ($curent_transfer) {
-              $next_transfer = $curent_transfer->next_transfer;
+            $next_transfer = $curent_transfer->next_transfer;
+            if(get_class($destination)=="App\Models\Import_operation"){
+              $next_transfer = $curent_transfer->prev_transfer;
+              unset($curent_transfer["prev_transfer"]);
+            }
+              
               $source=$next_transfer->sourceable;
+              
               $destination=$next_transfer->destinationable;
               if(!($source instanceof \App\Models\User)){
               $next_transfer->from=$source->location;
@@ -89,6 +99,9 @@ class DriverController extends Controller
                 return response()->json(["msg" => "now you dont have any transfers"], 202);
             }
             $next_transfer = $curent_transfer->next_transfer;
+            if( $curent_transfer->destinationable_type=="App\\Models\\Import_operation"){
+             $next_transfer = $curent_transfer->prev_transfer;
+            }
             $transfer_detail = $curent_transfer->transfer_details()->where("vehicle_id", $vehicle->id)->first();
             $continers = $transfer_detail->continers;
 
@@ -114,8 +127,8 @@ class DriverController extends Controller
                     "status" => "received"
                 ]);
             }
-            $curent_trans_noy_finished = $curent_transfer->transfer_details()->where("status", "!=", "resived")->get()->count();
-            if ($curent_trans_noy_finished == 0) {
+            $curent_trans_not_finished = $curent_transfer->transfer_details()->where("status", "!=", "resived")->where("status", "!=", "cut")->get()->count();
+            if ($curent_trans_not_finished == 0) {
                 $curent_transfer->update([
                     "date_of_finishing" => now()
                 ]);
@@ -124,8 +137,9 @@ class DriverController extends Controller
                 $next_transfer->update([
                     "date_of_resiving" => now()
                 ]);
-                $curent_transfer = $next_transfer;
 
+                $curent_transfer = $next_transfer;
+                 
                 $vehicle->update([
                     "transfer_id" => $next_transfer->id
                 ]);

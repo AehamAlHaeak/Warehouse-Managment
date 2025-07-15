@@ -229,7 +229,8 @@ Route::controller(DriverController::class)->middleware('is_driver')->group(funct
 });
 
 Route::controller(ViolationController::class)->group(function () {
-    Route::post("set_temp","set_temp");
+   
+    Route::post("set_conditions","set_conditions");
 });
 
 
