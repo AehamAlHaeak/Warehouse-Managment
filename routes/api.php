@@ -250,8 +250,10 @@ Route::controller(UserController::class)->group(function () {
         Route::post('updateUser', 'updateUser');
 
         Route::post("reserve_products","reserve_products");
+
+        Route::get("delete_invoice/{invoice_id}","delete_invoice");
     });
-});
+});//delete_invoice
 
 
 //creeate_bil

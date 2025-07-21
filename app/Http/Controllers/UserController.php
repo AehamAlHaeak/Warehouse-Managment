@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Exception;
+use App\Jobs\sell;
 use App\Models\User;
 use App\Models\Invoice;
 use App\Models\Product;
@@ -13,16 +14,18 @@ use Illuminate\Validator;
 use Illuminate\Http\Request;
 use App\Models\Transfer_detail;
 use App\Traits\AlgorithmsTrait;
-use App\Models\DistributionCenter;
 use App\Models\Continer_transfer;
 
+use App\Models\DistributionCenter;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Queue;
 use App\Http\Requests\storeUserRequest;
 use App\Http\Requests\updateUserRequest;
+use App\Models\reserved_details;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Illuminate\Validation\ValidationException;
 
@@ -265,7 +268,7 @@ class UserController extends Controller
                     );
 
                     DB::rollBack();
-                    return response()->json(["msg" => "the quantity is npt enogh ", "product" => $product], 404);
+                    return response()->json(["msg" => "the quantity is not enogh ", "product" => $product], 404);
                 }
 
                 if ($valedated_values["type"] == "transfered") {
@@ -278,7 +281,7 @@ class UserController extends Controller
 
                         $min_Capacity = Vehicle::whereIn("garage_id", $garages)->min("capacity");
                     }
-                    if (is_null($min_Capacity) || $number_contiers < $min_Capacity / 2) {
+                    if (is_null($min_Capacity)) {
                         return response()->json(["msg" => "the order is not enogh to transfer it by us ", "DistributionCenter" => $dist_C], 400);
                     }
                     $dist_C = $this->calculate_ready_vehiscles($dist_C, $product);
@@ -299,13 +302,13 @@ class UserController extends Controller
 
 
 
-                if ($number_contiers > $min_Capacity / 2) {
+                // if ($number_contiers > $min_Capacity / 2) {
 
                     $continers = $this->reserve_product_in_place($dist_C, $transfer_detail, $product, $quantity, $choise = "complete");
-                } else {
+                //} else {
 
-                    $continers = $this->reserve_product_in_place($dist_C, $transfer_detail, $product, $quantity, $choise = "un_complete");
-                }
+               //     $continers = $this->reserve_product_in_place($dist_C, $transfer_detail, $product, $quantity, $choise = "un_complete");
+               // }
 
 
 
@@ -323,17 +326,54 @@ class UserController extends Controller
                     }
                 }
             }
+             
+            $job = new sell($invoice->id);
+                    $jobId = Queue::later(now()->addMinutes(0), $job);
+                    $invoice->job_id = $jobId;
+                    $invoice->save();
 
-
-
-            DB::rollBack();
-            return response()->json(["msg" => "success", "continers" => $continers], 202);
-            //DB::afterCommit(function () {
-            //  dispatch(new YourJob(...));
-            //});
+            DB::commit();
+            return response()->json(["msg" => "success", "continers" => $continers,"invoice"=>$invoice], 202);
+           
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json(["error" => $e->getMessage()], 400);
         }
     }
+
+public function delete_invoice(Request $request,$invoice_id){
+    DB::beginTransaction();
+      try{
+        $invoice = Invoice::find($invoice_id);
+        if (!$invoice) {
+            return response()->json(["msg" => "the invoice not found"], 404);
+        }
+        $user=Auth::user();
+        if($invoice->user_id!=$user->id){
+          return response()->json(["msg" => "the invoice not found"], 404);
+        }
+        $transfer=$invoice->transfers;
+        foreach($transfer as $transfer){
+          $transfer_details=$transfer->transfer_details;
+          foreach($transfer_details as $transfer_detail){
+              Continer_transfer::where("transfer_detail_id",$transfer_detail->id)->delete();
+               reserved_details::where("transfer_details_id",$transfer_detail->id)->delete();
+               $transfer_detail->delete($transfer_detail->id);
+          }
+          $transfer->delete($transfer->id);
+        }
+        
+        $invoice->delete($invoice->id);
+        DB::commit();
+        return response()->json(["msg" => "success"], 200);
+       
+      }
+
+      catch(Exception $e){
+        DB::rollBack();
+        return response()->json(["error" => $e->getMessage()], 400);
+      }
+    }
+
+
 }

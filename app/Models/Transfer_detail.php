@@ -22,4 +22,10 @@ class Transfer_detail extends Model
     public function vehicle(){
         return $this->belongsTo(Vehicle::class,"vehicle_id");
     }
+   public function sell_loads(){
+        return $this->hasMany(Sell_detail::class,"transfer_details_id");
+     }
+     public function reserved_loads(){
+         return $this->hasMany(reserved_details::class,"transfer_details_id");
+    }
 }

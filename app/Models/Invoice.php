@@ -9,5 +9,7 @@ class Invoice extends Model
 {
     use HasFactory;
      protected $guarded;
-     
+     public function transfers(){
+        return $this->hasMany(Transfer::class,"invoice_id");
+     }
 }

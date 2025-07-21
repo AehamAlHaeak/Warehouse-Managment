@@ -30,7 +30,7 @@ use App\Models\Posetions_on_section;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Distribution_center_Product;
-
+use App\Models\Import_op_container;
 trait AlgorithmsTrait
 {
     public function create_token($object)
@@ -656,26 +656,26 @@ trait AlgorithmsTrait
         return $new_continers;
     }
     public function reserve_product_in_place($place, $transfer_detail, $product, $quantity, $choise = "complete")
-    {   
-        if($quantity<=0){
-          return "no quantity";
+    {
+        if ($quantity <= 0) {
+            return "no quantity";
         }
-       
+
         $sections = $place->sections()->where("product_id", $product->id)->get();
-       
+
         $targetTransferId = $transfer_detail->id;
-        $continer_of_reserving=[];
+        $continer_of_reserving = [];
         foreach ($sections as $section) {
             $storage_elements = $section->storage_elements;
-        
-          
+
+
             foreach ($storage_elements as $storage_element) {
                 if ($quantity == 0) {
                     break;
                 }
                 $containers_in_storage_element = null;
                 if ($choise == "complete") {
-                   
+
                     $containers_in_storage_element = $storage_element->impo_container()
                         ->where(function ($query) use ($targetTransferId) {
                             $query
@@ -695,9 +695,8 @@ trait AlgorithmsTrait
                                 ->min();
                         })
                         ->values();
-                     
                 } else {
-                  
+
                     $containers_in_storage_element = $storage_element->impo_container()->where("status", "accepted")
                         ->with('imp_op_product')
                         ->get()
@@ -708,15 +707,14 @@ trait AlgorithmsTrait
                                 ->min();
                         })
                         ->values();
-                      
                 }
-               
+
                 while ($quantity > 0 && $containers_in_storage_element->isNotEmpty()) {
-                    
+
                     $continer = $containers_in_storage_element->splice(0, 1)->first();
-                   
+
                     $loads = $continer->loads;
-              
+
                     foreach ($loads as $load) {
                         $log = $this->calculate_load_logs($load);
                         $reserved = min($log["remine_load"], $quantity);
@@ -728,7 +726,7 @@ trait AlgorithmsTrait
                             ]);
                         }
                         $quantity -= $reserved;
-                        $continer_of_reserving[$continer->id]=$continer->id;
+                        $continer_of_reserving[$continer->id] = $continer->id;
                         if ($quantity == 0) {
                             break 4;
                         }
@@ -742,12 +740,40 @@ trait AlgorithmsTrait
                 }
             }
         }
-        if(!empty($continer_of_reserving)){
-        return $continer_of_reserving;
+        if (!empty($continer_of_reserving)) {
+            return $continer_of_reserving;
+        } else {
+
+            return "no enogh quantity in  this place to reserve";
         }
-        else{
-          
-          return "no enogh quantity in  this place to reserve";  
+    }
+
+
+    public function cut_load($last_continer,$reserved_loads_to_detail)
+    {
+        $parent_continer = $last_continer->parent_continer;
+        $new_continer = Import_op_container::create([
+            "container_type_id" => $parent_continer->id,
+            "import_operation_id" => $last_continer->import_operation_id
+        ]);
+        foreach ($reserved_loads_to_detail as $reserved) {
+            $parent_load = $reserved->parent_load;
+            $parent_load->load -= $reserved->reserved_load;
+            $parent_load->save();
+            
+            $same_load = $new_continer->loads()->where("imp_op_product_id", $parent_load->imp_op_product_id)->first();
+            if ($same_load) {
+                $same_load->load += $reserved->reserved_load;
+            } else {
+                $same_load = Imp_continer_product::create([
+                    "imp_op_cont_id" => $new_continer->id,
+                    "imp_op_product_id" => $parent_load->imp_op_product_id,
+                    "load" => $reserved->reserved_load
+                ]);
+            }
+            $reserved->imp_cont_prod_id = $same_load->id;
+            $reserved->save();
         }
+        return $new_continer;
     }
 }

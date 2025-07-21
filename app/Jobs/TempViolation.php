@@ -131,9 +131,36 @@ class TempViolation implements ShouldQueue
                 $fetched_continer = Import_op_container::find($continer_id);
                 $fetched_continers->push($fetched_continer);
               }
+                    $last_continer= $fetched_continers->last();
+                    $loads = $last_continer->loads;
+                    $inventory = $this->inventory_on_continer($last_continer);
+                    $reserved_for_this_detail = 0;
+                    $reserved_loads_to_detail=collect();
+                    foreach ($loads as $load) {
+                        $reserved_loads = $load->reserved_load;
+                        foreach ($reserved_loads as $reserved_load) {
+
+                            if ($reserved_load->transfer_details_id == $load_of_vehicle->id) {
+                                $reserved_loads_to_detail->push($reserved_load);
+                            }
+                        }
+                    }
+                     $reserved_for_this_detail= $reserved_loads_to_detail->sum("reserved_load");
+                    if ($reserved_for_this_detail != $inventory["reserved_load"] || $inventory["remine_load"]>0) {
+           
+                         $new_continer=$this->cut_load($last_continer,$reserved_loads_to_detail);
+                        
+
+                   $last_continer=$fetched_continers->pop();
+                    
+                   $fetched_continers->push($new_continer);
+                  
+                  }
+                 
               $transfer_details = $this->resive_transfers($source, $destination, $fetched_continers);
-                print_r($transfer_details);
-            
+              
+              
+              
               $load_of_vehicle->status = "cut";
               $load_of_vehicle->save();
               $related_transfer = $transfer->next_transfer;
@@ -144,7 +171,7 @@ class TempViolation implements ShouldQueue
               Continer_transfer::where("transfer_detail_id", $load_of_vehicle->id)->update(["transfer_detail_id" => $detial_of_vehicle->id]);
               $detial_of_vehicle->save();
 
-            
+               
               if ($transfer_details != "No containers to transfer" && $transfer_details != "the vehicles is not enough for the load") {
                 foreach ($transfer_details as $block) {
                   $vehicle = Vehicle::find($block["vehicle_id"]);
@@ -153,6 +180,7 @@ class TempViolation implements ShouldQueue
                   foreach ($block["container_ids"] as $continer_id) {
                     reserved_details::where("transfer_details_id", $load_of_vehicle->id)->update(["transfer_details_id" => $new_detail_intrans->id]);
                   }
+
                 }
               } else {
 
