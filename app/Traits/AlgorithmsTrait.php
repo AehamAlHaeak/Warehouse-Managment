@@ -500,7 +500,7 @@ trait AlgorithmsTrait
         $rejected_load = 0;
         $reserved_load = 0;
         $sections = $place->sections()->where("product_id", $product->id)->get();
-
+        unset($place->sections);
 
         foreach ($sections as $section) {
             $section = $this->calculate_areas($section);
@@ -583,7 +583,14 @@ trait AlgorithmsTrait
                                 });
                         })
                         ->with('imp_op_product')
-                        ->get();
+                        ->get()
+                        ->sortBy(function ($container) {
+                            return $container->imp_op_product
+                                ->pluck('expiration')
+                                ->filter()
+                                ->min();
+                        })
+                        ->values();
 
                     Log::info("          Found " . $containers_in_storage_element->count() . " containers in storage_element " . $storage_element->id);
 
@@ -620,7 +627,7 @@ trait AlgorithmsTrait
 
                             if ($moved_reserved > 0) {
                                 Log::info("                  Moving " . $moved_reserved . " units to container " . $continer_item->id);
-                                \App\Models\reserved_details::create([
+                                reserved_details::create([
                                     "transfer_details_id" => $res_load->transfer_details_id,
                                     "reserved_load" => $moved_reserved,
                                     "imp_cont_prod_id" => $another_load->id
@@ -647,5 +654,100 @@ trait AlgorithmsTrait
         }
         Log::info("Finished move_reserved_from_container for container ID: " . $container->id . ". Returning new_continers: " . json_encode(array_values($new_continers)));
         return $new_continers;
+    }
+    public function reserve_product_in_place($place, $transfer_detail, $product, $quantity, $choise = "complete")
+    {   
+        if($quantity<=0){
+          return "no quantity";
+        }
+       
+        $sections = $place->sections()->where("product_id", $product->id)->get();
+       
+        $targetTransferId = $transfer_detail->id;
+        $continer_of_reserving=[];
+        foreach ($sections as $section) {
+            $storage_elements = $section->storage_elements;
+        
+          
+            foreach ($storage_elements as $storage_element) {
+                if ($quantity == 0) {
+                    break;
+                }
+                $containers_in_storage_element = null;
+                if ($choise == "complete") {
+                   
+                    $containers_in_storage_element = $storage_element->impo_container()
+                        ->where(function ($query) use ($targetTransferId) {
+                            $query
+
+                                ->whereDoesntHave('loads.reserved_load')
+
+                                ->orWhereHas('loads.reserved_load', function ($subquery) use ($targetTransferId) {
+                                    $subquery->where('transfer_details_id', '=', $targetTransferId);
+                                });
+                        })
+                        ->with('imp_op_product')
+                        ->get()
+                        ->sortBy(function ($container) {
+                            return $container->imp_op_product
+                                ->pluck('expiration')
+                                ->filter()
+                                ->min();
+                        })
+                        ->values();
+                     
+                } else {
+                  
+                    $containers_in_storage_element = $storage_element->impo_container()->where("status", "accepted")
+                        ->with('imp_op_product')
+                        ->get()
+                        ->sortBy(function ($container) {
+                            return $container->imp_op_product
+                                ->pluck('expiration')
+                                ->filter()
+                                ->min();
+                        })
+                        ->values();
+                      
+                }
+               
+                while ($quantity > 0 && $containers_in_storage_element->isNotEmpty()) {
+                    
+                    $continer = $containers_in_storage_element->splice(0, 1)->first();
+                   
+                    $loads = $continer->loads;
+              
+                    foreach ($loads as $load) {
+                        $log = $this->calculate_load_logs($load);
+                        $reserved = min($log["remine_load"], $quantity);
+                        if ($reserved > 0) {
+                            reserved_details::create([
+                                "transfer_details_id" => $transfer_detail->id,
+                                "reserved_load" => $reserved,
+                                "imp_cont_prod_id" => $load->id
+                            ]);
+                        }
+                        $quantity -= $reserved;
+                        $continer_of_reserving[$continer->id]=$continer->id;
+                        if ($quantity == 0) {
+                            break 4;
+                        }
+                    }
+                    if ($quantity == 0) {
+                        break 3;
+                    }
+                }
+                if ($quantity == 0) {
+                    break 2;
+                }
+            }
+        }
+        if(!empty($continer_of_reserving)){
+        return $continer_of_reserving;
+        }
+        else{
+          
+          return "no enogh quantity in  this place to reserve";  
+        }
     }
 }

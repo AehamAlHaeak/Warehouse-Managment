@@ -21,7 +21,7 @@ class DistributionCenter extends Model
 
 
 
-    public function employes()
+    public function employees()
     {
         return $this->morphMany(Employe::class, "workable");
     }

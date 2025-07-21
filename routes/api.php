@@ -214,9 +214,10 @@ Route::controller(Distribution_Center_controller::class)->middleware('is_QA')->g
     Route::post("move_to_position", "move_to_position");
     Route::post("pass_load", "pass_load");
     Route::post("reset_conditions_in_place", "reset_conditions_in_place");
+    Route::post("reject_continer","reject_continer");
    
 });
-//reset_conditions_in_place
+//reject_continer(Request $request)
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
 
 Route::controller(EmployeController::class)->middleware('is_employe')->group(function () {
@@ -248,9 +249,7 @@ Route::controller(UserController::class)->group(function () {
 
         Route::post('updateUser', 'updateUser');
 
-        Route::post('updateUser', 'updateUser');
-
-        Route::post('near_by_centers', 'near_by_centers');
+        Route::post("reserve_products","reserve_products");
     });
 });
 

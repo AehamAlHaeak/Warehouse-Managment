@@ -52,7 +52,7 @@ trait ViolationsTrait
                 if (!$job) {
                     $violation = Violation::create(["parameter" => $parameter, "violable_id" => $place->id, "violable_type" => get_class($place), "status" => "wait"]);
                     $job = new TempViolation($violation->id);
-                    $jobId = Queue::later(now()->addMinutes(120), $job);
+                    $jobId = Queue::later(now()->addMinutes(0), $job);
                     $violation->job_id = $jobId;
                     $violation->save();
                 }

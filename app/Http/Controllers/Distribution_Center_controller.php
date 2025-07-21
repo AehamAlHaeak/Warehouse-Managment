@@ -13,9 +13,11 @@ use App\Models\Transfer;
 use App\Traits\LoadingTrait;
 use Illuminate\Http\Request;
 use app\Traits\TransferTrait;
+
 use App\Models\reject_details;
 use App\Models\Transfer_detail;
 use App\Traits\AlgorithmsTrait;
+use App\Traits\ViolationsTrait;
 use App\Models\reserved_details;
 use App\Traits\TransferTraitAeh;
 use App\Models\container_movments;
@@ -24,10 +26,10 @@ use App\Models\Positions_on_sto_m;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Models\Import_op_container;
+use Illuminate\Support\Facades\Log;
 use App\Models\Imp_continer_product;
 use App\Models\Import_op_storage_md;
 use App\Models\Posetions_on_section;
-use App\Traits\ViolationsTrait;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -409,7 +411,7 @@ class Distribution_Center_controller extends Controller
                             $storage_elements = $section->storage_elements;
                             unset($section["storage_elements"]);
                             foreach ($storage_elements as $storage_element) {
-                                $containers = $storage_element->impo_container()
+                                $containers = $storage_element->impo_container()->wher("status", "accepted")
                                     ->with('imp_op_product')
                                     ->get()
                                     ->sortBy(function ($container) {
@@ -426,6 +428,10 @@ class Distribution_Center_controller extends Controller
 
                                     //  $res_load=$this->move_reserved_from_to($contents_in_continer, $res_load);
                                     foreach ($contents_in_continer as $another_load) {
+
+
+
+
                                         $logs = $this->calculate_load_logs($another_load);
 
                                         $moved_reserved = min($logs["remine_load"], $res_load->reserved_load);
@@ -943,12 +949,12 @@ class Distribution_Center_controller extends Controller
                     'errors' => $e->errors(),
                 ], 422);
             }
-            
+
             $driver = Employe::find($validated_values["driver_id"]);
             if (!$driver) {
                 return response()->json(["msg" => "the driver which you want is not exist"], 404);
             }
-            
+
             $vehicle = Vehicle::find($validated_values["vehicle_id"]);
             if (!$vehicle) {
                 return response()->json(["msg" => "the vehicle which you want is not exist"], 404);
@@ -965,10 +971,10 @@ class Distribution_Center_controller extends Controller
                 }
                 $authorized_in_place = $this->check_if_authorized_in_place($employe, $work_place_of_vehicle);
             }
-             $spec_of_driver=$driver->specialization;
-             if($spec_of_driver->name!="driver"){
-              return response()->json(["msg" => "the employe you want is not a driver"], 404);
-             }
+            $spec_of_driver = $driver->specialization;
+            if ($spec_of_driver->name != "driver") {
+                return response()->json(["msg" => "the employe you want is not a driver"], 404);
+            }
 
             if (get_class($work_place_of_driver) !== get_class($work_place_of_vehicle)) {
                 return response()->json(["msg" => "the driver and the vehicle are not in the same place"], 404);
@@ -979,14 +985,14 @@ class Distribution_Center_controller extends Controller
             if ($vehicle->transfer_id != null) {
                 return response()->json(["msg" => "the vehicle is in a transfer"], 404);
             }
-            
-            if($vehicle->driver_id!=null){
+
+            if ($vehicle->driver_id != null) {
                 //send notefication he will cansell the truck
             }
-            $driver_vehicle=$driver->vehicle;
-               if($driver_vehicle){
-                 return response()->json(["msg" => "the driver already has a vehicle"], 404);
-               }
+            $driver_vehicle = $driver->vehicle;
+            if ($driver_vehicle) {
+                return response()->json(["msg" => "the driver already has a vehicle"], 404);
+            }
 
             $vehicle->update(["driver_id" => $driver->id]);
             return response()->json(["msg" => "driver set successfully"], 202);
@@ -995,95 +1001,183 @@ class Distribution_Center_controller extends Controller
         }
     }
 
-    public function remove_driver(Request $request,$vehicle_id){
-         try{
-              $vehicle = Vehicle::find($vehicle_id);
-              if (!$vehicle) {
-                  return response()->json(["msg" => "the vehicle which you want is not exist"], 404);
-              }
-              $work_place_of_vehicle=$vehicle->garage->existable;
-              $employe=$request->employe;
-              if($employe->specialization->name != "super_admin"){
-              $authorized_in_place = $this->check_if_authorized_in_place($employe, $work_place_of_vehicle);
-              if (!$authorized_in_place) {
-                  return response()->json(["msg" => "Unauthorized - Invalid or missing employe or dont have this employe"], 401);
-              }
+    public function remove_driver(Request $request, $vehicle_id)
+    {
+        try {
+            $vehicle = Vehicle::find($vehicle_id);
+            if (!$vehicle) {
+                return response()->json(["msg" => "the vehicle which you want is not exist"], 404);
             }
-                $driver=$vehicle->driver;
-                if($driver){
-                    //send notefication he will cansel the truck
+            $work_place_of_vehicle = $vehicle->garage->existable;
+            $employe = $request->employe;
+            if ($employe->specialization->name != "super_admin") {
+                $authorized_in_place = $this->check_if_authorized_in_place($employe, $work_place_of_vehicle);
+                if (!$authorized_in_place) {
+                    return response()->json(["msg" => "Unauthorized - Invalid or missing employe or dont have this employe"], 401);
                 }
-                if($vehicle->driver_id==null){
-                  return response()->json(["msg" => "the vehicle has no driver"], 404);
-                }
-              $vehicle->update(["driver_id" => null]);
-              return response()->json(["msg" => "driver removed successfully"], 202);
-         }
-        catch (Exception $e) {
+            }
+            $driver = $vehicle->driver;
+            if ($driver) {
+                //send notefication he will cansel the truck
+            }
+            if ($vehicle->driver_id == null) {
+                return response()->json(["msg" => "the vehicle has no driver"], 404);
+            }
+            $vehicle->update(["driver_id" => null]);
+            return response()->json(["msg" => "driver removed successfully"], 202);
+        } catch (Exception $e) {
             return response()->json(["msg" => $e->getMessage()], 500);
         }
     }
-   public function reset_conditions_in_place(Request $request){
-     DB::beginTransaction();
-    try{
-     try{
-       $valedated_values=$request->validate([
-         "place_id"=>"required|integer",
-         "place_type"=>"required|in:Vehicle,Import_op_storage_md",
-       ]);
-     }
-     catch(ValidationException $e){
+    public function reset_conditions_in_place(Request $request)
+    {
+        DB::beginTransaction();
+        try {
+            try {
+                $valedated_values = $request->validate([
+                    "place_id" => "required|integer",
+                    "place_type" => "required|in:Vehicle,Import_op_storage_md",
+                ]);
+            } catch (ValidationException $e) {
 
-       return response()->json([
-         'msg' => 'Validation failed',
-         'errors' => $e->errors(),
-       ], 422);
-     }
-     $employe=$request->employe;
-     $model_place = "App\\Models\\" . $valedated_values["place_type"];
-     $place = $model_place::find($valedated_values["place_id"]);
-     if (!$place) {
-         return response()->json(["msg" => "the place which you want is not exist"], 404);
-     }
-     if(get_class($place)=="App\Models\Vehicle"){
-      
-      if($place->transfer_id!=null){
-       return response()->json(["msg" => "the vehicle is in a transfer"], 404);
-      } 
-      $garage=$place->grarage;
-      $existable=$garage->existable;
-     }
-     elseif(get_class($place)=="App\Models\Import_op_storage_md"){
-      $section=$place->section->first();
-      $existable=$section->existable;
-     }
-     if($employe->specialization->name != "super_admin"){
+                return response()->json([
+                    'msg' => 'Validation failed',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
+            $employe = $request->employe;
+            $model_place = "App\\Models\\" . $valedated_values["place_type"];
+            $place = $model_place::find($valedated_values["place_id"]);
+            if (!$place) {
+                return response()->json(["msg" => "the place which you want is not exist"], 404);
+            }
+            if (get_class($place) == "App\Models\Vehicle") {
 
-        $authorized_in_place = $this->check_if_authorized_in_place($employe, $existable);
-        if (!$authorized_in_place) {
-            return response()->json(["msg" => "Unauthorized - Invalid or missing employe token"], 401);
+                if ($place->transfer_id != null) {
+                    return response()->json(["msg" => "the vehicle is in a transfer"], 400);
+                }
+                $garage = $place->garage;
+                $existable = $garage->existable;
+            } elseif (get_class($place) == "App\Models\Import_op_storage_md") {
+                $section = $place->section->first();
+                $existable = $section->existable;
+            }
+            if ($employe->specialization->name != "super_admin") {
+
+                $authorized_in_place = $this->check_if_authorized_in_place($employe, $existable);
+                if (!$authorized_in_place) {
+                    return response()->json(["msg" => "Unauthorized - Invalid or missing employe token"], 401);
+                }
+            }
+            $parameters = ["temperature", "humidity", "light", "pressure", "ventilation"];
+            $product = $place->product;
+            $place->readiness = 1;
+            foreach ($parameters as $parameter) {
+
+                $value = ($product["highest_" . $parameter] + $product["lowest_" . $parameter]) / 2;
+                $this->deal_with_variable_conditions($place, $parameter, $value);
+            }
+
+
+            DB::commit();
+            return response()->json(["msg" => "conditions reset successfully"], 202);
+        } catch (Exception $e) {
+            DB::rollback();
+            return response()->json(["msg" => $e->getMessage()], 500);
         }
-     }
-      $parameters=["temperature","humidity","light","pressure","ventilation"];
-      $product=$place->product;
-      $place->readiness=1;
-      foreach($parameters as $parameter){
+    }
+    public function reject_continer(Request $request)
+    {
+        DB::beginTransaction();
+        try {
+            try {
+                $validated_values = $request->validate([
+                    "continer_id" => "required",
+                    "why" => "required|string",
+
+                ]);
+            } catch (ValidationException $e) {
+
+                return response()->json([
+                    'msg' => 'Validation failed',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
+
+
+
+            $continer = Import_op_container::find($validated_values["continer_id"]);
             
-           $value=($product["highest_".$parameter]+$product["lowest_".$parameter])/2;
-           $this->deal_with_variable_conditions($place, $parameter, $value);
-      }
-       
-    
-      DB::commit();
-     return response()->json(["msg" => "conditions reset successfully"], 202);
+            if (!$continer) {
+                return response()->json(["msg" => "continer_not found"], 404);
+            }
 
+            $employe = $request->employe;
+            $latest_trans = $continer->logs->last();
+            unset($continer["logs"]);
+            $transfer = $latest_trans->transfer;
+
+            $place = $transfer->destinationable;
+            $employee = $request->employe;
+            if ($employee->specialization->name !== "super_admin") {
+                $authorized = $this->check_if_authorized_in_place($employe, $place);
+                if (!$authorized) {
+                    return response()->json(["msg" => "Unauthorized or dont have the container yet"], 401);
+                }
+            }
+            if($continer->status=="rejected"){
+                return response()->json(["msg"=>"continer rejected already"],400);
+            }
+            elseif($continer->status=='sold'){
+             return response()->json(["msg"=>"continer is sold"],400);
+            }
+             
+            if ($latest_trans->status == "under_work" || $latest_trans->status == "wait" || $latest_trans->status == "cut") {
+                return response()->json(["msg" => "you dont have the continer yet"]);
+            }
+            $loads_in_continer = $continer->loads;
+            $continer->status = "rejected";
+            $continer->save();
+            $avilable_sections = $place->sections;
+            $new_ids=[];
+            $has_reserving=$continer->loads()->whereDoesntHave('reserved_load')->exists();
+            if(!$has_reserving){
+            foreach ($avilable_sections as $section) {
+               
+                $storage_elements = $section->storage_elements()->where("readiness", ">", 0.8)->get();
+               
+                    $new_ids = $this->move_reserved_from_container($storage_elements, $continer);
+
+                    if (!empty($new_ids)) {
+                      break; 
+                    }
+            }
+            if (empty($new_ids)) {
+
+                throw new \Exception("The destination does not have enough containers for all reservations.");
+            }
+        }
+            
+
+            foreach ($loads_in_continer as $load) {
+                $remine_load = $this->calculate_load_logs($load)["remine_load"];
+
+                if ($remine_load > 0) {
+                    reject_details::create([
+                        "employe_id" => $employe->id,
+                        "rejected_load" => $remine_load,
+                        "imp_cont_prod_id" => $load->id,
+                        "why" => $validated_values["why"]
+                    ]);
+                }
+            }
+            
+
+            DB::commit();
+            return response()->json(["msg" => "rejected succesfuly"]);
+        } catch (Exception $e) {
+            DB::rollback();
+            return response()->json(["msg" => $e->getMessage()], 500);
+        }
     }
-    catch(Exception $e){
-        DB::rollback();
-      return response()->json(["msg"=>$e->getMessage()],500);
-    }
-   }
-
-
-
 }
