@@ -19,7 +19,5 @@ class type extends Model
     public function products(){
         return $this->hasMany(Product::class,"type_id");
     }
-    public function vehicles(){
-        return $this->hasMany(Transfer::class,"type_id");
-    }
+  
 }

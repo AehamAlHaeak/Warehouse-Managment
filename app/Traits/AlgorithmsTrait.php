@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Distribution_center_Product;
 use App\Models\Import_op_container;
+use App\Models\container_movments;
 trait AlgorithmsTrait
 {
     public function create_token($object)
@@ -149,7 +150,7 @@ trait AlgorithmsTrait
         $data = $response->json();
 
         if (isset($data)) {
-            return $data; // المسافة بالأمتار
+            return $data; // distance by metirs
         } else {
             throw new \Exception('Failed to fetch distance: ' . json_encode($data));
         }
@@ -189,6 +190,7 @@ trait AlgorithmsTrait
         $distances = [];
         foreach ($items as $item) {
             $data = $this->calculate($item->latitude, $item->longitude, $latitude, $longitude);
+            
             $item->distance = $data['distances'][0][1]; //0 1 are from 0 to one form sourece to dest
             $item->duration = $data["duration"][0][1];
             $distances[] = $item;
@@ -204,10 +206,10 @@ trait AlgorithmsTrait
 
         return $leastdistance;
     }
-    public function sort_the_near_by_location($model, $latitude, $longitude)
+    public function sort_the_near_by_location($items, $latitude, $longitude)
     {
 
-        $items = $model::all();
+
 
 
         foreach ($items as $item) {
@@ -749,7 +751,7 @@ trait AlgorithmsTrait
     }
 
 
-    public function cut_load($last_continer,$reserved_loads_to_detail)
+    public function divide_load($last_continer,$reserved_loads_to_detail)
     {
         $parent_continer = $last_continer->parent_continer;
         $new_continer = Import_op_container::create([
@@ -764,6 +766,7 @@ trait AlgorithmsTrait
             $same_load = $new_continer->loads()->where("imp_op_product_id", $parent_load->imp_op_product_id)->first();
             if ($same_load) {
                 $same_load->load += $reserved->reserved_load;
+                $same_load->save();
             } else {
                 $same_load = Imp_continer_product::create([
                     "imp_op_cont_id" => $new_continer->id,
@@ -774,6 +777,23 @@ trait AlgorithmsTrait
             $reserved->imp_cont_prod_id = $same_load->id;
             $reserved->save();
         }
+        $posetion=$last_continer->posetion_on_stom;
+        container_movments::create([
+                        "imp_op_cont_id" => $new_continer->id,
+                        "prev_position_id" => $posetion->id,
+
+                        "moved_why" => "take loads from another continer ,the previos continer_id is : {$last_continer->id}"
+                    ]);
         return $new_continer;
+    }
+    public function reserved_sold_on_load($transfer_detail){
+        $sell_reserve=[];
+        $sell_reserve["sold"]=$transfer_detail->sell_loads->sum('sold_load');
+        
+        $sell_reserve["reserved"]=$transfer_detail->reserved_loads->sum("reserved_load");
+        unset($transfer_detail->sell_loads,$transfer_detail->reserved_loads);
+
+        return $sell_reserve; 
+
     }
 }

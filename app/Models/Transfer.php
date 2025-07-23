@@ -44,4 +44,7 @@ class Transfer extends Model
     public function contents(){
          return $this->transfer_details()->whereHas('continers')->exists();
     }
+    public function invonice(){
+        return $this->belongsTo(Invoice::class,"invoice_id");
+    }
 }

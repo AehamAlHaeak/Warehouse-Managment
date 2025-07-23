@@ -2,21 +2,22 @@
 
 namespace App\Jobs;
 
+use App\Models\Invoice;
 use App\Models\Vehicle;
 use App\Models\Violation;
 use Illuminate\Bus\Queueable;
 use App\Models\Specialization;
 use App\Traits\AlgorithmsTrait;
+use App\Models\reserved_details;
 use App\Traits\TransferTraitAeh;
 use App\Models\Continer_transfer;
 use Illuminate\Support\Facades\DB;
+use App\Models\Import_op_container;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use App\Models\Import_op_container;
-use App\Models\reserved_details;
 
 class TempViolation implements ShouldQueue
 {
@@ -148,7 +149,7 @@ class TempViolation implements ShouldQueue
                      $reserved_for_this_detail= $reserved_loads_to_detail->sum("reserved_load");
                     if ($reserved_for_this_detail != $inventory["reserved_load"] || $inventory["remine_load"]>0) {
            
-                         $new_continer=$this->cut_load($last_continer,$reserved_loads_to_detail);
+                         $new_continer=$this->divide_load($last_continer,$reserved_loads_to_detail);
                         
 
                    $last_continer=$fetched_continers->pop();
@@ -173,9 +174,12 @@ class TempViolation implements ShouldQueue
 
                
               if ($transfer_details != "No containers to transfer" && $transfer_details != "the vehicles is not enough for the load") {
+               $invoice=Invoice::find($transfer->invoice_id);
                 foreach ($transfer_details as $block) {
                   $vehicle = Vehicle::find($block["vehicle_id"]);
                   $actual_transfer = $vehicle->actual_transfer;
+                  $actual_transfer->invoice_id=$invoice->id;
+                  $actual_transfer->save();
                   $new_detail_intrans = $actual_transfer->transfer_details()->where("vehicle_id", $block["vehicle_id"])->first();
                   foreach ($block["container_ids"] as $continer_id) {
                     reserved_details::where("transfer_details_id", $load_of_vehicle->id)->update(["transfer_details_id" => $new_detail_intrans->id]);

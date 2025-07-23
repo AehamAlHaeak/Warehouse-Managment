@@ -28,4 +28,5 @@ class UserMovable extends Model
                     ->withPivot('quantity')
                     ->withTimestamps();
     }
+    
 }

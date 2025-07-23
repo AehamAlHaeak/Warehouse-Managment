@@ -252,8 +252,24 @@ Route::controller(UserController::class)->group(function () {
         Route::post("reserve_products","reserve_products");
 
         Route::get("delete_invoice/{invoice_id}","delete_invoice");
+
+        Route::get("show_products_in_centers","show_products_in_centers");
+
+        Route::get("show_distribution_centers_of_product_sorted/{product_id}/{longitude}/{latitude}","show_distribution_centers_of_product_sorted");
+   
+        Route::get("show_products_of_distribution_center/{dist_c_id}","show_products_of_distribution_center");
+   
+        Route::get("show_my_invoices","show_my_invoices");
+
+        Route::get("show_invoice_loads/{invoice_id}","show_invoice_loads");
+
+        Route::get("delete_load/{load_id}","delete_load");
+
+        Route::post("edit_load","edit_load");
+
+        Route::get("execute_invoice/{invoice_id}","execute_invoice");
     });
-});//delete_invoice
+});// execute_invoice($invoice_id)
 
 
 //creeate_bil

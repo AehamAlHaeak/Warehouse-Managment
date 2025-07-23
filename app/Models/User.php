@@ -18,7 +18,7 @@ class User extends Authenticatable  implements JWTSubject
      *
      * @var array<int, string>
      */
-    protected $guarded=[];
+    protected $guarded = [];
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -48,13 +48,15 @@ class User extends Authenticatable  implements JWTSubject
     }
     public function getAuthIdentifierName()
     {
-        return 'id'; 
+        return 'id';
     }
-    public function favoriteProduct(){
-       return $this->belongsToMany(product::class,'favorites');
+    public function favoriteProduct()
+    {
+        return $this->belongsToMany(product::class, 'favorites');
     }
 
-
-
-
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class, "user_id");
+    }
 }

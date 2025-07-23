@@ -12,4 +12,5 @@ class Invoice extends Model
      public function transfers(){
         return $this->hasMany(Transfer::class,"invoice_id");
      }
+    
 }

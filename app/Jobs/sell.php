@@ -19,7 +19,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-
+use App\Models\reserved_details;
 class sell implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
@@ -43,11 +43,7 @@ class sell implements ShouldQueue
             if (!$invoice) {
                 throw new Exception("Invoice not found");
             }
-            /*$table->unsignedBigInteger("user_id");
-            $table->foreign("user_id")->references("id")->on("users");
-            $table->enum("type",["transfered","Un_transfered"])->default("transfered");
-            $table->enum("status",["wait","accepted"])->default("wait");
-            $table->unsignedBigInteger("job_id")->nullable();*/
+            
             $transfer = $invoice->transfers->first();
             if ($transfer->date_of_resiving != null) {
                 throw new Exception("Invoice already accepted");
@@ -94,10 +90,14 @@ class sell implements ShouldQueue
                
                 while($transfer_details->isNotEmpty()){ 
                     $transfer_detail=$transfer_details->splice(0, 1)->first();
-                    $continers = $transfer_detail->continers;
-                    $last_continer =$continers->last();
-                    $loads = $last_continer->loads;
-                    $inventory = $this->inventory_on_continer($last_continer);
+                    $continers = collect();
+                    $continer_reserved=$transfer_detail->continers;
+                   
+                    foreach( $continer_reserved as $orginal_continer){
+                        
+                    
+                    $loads = $orginal_continer->loads;
+                    $inventory = $this->inventory_on_continer($orginal_continer);
                     $reserved_for_this_detail = 0;
                     $reserved_loads_to_detail=collect();
                     foreach ($loads as $load) {
@@ -111,16 +111,19 @@ class sell implements ShouldQueue
                     }
                      $reserved_for_this_detail= $reserved_loads_to_detail->sum("reserved_load");
                     if ($reserved_for_this_detail != $inventory["reserved_load"] || $inventory["remine_load"]>0) {
-           
-                         $new_continer=$this->cut_load($last_continer,$reserved_loads_to_detail);
-                        
-
-                   $last_continer=$continers->pop();
-                    Continer_transfer::where("transfer_detail_id", $transfer_detail->id)->where("imp_op_contin_id",$last_continer->id)->delete();
+                      
+                         $new_continer=$this->divide_load($orginal_continer,$reserved_loads_to_detail);
+                      
+                    Continer_transfer::where("transfer_detail_id", $transfer_detail->id)->where("imp_op_contin_id",$orginal_continer->id)->delete();
                    $continers->push($new_continer);
                     }
+                    else{
+                        $continers->push($orginal_continer);
+                    }
+
+                }
                     $details=$this->resive_transfers($source,$destination,$continers);
-                    print_r( $details);
+                   
                     
                     if($details=="the vehicles is not enough for the load" || $details=="No containers to transfer"){
                      throw new \Exception($details);
@@ -128,13 +131,12 @@ class sell implements ShouldQueue
                     foreach($details as $block){
                           $vehicle = Vehicle::find($block["vehicle_id"]);
                           $live_transfer=$vehicle->actual_transfer;
-                           $live_transfer->invoice_id=$invoice->id;
-                           $live_transfer->save();
+                          $live_transfer->invoice_id=$invoice->id;
+                          $live_transfer->save();
                           $detail=$live_transfer->transfer_details()->where("vehicle_id",$block["vehicle_id"])->first();
                           $continers=$detail->continers;
-                          $last=$continers->last();
-                          $loads=$last->loads;
-                          echo "load_of_last_continer : ". $loads->sum("load");
+                          
+                         
                           foreach($continers as $continer){
                              $loads=$continer->loads;
                              foreach($loads as $load){
@@ -150,8 +152,9 @@ class sell implements ShouldQueue
                             }
                         }
                     
-                     $contents=Continer_transfer::where("transfer_detail_id", $transfer_detail->id)->get();
-                     
+                     Continer_transfer::where("transfer_detail_id", $transfer_detail->id)->delete();
+                     reserved_details::where("transfer_details_id", $transfer_detail->id)->delete();
+                    
                      $transfer_detail->delete();
                      
                   

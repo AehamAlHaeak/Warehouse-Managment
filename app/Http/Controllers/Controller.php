@@ -16,11 +16,11 @@ class Controller extends BaseController
     {
         return "hellow Majd";
     }
-    public function FunctionName(){
+    public function Amjad(){
        return "hellow amjad"; 
 
     }
-    public function amjad(){
+    public function Aeham(){
         return "hello Ayham";
     }
 }
