@@ -9,4 +9,7 @@ class Posetions_on_section extends Model
 {
     use HasFactory;
      protected $guarded;
+     public function section(){
+         return $this->belongsTo(Section::class,"section_id");
+     }
 }

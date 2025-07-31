@@ -1783,7 +1783,39 @@ class SuperAdmenController extends Controller
 
         return response()->json(["supplier_products" => $supplier_products], 202);
     }
+     
+    public function import_archive_for_supplier($sup_id){
+      try{
+          $supplier = Supplier::find($sup_id);
+          if (!$supplier) {
+              return response()->json(["msg" => "supplier is npt exist"], 400);
+          }
+          $import_operations = $supplier->import_operations;
+          if($import_operations->isEmpty()){
+              return response()->json(["msg" => "supplier has no import operations"], 400);
+          }
+          return response()->json(["import_operations" => $import_operations], 202);
+      }catch(Exception $e){
+          return response()->json(["msg"=>$e->getMessage()],400);
+      }
+    }
 
+    public function show_import_opreation_content($imp_op_id){
+        try{
+            $import_operation = Import_Operation::find($imp_op_id);
+            if(!$import_operation){
+                return response()->json(["msg" => "import operation not exist"], 400);
+            }
+             $vehicles= $import_operation->vehicles;
+             unset( $import_operation->vehicles);
+             $storage_media = $import_operation->storage_media()->with("parent_storage_media")->get();
+             $products = $import_operation->cargos()->with("parent_product")->get();
+             return response()->json(["import_operation"=>$import_operation,"vehicles"=>$vehicles,"storage_media"=>$storage_media,"products"=>$products],202);
+            }
+        catch(Exception $e){
+            return response()->json(["msg"=>$e->getMessage()],400);
+        }
+    }
     public function show_warehouses_of_product($id)
     {
         $product = Product::find($id);

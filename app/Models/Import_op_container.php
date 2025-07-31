@@ -46,4 +46,7 @@ class Import_op_container extends Model
    public function loads(){
       return $this->hasMany(Imp_continer_product::class,"imp_op_cont_id");
    }
+   public function movments(){
+      return $this->hasMany(container_movments::class,"imp_op_cont_id");
+   }
 }

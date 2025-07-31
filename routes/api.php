@@ -163,12 +163,16 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
     Route::post("accept_import_op_products", "accept_import_op_products");
 
     Route::get("show_latest_import_op_products", "show_latest_import_op_products");
+
+    Route::get("import_archive_for_supplier/{sup_id}","import_archive_for_supplier");
+    
+    Route::get("show_import_opreation_content/{imp_op_id}","show_import_opreation_content");
     //end
     Route::post("reject_import_op", "reject_import_op");
 
     Route::get("try_choise_trucks/{warehouse_id}/{import_operation_id}", "try_choise_trucks");
 });
-//try_choise_trucks($warehouse_id,$import_operation_id)
+//show_import_opreation_content($imp_op_id)
 
 Route::controller(WarehouseController::class)->middleware('is_warehouse_admin')->group(function () {
 
@@ -215,9 +219,11 @@ Route::controller(Distribution_Center_controller::class)->middleware('is_QA')->g
     Route::post("pass_load", "pass_load");
     Route::post("reset_conditions_in_place", "reset_conditions_in_place");
     Route::post("reject_continer","reject_continer");
+    Route::post("serch","search");
+    Route::get("show_continer_movments/{continer_id}","show_continer_movments");
    
 });
-//reject_continer(Request $request)
+//search
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
 
 Route::controller(EmployeController::class)->middleware('is_employe')->group(function () {

@@ -13,11 +13,11 @@ use App\Models\Transfer;
 use App\Traits\LoadingTrait;
 use Illuminate\Http\Request;
 use app\Traits\TransferTrait;
-
 use App\Models\reject_details;
 use App\Models\Transfer_detail;
 use App\Traits\AlgorithmsTrait;
 use App\Traits\ViolationsTrait;
+use Illuminate\Validation\Rule;
 use App\Models\reserved_details;
 use App\Traits\TransferTraitAeh;
 use App\Models\container_movments;
@@ -31,6 +31,8 @@ use App\Models\Imp_continer_product;
 use App\Models\Import_op_storage_md;
 use App\Models\Posetions_on_section;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
@@ -1107,7 +1109,7 @@ class Distribution_Center_controller extends Controller
 
 
             $continer = Import_op_container::find($validated_values["continer_id"]);
-            
+
             if (!$continer) {
                 return response()->json(["msg" => "continer_not found"], 404);
             }
@@ -1125,13 +1127,12 @@ class Distribution_Center_controller extends Controller
                     return response()->json(["msg" => "Unauthorized or dont have the container yet"], 401);
                 }
             }
-            if($continer->status=="rejected"){
-                return response()->json(["msg"=>"continer rejected already"],400);
+            if ($continer->status == "rejected") {
+                return response()->json(["msg" => "continer rejected already"], 400);
+            } elseif ($continer->status == 'sold') {
+                return response()->json(["msg" => "continer is sold"], 400);
             }
-            elseif($continer->status=='sold'){
-             return response()->json(["msg"=>"continer is sold"],400);
-            }
-             
+
             if ($latest_trans->status == "under_work" || $latest_trans->status == "wait" || $latest_trans->status == "cut") {
                 return response()->json(["msg" => "you dont have the continer yet"]);
             }
@@ -1139,25 +1140,25 @@ class Distribution_Center_controller extends Controller
             $continer->status = "rejected";
             $continer->save();
             $avilable_sections = $place->sections;
-            $new_ids=[];
-            $has_reserving=$continer->loads()->whereDoesntHave('reserved_load')->exists();
-            if(!$has_reserving){
-            foreach ($avilable_sections as $section) {
-               
-                $storage_elements = $section->storage_elements()->where("readiness", ">", 0.8)->get();
-               
+            $new_ids = [];
+            $has_reserving = $continer->loads()->whereDoesntHave('reserved_load')->exists();
+            if (!$has_reserving) {
+                foreach ($avilable_sections as $section) {
+
+                    $storage_elements = $section->storage_elements()->where("readiness", ">", 0.8)->get();
+
                     $new_ids = $this->move_reserved_from_container($storage_elements, $continer);
 
                     if (!empty($new_ids)) {
-                      break; 
+                        break;
                     }
-            }
-            if (empty($new_ids)) {
+                }
+                if (empty($new_ids)) {
 
-                throw new \Exception("The destination does not have enough containers for all reservations.");
+                    throw new \Exception("The destination does not have enough containers for all reservations.");
+                }
             }
-        }
-            
+
 
             foreach ($loads_in_continer as $load) {
                 $remine_load = $this->calculate_load_logs($load)["remine_load"];
@@ -1171,12 +1172,140 @@ class Distribution_Center_controller extends Controller
                     ]);
                 }
             }
-            
+
 
             DB::commit();
             return response()->json(["msg" => "rejected succesfuly"]);
         } catch (Exception $e) {
             DB::rollback();
+            return response()->json(["msg" => $e->getMessage()], 500);
+        }
+    }
+
+
+    public function search()
+    {
+        try {
+        /*
+        "Containers_type",
+        "Continer_transfer",
+        "DistributionCenter",
+        "Employe",
+        "Favorite",
+        "Garage",
+        "Imp_continer_product",
+        "Import_op_container",
+        "Import_op_storage_md",
+        "Import_operation",
+        "Import_operation_product",
+        "Invoice",
+        "Job",
+        "MovableProduct",
+        "Posetions_on_section",
+        "Positions_on_sto_m",
+        "Product",
+        "Request_detail",
+        "Requests",
+        "Section",
+        "Sell_detail",
+        "Specialization",
+        "Storage_media",
+        "Supplier",
+        "Supplier_Details",
+        "Transfer",
+        "Transfer_detail",
+        "User",
+        "Vehicle",
+        "Violation",
+        "Warehouse",
+        "container_movments",
+        "reject_details",
+        "reserved_details",
+        "type" all filters
+         */
+            $modelNames = collect(File::files(app_path('Models')))
+                ->map(fn($file) => pathinfo($file, PATHINFO_FILENAME))
+                ->all();
+
+            try {
+                $validated_values = request()->validate([
+                    "filter" => ["required", Rule::in($modelNames)],
+                    "value" => ["required", 'regex:/^[a-zA-Z0-9 ]+$/']
+                ]);
+            } catch (ValidationException $e) {
+
+                return response()->json([
+                    'msg' => 'Validation failed',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
+            $model = "App\\Models\\" . $validated_values["filter"];
+            $value = $validated_values["value"];
+            $columns = Schema::getColumnListing((new $model)->getTable());
+
+            $results = $model::where(function ($query) use ($columns,  $value) {
+                foreach ($columns as $column) {
+                    $query->orWhere($column, 'LIKE', "%$value%");
+                }
+            })->get();
+
+
+            return response()->json(["msg" => "search results", "filter" => $validated_values["filter"], "results" => $results], 202);
+        } catch (Exception $e) {
+            return response()->json(["msg" => $e->getMessage()], 500);
+        }
+    }
+
+    public function show_continer_movments(Request $request,$cont_id)
+    {
+        try {
+            $continer = Import_op_container::find($cont_id);
+            if (!$continer) {
+                return response()->json(["msg" => "continer not found"], 404);
+            }
+             $latest_trans = $continer->logs->last();
+            $transfer = $latest_trans->transfer;
+
+            $destination = $transfer->destinationable;
+            $source=$transfer->sourceable;
+            $employe = $request->employe;
+            $employe = $request->employe;
+            if ($employe->specialization->name != "super_admin") {
+
+                $authorized_in_place = $this->check_if_authorized_in_place($employe, $destination);
+                $authorized_in_place2=$this->check_if_authorized_in_place($employe, $source);
+                if (!$authorized_in_place && !$authorized_in_place2) {
+                    return response()->json(["msg" => "you are not last destination or source!"], 401);
+                }
+            }
+            $actual_posetion = $continer->posetion_on_stom()->select(["imp_op_stor_id", "floor", "class", "positions_on_class"])->first();
+            
+            $movments = $continer->movments()->select(["id","imp_op_cont_id","prev_position_id","moved_why"])->orderby("created_at", "desc")->get();
+
+           
+            foreach ($movments as $movment) {
+                $posetion = $movment->posetion_on_sto_m()->select(["imp_op_stor_id", "floor", "class", "positions_on_class"])->first();
+
+           
+                $storage_element = $posetion->storage_element;
+                
+                $posetion_of_storage_element = $storage_element->posetion_on_section()->select(["id","section_id","floor","class","positions_on_class",])->first();
+         
+                $section = $posetion_of_storage_element->section()->select(["id","name","existable_type","existable_id"])->first();
+              
+                $place = $section->existable;
+                 unset($section["existable"]);
+                 unset($place->created_at,$place->updated_at);
+                $movment->place_type = str_replace("App\\Models\\", "", get_class($place));
+                $movment->place = $place;
+                $movment->section = $section;
+                $movment->storage_element = $storage_element;
+                $movment->posetion_of_storage_element = $posetion_of_storage_element;
+                $movment->posetion = $posetion;
+            }
+
+            return response()->json(["msg" => "success", "continer" => $continer, "actual_posetion" => $actual_posetion, "movments" => $movments], 202);
+        } catch (Exception $e) {
             return response()->json(["msg" => $e->getMessage()], 500);
         }
     }

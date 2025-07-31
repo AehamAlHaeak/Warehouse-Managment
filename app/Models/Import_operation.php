@@ -13,7 +13,7 @@ class Import_operation extends Model
         return $this->hasMany(Import_operation_product::class);
     }
     public function vehicles(){
-        return $this->hasMany(Import_operation_product::class);
+        return $this->hasMany(Vehicle::class);
     }
     public function cargos(){
         return $this->hasMany(Import_operation_product::class);
@@ -26,7 +26,7 @@ class Import_operation extends Model
         return $this->hasMany(Import_op_container::class,"import_operation_id");
     }
 
-    public function storage_md(){
-        return $this->belongsToMany(Storage_media::class,"storage_media_id");
+    public function storage_media(){
+        return $this->hasMany(Import_op_storage_md::class,"import_operation_id");
     }
 }
