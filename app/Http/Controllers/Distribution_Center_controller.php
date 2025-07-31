@@ -1264,6 +1264,7 @@ class Distribution_Center_controller extends Controller
                 return response()->json(["msg" => "continer not found"], 404);
             }
              $latest_trans = $continer->logs->last();
+             unset($continer->logs);
             $transfer = $latest_trans->transfer;
 
             $destination = $transfer->destinationable;
@@ -1278,7 +1279,7 @@ class Distribution_Center_controller extends Controller
                     return response()->json(["msg" => "you are not last destination or source!"], 401);
                 }
             }
-            $actual_posetion = $continer->posetion_on_stom()->select(["imp_op_stor_id", "floor", "class", "positions_on_class"])->first();
+            $actual_posetion = $continer->posetion_on_stom()->select(["id","imp_op_stor_id", "floor", "class", "positions_on_class"])->first();
             
             $movments = $continer->movments()->select(["id","imp_op_cont_id","prev_position_id","moved_why"])->orderby("created_at", "desc")->get();
 
