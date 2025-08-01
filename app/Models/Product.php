@@ -34,12 +34,7 @@ public function import_operation_details(){
 }
 
 
-public function userMovables()
-{
-    return $this->belongsToMany(UserMovable::class, 'movable_product')
-                ->withPivot('quantity')
-                ->withTimestamps();
-}
+
 
 
 
