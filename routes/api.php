@@ -28,7 +28,7 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
 
     Route::post("create_new_type", "create_new_type");
 
-     Route::post("create_new_specialization", "create_new_specialization");
+    Route::post("create_new_specialization", "create_new_specialization");
     //types configrations and featurs
     Route::get("show_all_types", "show_all_types");
 
@@ -73,7 +73,7 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
     //end
 
     //constract the structur  delete_warehouse
-    Route::get("show_all_warehouses","show_all_warehouses");
+    Route::get("show_all_warehouses", "show_all_warehouses");
 
     Route::post("create_new_warehouse", "create_new_warehouse");
 
@@ -164,13 +164,15 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
 
     Route::get("show_latest_import_op_products", "show_latest_import_op_products");
 
-    Route::get("import_archive_for_supplier/{sup_id}","import_archive_for_supplier");
-    
-    Route::get("show_import_opreation_content/{imp_op_id}","show_import_opreation_content");
+    Route::get("import_archive_for_supplier/{sup_id}", "import_archive_for_supplier");
+
+    Route::get("show_import_opreation_content/{imp_op_id}", "show_import_opreation_content");
     //end
     Route::post("reject_import_op", "reject_import_op");
 
     Route::get("try_choise_trucks/{warehouse_id}/{import_operation_id}", "try_choise_trucks");
+    Route::get("resive_notification", "resive_notification");
+   
 });
 //show_import_opreation_content($imp_op_id)
 
@@ -178,10 +180,10 @@ Route::controller(WarehouseController::class)->middleware('is_warehouse_admin')-
 
     Route::get("show_distrebution_centers_of_product/{warehouse_id}/{product_id}", "show_distrebution_centers_of_product");
     Route::get("show_distribution_centers_of_storage_media_in_warehouse/{warehouse_id}/{storage_media_id}", "show_distribution_centers_of_storage_media_in_warehouse");
-      Route::post("send_products_from_To", "send_products_from_To");
-      Route::get("show_distrebution_centers_of_warehouse/{warehouse_id}", "show_distrebution_centers_of_warehouse");
-     Route::get("calculate_ready_vehicles/{warehouse_id}", "calculate_ready_vehicles");
-});//remove_driver(Request $request,$vehicle_id)
+    Route::post("send_products_from_To", "send_products_from_To");
+    Route::get("show_distrebution_centers_of_warehouse/{warehouse_id}", "show_distrebution_centers_of_warehouse");
+    Route::get("calculate_ready_vehicles/{warehouse_id}", "calculate_ready_vehicles");
+}); //remove_driver(Request $request,$vehicle_id)
 
 
 Route::controller(Distribution_Center_controller::class)->middleware("is_dist_c_admin")->group(function () {
@@ -195,11 +197,10 @@ Route::controller(Distribution_Center_controller::class)->middleware("is_dist_c_
     Route::get("show_products_of_place/{place_type}/{place_id}", "show_products_of_place");
 
     Route::get("show_my_work_place", "show_my_work_place");
-    
-    Route::get("remove_driver/{vehicle_id}", "remove_driver");
-    
-    Route::post("set_driver_for_vehicle", "set_driver_for_vehicle");
 
+    Route::get("remove_driver/{vehicle_id}", "remove_driver");
+
+    Route::post("set_driver_for_vehicle", "set_driver_for_vehicle");
 });
 //set_driver_for_vehicle
 
@@ -218,12 +219,11 @@ Route::controller(Distribution_Center_controller::class)->middleware('is_QA')->g
     Route::post("move_to_position", "move_to_position");
     Route::post("pass_load", "pass_load");
     Route::post("reset_conditions_in_place", "reset_conditions_in_place");
-    Route::post("reject_continer","reject_continer");
-    Route::post("serch","search");
-    Route::get("show_continer_movments/{continer_id}","show_continer_movments");
-   
+    Route::post("reject_continer", "reject_continer");
+    Route::post("serch", "search");
+    Route::get("show_continer_movments/{continer_id}", "show_continer_movments");
 });
-//search
+//resive_notification
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
 
 Route::controller(EmployeController::class)->middleware('is_employe')->group(function () {
@@ -237,8 +237,8 @@ Route::controller(DriverController::class)->middleware('is_driver')->group(funct
 });
 
 Route::controller(ViolationController::class)->group(function () {
-   
-    Route::post("set_conditions","set_conditions");
+
+    Route::post("set_conditions", "set_conditions");
 });
 
 
@@ -255,27 +255,27 @@ Route::controller(UserController::class)->group(function () {
 
         Route::post('updateUser', 'updateUser');
 
-        Route::post("reserve_products","reserve_products");
+        Route::post("reserve_products", "reserve_products");
 
-        Route::get("delete_invoice/{invoice_id}","delete_invoice");
+        Route::get("delete_invoice/{invoice_id}", "delete_invoice");
 
-        Route::get("show_products_in_centers","show_products_in_centers");
+        Route::get("show_products_in_centers", "show_products_in_centers");
 
-        Route::get("show_distribution_centers_of_product_sorted/{product_id}/{longitude}/{latitude}","show_distribution_centers_of_product_sorted");
-   
-        Route::get("show_products_of_distribution_center/{dist_c_id}","show_products_of_distribution_center");
-   
-        Route::get("show_my_invoices","show_my_invoices");
+        Route::get("show_distribution_centers_of_product_sorted/{product_id}/{longitude}/{latitude}", "show_distribution_centers_of_product_sorted");
 
-        Route::get("show_invoice_loads/{invoice_id}","show_invoice_loads");
+        Route::get("show_products_of_distribution_center/{dist_c_id}", "show_products_of_distribution_center");
 
-        Route::get("delete_load/{load_id}","delete_load");
+        Route::get("show_my_invoices", "show_my_invoices");
 
-        Route::post("edit_load","edit_load");
+        Route::get("show_invoice_loads/{invoice_id}", "show_invoice_loads");
 
-        Route::get("execute_invoice/{invoice_id}","execute_invoice");
+        Route::get("delete_load/{load_id}", "delete_load");
+
+        Route::post("edit_load", "edit_load");
+
+        Route::get("execute_invoice/{invoice_id}", "execute_invoice");
     });
-});// execute_invoice($invoice_id)
+}); // execute_invoice($invoice_id)
 
 
 //creeate_bil

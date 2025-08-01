@@ -2,19 +2,27 @@
 
 namespace App\Jobs;
 
+use App\Events\Send_Notification;
+use App\Models\Import_op_storage_md;
+use App\Models\Import_operation;
+use App\Models\Posetions_on_section;
+use App\Models\Positions_on_sto_m;
+use App\Models\Section;
+use App\Models\Specialization;
+use App\Models\Storage_media;
+use App\Notifications\Importing_failed;
+use App\Notifications\Importing_success;
+use App\Traits\AlgorithmsTrait;
+use App\Traits\ViolationsTrait;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use App\Traits\AlgorithmsTrait;
-use App\Models\Import_operation;
-use App\Models\Import_op_storage_md;
-use App\Models\Positions_on_sto_m;
-use App\Models\Section;
-use App\Models\Storage_media;
-use App\Models\Posetions_on_section;
-use App\Traits\ViolationsTrait;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class import_storage_media implements ShouldQueue
 {
@@ -40,6 +48,9 @@ class import_storage_media implements ShouldQueue
 
   public function handle(): void
   {
+     $employe = Specialization::where("name", "super_admin")->first()->employees()->first();
+          DB::beginTransaction();
+    try{
     $created_storage_units = [];
     foreach ($this->storage_media as $storage_element) {
       $section = Section::find($storage_element["section_id"]);
@@ -84,5 +95,44 @@ class import_storage_media implements ShouldQueue
         
       }
     }
-  }
+     $uuid = (string) Str::uuid();
+            $notification = new Importing_success("Storage Media");
+
+            $notify=DatabaseNotification::create([
+                'id' => $uuid,
+                'type' => get_class($notification),
+                'notifiable_type' => get_class($employe),
+                'notifiable_id' => $employe->id,
+                'data' => $notification->toArray($employe),
+                'read_at' => null,
+            ]);
+            $notification->id=$notify->id;
+         event(new Send_Notification($employe,$notification));
+
+
+
+
+    DB::commit(); 
+    } catch (\Throwable $e) {
+        DB::rollBack(); 
+        Log::error("Transaction failed in import operation: " . $e->getMessage());
+         $uuid = (string) Str::uuid();
+            $notification = new Importing_failed("Storage Media",$e->getMessage());
+
+            $notify=DatabaseNotification::create([
+                'id' => $uuid,
+                'type' => get_class($notification),
+                'notifiable_type' => get_class($employe),
+                'notifiable_id' => $employe->id,
+                'data' => $notification->toArray($employe),
+                'read_at' => null,
+            ]);
+            
+         event(new Send_Notification($employe,$notification));
+
+        throw $e; 
+    }
+    }
+ 
+
 }

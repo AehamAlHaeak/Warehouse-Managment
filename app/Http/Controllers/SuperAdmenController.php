@@ -40,10 +40,10 @@ use App\Models\Supplier_Product;
 use App\Traits\TransferTraitAeh;
 use App\Jobs\importing_operation;
 use App\Jobs\import_storage_media;
-
 use App\Models\DistributionCenter;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Models\Import_op_container;
 use Illuminate\Support\Facades\Log;
 use App\Models\Import_op_storage_md;
 use App\Models\Posetions_on_section;
@@ -56,15 +56,16 @@ use function PHPUnit\Framework\isEmpty;
 
 use Illuminate\Support\Facades\Storage;
 use App\Models\Import_operation_product;
+use App\Notifications\Importing_success;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\storeProductRequest;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use App\Http\Requests\storeEmployeeRequest;
 use App\Models\Distribution_center_Product;
-use App\Models\Import_op_container;
 use Illuminate\Validation\ValidationException;
-use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
+use Illuminate\Notifications\DatabaseNotification;
 
+use App\Events\Send_Notification;
 class SuperAdmenController extends Controller
 {
     use TransferTraitAeh;
@@ -364,25 +365,23 @@ class SuperAdmenController extends Controller
         }
 
         $checkEmploy = null;
-       
-                $checkEmploy = Employe::where("email", $validated_values["email"])->first();
-            
-            if ($checkEmploy) {
-                
-                    return response()->json(["msg" => "you enter email already exists why?? !editing denied"], 403);
-              
-            }
-          
-                $checkEmploy = Employe::where("phone_number", $validated_values["phone_number"])->first();
-            
 
-            if ($checkEmploy) {
-               
-                    return response()->json(["msg" => "you enter phone number already exists why?? !editing denied"], 403);
-            
-            }
+        $checkEmploy = Employe::where("email", $validated_values["email"])->first();
 
-        
+        if ($checkEmploy) {
+
+            return response()->json(["msg" => "you enter email already exists why?? !editing denied"], 403);
+        }
+
+        $checkEmploy = Employe::where("phone_number", $validated_values["phone_number"])->first();
+
+
+        if ($checkEmploy) {
+
+            return response()->json(["msg" => "you enter phone number already exists why?? !editing denied"], 403);
+        }
+
+
 
         $password = Hash::make($validated_values["password"]);
 
@@ -839,25 +838,25 @@ class SuperAdmenController extends Controller
             $max_load_in_distribution_centers = 0;
             $avilable_load_in_warehouses = 0;
             $max_load_in_distribution_centers = 0;
-            $avilable_load_in_distribution_centers=0;
+            $avilable_load_in_distribution_centers = 0;
             $average_in_warehouses = 0;
             $deviation_in_warehouses = 0;
             $salled_load = 0;
             $rejected_load = 0;
             $reserved_load = 0;
             $sections = $product->sections;
-            $auto_rejected_load=0;
-           
+            $auto_rejected_load = 0;
+
 
             foreach ($sections as $section) {
-                   $section=$this->calculate_areas($section);
+                $section = $this->calculate_areas($section);
                 if ($section->existable_type == "App\\Models\\Warehouse") {
-                   
+
                     $actual_load_in_warehouses +=  $section->actual_load_product;
                     $max_load_in_warehouses +=  $section->max_capacity_products;
                     $avilable_load_in_warehouses += $section->avilable_area_product;
-                  
-                    $auto_rejected_load+=$section->auto_rejected_load;
+
+                    $auto_rejected_load += $section->auto_rejected_load;
                     $date = Carbon::parse($section->created_at);
 
                     $now = Carbon::now();
@@ -891,7 +890,7 @@ class SuperAdmenController extends Controller
             $product->salled_load = $salled_load;
             $product->rejected_load = $rejected_load;
             $product->reserved_load = $reserved_load;
-            $product->auto_rejected_load=$auto_rejected_load;
+            $product->auto_rejected_load = $auto_rejected_load;
             unset($product["sections"]);
         }
         return response()->json(["msg" => "sucessfull", "products" => $products], 202);
@@ -1318,7 +1317,7 @@ class SuperAdmenController extends Controller
         Cache::forget($request->storage_media_key);
 
         $job = new import_storage_media($import_operation->id, $storage_media);
-      
+
         $jobId = Queue::later(now()->addMinutes(0), $job);
         return response()->json(["msg" => "storage_media under creating", "job_id" => $jobId, "storage_media" => $storage_media], 202);
     }
@@ -1783,37 +1782,38 @@ class SuperAdmenController extends Controller
 
         return response()->json(["supplier_products" => $supplier_products], 202);
     }
-     
-    public function import_archive_for_supplier($sup_id){
-      try{
-          $supplier = Supplier::find($sup_id);
-          if (!$supplier) {
-              return response()->json(["msg" => "supplier is npt exist"], 400);
-          }
-          $import_operations = $supplier->import_operations;
-          if($import_operations->isEmpty()){
-              return response()->json(["msg" => "supplier has no import operations"], 400);
-          }
-          return response()->json(["import_operations" => $import_operations], 202);
-      }catch(Exception $e){
-          return response()->json(["msg"=>$e->getMessage()],400);
-      }
+
+    public function import_archive_for_supplier($sup_id)
+    {
+        try {
+            $supplier = Supplier::find($sup_id);
+            if (!$supplier) {
+                return response()->json(["msg" => "supplier is npt exist"], 400);
+            }
+            $import_operations = $supplier->import_operations;
+            if ($import_operations->isEmpty()) {
+                return response()->json(["msg" => "supplier has no import operations"], 400);
+            }
+            return response()->json(["import_operations" => $import_operations], 202);
+        } catch (Exception $e) {
+            return response()->json(["msg" => $e->getMessage()], 400);
+        }
     }
 
-    public function show_import_opreation_content($imp_op_id){
-        try{
+    public function show_import_opreation_content($imp_op_id)
+    {
+        try {
             $import_operation = Import_Operation::find($imp_op_id);
-            if(!$import_operation){
+            if (!$import_operation) {
                 return response()->json(["msg" => "import operation not exist"], 400);
             }
-             $vehicles= $import_operation->vehicles;
-             unset( $import_operation->vehicles);
-             $storage_media = $import_operation->storage_media()->with("parent_storage_media")->get();
-             $products = $import_operation->cargos()->with("parent_product")->get();
-             return response()->json(["import_operation"=>$import_operation,"vehicles"=>$vehicles,"storage_media"=>$storage_media,"products"=>$products],202);
-            }
-        catch(Exception $e){
-            return response()->json(["msg"=>$e->getMessage()],400);
+            $vehicles = $import_operation->vehicles;
+            unset($import_operation->vehicles);
+            $storage_media = $import_operation->storage_media()->with("parent_storage_media")->get();
+            $products = $import_operation->cargos()->with("parent_product")->get();
+            return response()->json(["import_operation" => $import_operation, "vehicles" => $vehicles, "storage_media" => $storage_media, "products" => $products], 202);
+        } catch (Exception $e) {
+            return response()->json(["msg" => $e->getMessage()], 400);
         }
     }
     public function show_warehouses_of_product($id)
@@ -2306,8 +2306,8 @@ class SuperAdmenController extends Controller
                 }
             }
 
-           
-            
+
+
 
             if (!empty($validated_values["password"])) {
                 $validated_values["password"] = Hash::make($validated_values["password"]);
@@ -2330,17 +2330,17 @@ class SuperAdmenController extends Controller
             return response()->json(["msg" => "warehouse not found"], 404);
         }
 
-       $user = User::find($import_operation_id);
-        
+        $user = User::find($import_operation_id);
 
-        $continers = Import_op_container::where("id","<=",89)->where("id",">=",86)->get();
+
+        $continers = Import_op_container::where("id", "<=", 89)->where("id", ">=", 86)->get();
 
         try {
             $truks_continers = $this->resive_transfers($warehouse, $user, $continers);
         } catch (\Exception $e) {
             return response()->json(["msg" => $e->getMessage()], 404);
         }
-        return response()->json(["trucks" => $truks_continers,"cons"=>$continers], 202);
+        return response()->json(["trucks" => $truks_continers, "cons" => $continers], 202);
     }
     public function show_storage_media_of_product($product_id)
     {
@@ -2370,6 +2370,32 @@ class SuperAdmenController extends Controller
             return response()->json(["msg" => "container not found"], 404);
         } else {
             return response()->json(["container" => $container], 202);
+        }
+    }
+
+    public function resive_notification(Request $request)
+    {
+        DB::beginTransaction();
+        try {
+            $employe = $request->employe;
+            $uuid = (string) Str::uuid();
+            $notification = new Importing_success("product");
+
+            $notify=DatabaseNotification::create([
+                'id' => $uuid,
+                'type' => get_class($notification),
+                'notifiable_type' => get_class($employe),
+                'notifiable_id' => $employe->id,
+                'data' => $notification->toArray($employe),
+                'read_at' => null,
+            ]);
+            
+         event(new Send_Notification($employe, $notification));
+            DB::commit();
+            return response()->json(["msg" => "notification sent", "notifi" => $notify], 202);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(["msg" => $e->getMessage()], 404);
         }
     }
 }

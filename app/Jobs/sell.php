@@ -2,24 +2,30 @@
 
 namespace App\Jobs;
 
-use App\Models\Continer_transfer;
 use Exception;
 use Throwable;
 use App\Models\Invoice;
 use App\Models\Vehicle;
 use App\Models\Sell_detail;
+use Illuminate\Support\Str;
 use Illuminate\Bus\Queueable;
 use App\Traits\AlgorithmsTrait;
+use App\Models\reserved_details;
 use App\Traits\TransferTraitAeh;
+use App\Events\Send_Notification;
+use App\Models\Continer_transfer;
 use Illuminate\Support\Facades\DB;
 use App\Models\Import_op_container;
 use Illuminate\Support\Facades\Log;
 use App\Models\Imp_continer_product;
+use App\Notifications\Sell_under_work;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
+use App\Notifications\Send_the_order_faild;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use App\Models\reserved_details;
+use Illuminate\Notifications\DatabaseNotification;
+
 class sell implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
@@ -43,7 +49,7 @@ class sell implements ShouldQueue
             if (!$invoice) {
                 throw new Exception("Invoice not found");
             }
-            
+            $user = $invoice->user;
             $transfer = $invoice->transfers->first();
             if ($transfer->date_of_resiving != null) {
                 throw new Exception("Invoice already accepted");
@@ -61,7 +67,7 @@ class sell implements ShouldQueue
                 $transfer->date_of_finishing = now();
                 $transfer->save();
                 foreach ($transfer_details as $transfer_detail) {
-                    
+
                     $reserved_loads = $transfer_detail->reserved_loads;
                     foreach ($reserved_loads as $reserved_load) {
                         Sell_detail::create([
@@ -69,16 +75,16 @@ class sell implements ShouldQueue
                             "sold_load" => $reserved_load->reserved_load,
                             "imp_cont_prod_id" => $reserved_load->imp_cont_prod_id
                         ]);
-                        $parent_load=$reserved_load->parent_load;
-                         $continer=$parent_load->container;
+                        $parent_load = $reserved_load->parent_load;
+                        $continer = $parent_load->container;
 
                         $reserved_load->delete($reserved_load->id);
                         $inventory = $this->inventory_on_continer($continer);
                         if ($inventory["reserved_load"] == 0 && $inventory["remine_load"] == 0) {
-                            $continer->status="sold";
+                            $continer->status = "sold";
                             $continer->save();
-                            $posetion= $continer->posetion_on_stom;
-                            $posetion->imp_op_contin_id=null;
+                            $posetion = $continer->posetion_on_stom;
+                            $posetion->imp_op_contin_id = null;
                             $posetion->save();
                         }
                     }
@@ -87,92 +93,108 @@ class sell implements ShouldQueue
                     $transfer_detail->save();
                 }
             } else if ($invoice->type == "transfered") {
-               
-                while($transfer_details->isNotEmpty()){ 
-                    $transfer_detail=$transfer_details->splice(0, 1)->first();
+
+                while ($transfer_details->isNotEmpty()) {
+                    $transfer_detail = $transfer_details->splice(0, 1)->first();
                     $continers = collect();
-                    $continer_reserved=$transfer_detail->continers;
-                   
-                    foreach( $continer_reserved as $orginal_continer){
-                        
-                    
-                    $loads = $orginal_continer->loads;
-                    $inventory = $this->inventory_on_continer($orginal_continer);
-                    $reserved_for_this_detail = 0;
-                    $reserved_loads_to_detail=collect();
-                    foreach ($loads as $load) {
-                        $reserved_loads = $load->reserved_load;
-                        foreach ($reserved_loads as $reserved_load) {
+                    $continer_reserved = $transfer_detail->continers;
 
-                            if ($reserved_load->transfer_details_id == $transfer_detail->id) {
-                                $reserved_loads_to_detail->push($reserved_load);
+                    foreach ($continer_reserved as $orginal_continer) {
+
+
+                        $loads = $orginal_continer->loads;
+                        $inventory = $this->inventory_on_continer($orginal_continer);
+                        $reserved_for_this_detail = 0;
+                        $reserved_loads_to_detail = collect();
+                        foreach ($loads as $load) {
+                            $reserved_loads = $load->reserved_load;
+                            foreach ($reserved_loads as $reserved_load) {
+
+                                if ($reserved_load->transfer_details_id == $transfer_detail->id) {
+                                    $reserved_loads_to_detail->push($reserved_load);
+                                }
                             }
                         }
+                        $reserved_for_this_detail = $reserved_loads_to_detail->sum("reserved_load");
+                        if ($reserved_for_this_detail != $inventory["reserved_load"] || $inventory["remine_load"] > 0) {
+
+                            $new_continer = $this->divide_load($orginal_continer, $reserved_loads_to_detail);
+
+                            Continer_transfer::where("transfer_detail_id", $transfer_detail->id)->where("imp_op_contin_id", $orginal_continer->id)->delete();
+                            $continers->push($new_continer);
+                        } else {
+                            $continers->push($orginal_continer);
+                        }
                     }
-                     $reserved_for_this_detail= $reserved_loads_to_detail->sum("reserved_load");
-                    if ($reserved_for_this_detail != $inventory["reserved_load"] || $inventory["remine_load"]>0) {
-                      
-                         $new_continer=$this->divide_load($orginal_continer,$reserved_loads_to_detail);
-                      
-                    Continer_transfer::where("transfer_detail_id", $transfer_detail->id)->where("imp_op_contin_id",$orginal_continer->id)->delete();
-                   $continers->push($new_continer);
+                    $details = $this->resive_transfers($source, $destination, $continers);
+
+
+                    if ($details == "the vehicles is not enough for the load" || $details == "No containers to transfer") {
+                        throw new \Exception($details);
                     }
-                    else{
-                        $continers->push($orginal_continer);
+                    foreach ($details as $block) {
+                        $vehicle = Vehicle::find($block["vehicle_id"]);
+                        $live_transfer = $vehicle->actual_transfer;
+                        $live_transfer->invoice_id = $invoice->id;
+                        $live_transfer->save();
+                        $detail = $live_transfer->transfer_details()->where("vehicle_id", $block["vehicle_id"])->first();
+                        $continers = $detail->continers;
+
+
+                        foreach ($continers as $continer) {
+                            $loads = $continer->loads;
+                            foreach ($loads as $load) {
+                                $reserved_loads = $load->reserved_load()->update([
+                                    "transfer_details_id" => $detail->id
+                                ]);
+                            }
+
+
+                            Continer_transfer::where("transfer_detail_id", $transfer_detail->id)->where("imp_op_contin_id", $continer->id)->delete();
+                        }
                     }
 
+                    Continer_transfer::where("transfer_detail_id", $transfer_detail->id)->delete();
+                    reserved_details::where("transfer_details_id", $transfer_detail->id)->delete();
+
+                    $transfer_detail->delete();
                 }
-                    $details=$this->resive_transfers($source,$destination,$continers);
-                   
-                    
-                    if($details=="the vehicles is not enough for the load" || $details=="No containers to transfer"){
-                     throw new \Exception($details);
-                    }
-                    foreach($details as $block){
-                          $vehicle = Vehicle::find($block["vehicle_id"]);
-                          $live_transfer=$vehicle->actual_transfer;
-                          $live_transfer->invoice_id=$invoice->id;
-                          $live_transfer->save();
-                          $detail=$live_transfer->transfer_details()->where("vehicle_id",$block["vehicle_id"])->first();
-                          $continers=$detail->continers;
-                          
-                         
-                          foreach($continers as $continer){
-                             $loads=$continer->loads;
-                             foreach($loads as $load){
-                               $reserved_loads=$load->reserved_load()->update([
-                                  "transfer_details_id"=>$detail->id
-                               ]);
-                               
-                             }
-                          
-                            
-                             Continer_transfer::where("transfer_detail_id", $transfer_detail->id)->where("imp_op_contin_id",$continer->id)->delete();
-                             
-                            }
-                        }
-                    
-                     Continer_transfer::where("transfer_detail_id", $transfer_detail->id)->delete();
-                     reserved_details::where("transfer_details_id", $transfer_detail->id)->delete();
-                    
-                     $transfer_detail->delete();
-                     
-                  
-                }
-                 
-            
-             $transfer->delete($transfer->id);
-         
-            
+
+
+                $transfer->delete($transfer->id);
             }
+            $uuid = (string) Str::uuid();
+            $notification = new Sell_under_work($invoice);
 
-
-
+            $notify = DatabaseNotification::create([
+                'id' => $uuid,
+                'type' => get_class($notification),
+                'notifiable_type' => get_class($user),
+                'notifiable_id' => $user->id,
+                'data' => $notification->toArray($user),
+                'read_at' => null,
+            ]);
+            $notification->id = $notify->id;
+            event(new Send_Notification($user, $notification));
 
 
 
             DB::commit();
         } catch (Throwable $e) {
+            $user = $invoice->user;
+            $uuid = (string) Str::uuid();
+            $notification = new Send_the_order_faild($invoice);
+
+            $notify = DatabaseNotification::create([
+                'id' => $uuid,
+                'type' => get_class($notification),
+                'notifiable_type' => get_class($user),
+                'notifiable_id' => $user->id,
+                'data' => $notification->toArray($user),
+                'read_at' => null,
+            ]);
+            $notification->id = $notify->id;
+            event(new Send_Notification($user, $notification));
             DB::rollBack();
             Log::error("Transaction failed in import operation: " . $e->getMessage());
             throw $e;

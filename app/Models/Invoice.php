@@ -12,5 +12,8 @@ class Invoice extends Model
      public function transfers(){
         return $this->hasMany(Transfer::class,"invoice_id");
      }
+     public function user(){
+      return $this->belongsTo(User::class,"user_id");
+     }
     
 }

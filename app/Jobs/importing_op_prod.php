@@ -6,7 +6,9 @@ use Exception;
 use App\Models\Product;
 use App\Models\Transfer;
 use App\Models\Warehouse;
+use Illuminate\Support\Str;
 use Illuminate\Bus\Queueable;
+use App\Models\Specialization;
 use App\Models\Containers_type;
 use App\Models\Transfer_detail;
 use App\Models\Import_operation;
@@ -21,7 +23,10 @@ use App\Models\Import_operation_product;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-
+use Illuminate\Notifications\DatabaseNotification;
+use App\Events\Send_Notification;
+use App\Notifications\Importing_success;
+use App\Notifications\Importing_failed;
 class importing_op_prod implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
@@ -47,6 +52,8 @@ class importing_op_prod implements ShouldQueue
 
     public function handle(): void
     {
+
+          $employe = Specialization::where("name", "super_admin")->first()->employees()->first();
           DB::beginTransaction();
           try{
         if (empty($this->validated_products)) {
@@ -178,10 +185,41 @@ class importing_op_prod implements ShouldQueue
             }
         }
     }
+     
+   
+            $uuid = (string) Str::uuid();
+            $notification = new Importing_success("product");
+
+            $notify=DatabaseNotification::create([
+                'id' => $uuid,
+                'type' => get_class($notification),
+                'notifiable_type' => get_class($employe),
+                'notifiable_id' => $employe->id,
+                'data' => $notification->toArray($employe),
+                'read_at' => null,
+            ]);
+           $notification->id=$notify->id;
+         event(new Send_Notification($employe,$notification));
+
+
+
     DB::commit(); 
     } catch (\Throwable $e) {
         DB::rollBack(); 
         Log::error("Transaction failed in import operation: " . $e->getMessage());
+         $uuid = (string) Str::uuid();
+            $notification = new Importing_failed("product",$e->getMessage());
+
+            $notify=DatabaseNotification::create([
+                'id' => $uuid,
+                'type' => get_class($notification),
+                'notifiable_type' => get_class($employe),
+                'notifiable_id' => $employe->id,
+                'data' => $notification->toArray($employe),
+                'read_at' => null,
+            ]);
+         $notification->id=$notify->id;
+         event(new Send_Notification($employe,$notification));
         throw $e; 
     }
     }
