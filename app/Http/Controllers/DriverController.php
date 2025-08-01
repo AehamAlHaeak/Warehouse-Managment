@@ -171,8 +171,9 @@ class DriverController extends Controller
                     "date_of_finishing" => now()
                 ]);
             }
-          if ($transfer_detail->status != "in_QA") {
+         
             if ($next_transfer) {
+                 if ($transfer_detail->status != "in_QA") {
                 $transfer_detail_in_next = $next_transfer->transfer_details()->where("vehicle_id", $vehicle->id)->first();
 
                 if ($transfer_detail_in_next->status != "received" ) {
@@ -187,18 +188,16 @@ class DriverController extends Controller
                         "transfer_id" => $next_transfer->id
                     ]);
                     $next_transfer = null;
-                } else {
-                    $vehicle->update([
-                        "transfer_id" => null
-                    ]);
+                } 
                 }
-            } else {
+            } 
+          
+        else {
                  $next_transfer=null;
                 $vehicle->update([
                     "transfer_id" => null
                 ]);
             }
-        }    
             unset($curent_transfer->next_transfer);
            
             return response()->json(["msg" => "your task status updated suucesfuly!", "your_status" => $transfer_detail->status, "actual_transfer" => $curent_transfer, "next_transfer" => $next_transfer], 202);
