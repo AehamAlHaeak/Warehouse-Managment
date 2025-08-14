@@ -31,8 +31,7 @@ class ViolationController extends Controller
                     "place_id" => "required|integer",
                     "place_type" => "required|in:Vehicle,Import_op_storage_md"
                 ]);
-            } catch (ValidationException $e) {
-            } catch (ValidationException $e) {
+            }  catch (ValidationException $e) {
                 return response()->json([
                     'msg' => 'Validation failed',
                     'errors' => $e->errors(),

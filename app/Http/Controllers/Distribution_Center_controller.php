@@ -30,6 +30,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Imp_continer_product;
 use App\Models\Import_op_storage_md;
 use App\Models\Posetions_on_section;
+use App\Notifications\you_have_changes;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
@@ -243,10 +244,12 @@ class Distribution_Center_controller extends Controller
 
 
             $activ_transfers = $place->resived_transfers()->where("date_of_resiving", "!=", null)->where("date_of_finishing", null)->get();
+
             $in_QA_loads = collect();
             foreach ($activ_transfers as $transfer) {
-                $transfer_details = $transfer->transfer_details;
-                $in_QA_loads->push($transfer_details->where("status", "in_QA")->first());
+                $transfer_details = $transfer->transfer_details()->where("status", "in_QA")->get();
+
+                $in_QA_loads = $in_QA_loads->merge($transfer_details);
             }
 
 
@@ -834,7 +837,6 @@ class Distribution_Center_controller extends Controller
                     "destination_type" => "required|in:Warehouse,DistributionCenter",
                     "destination_id" => "required",
 
-
                 ]);
             } catch (ValidationException $e) {
 
@@ -881,6 +883,7 @@ class Distribution_Center_controller extends Controller
                     ], 409);
                 }
             }
+            
         } catch (Exception $e) {
             return response()->json(["msg" => $e->getMessage()], 500);
         }
@@ -989,7 +992,17 @@ class Distribution_Center_controller extends Controller
             }
 
             if ($vehicle->driver_id != null) {
-                //send notefication he will cansell the truck
+               if($vehicle->driver_id==$validated_values["driver_id"]){
+                  return response()->json(["msg" => "the vehicle already has this driver"], 409);
+               }
+               
+                $last_driver = $vehicle->driver;
+                $notification = new you_have_changes("you canseled from the vehicle $vehicle->id and still work in the same place");
+                $this->send_not($notification,$last_driver);
+                $notification = new you_have_changes("you take the work in $vehicle->id ");
+                $this->send_not($notification,$driver);
+
+                
             }
             $driver_vehicle = $driver->vehicle;
             if ($driver_vehicle) {
@@ -1020,7 +1033,9 @@ class Distribution_Center_controller extends Controller
             }
             $driver = $vehicle->driver;
             if ($driver) {
-                //send notefication he will cansel the truck
+               $driver = $vehicle->driver;
+                $notification = new you_have_changes("you canseled from the vehicle $vehicle->id and still work in the same place");
+                $this->send_not($notification,$driver);
             }
             if ($vehicle->driver_id == null) {
                 return response()->json(["msg" => "the vehicle has no driver"], 404);
@@ -1186,7 +1201,7 @@ class Distribution_Center_controller extends Controller
     public function search()
     {
         try {
-        /*
+            /*
         "Containers_type",
         "Continer_transfer",
         "DistributionCenter",
@@ -1256,47 +1271,47 @@ class Distribution_Center_controller extends Controller
         }
     }
 
-    public function show_continer_movments(Request $request,$cont_id)
+    public function show_continer_movments(Request $request, $cont_id)
     {
         try {
             $continer = Import_op_container::find($cont_id);
             if (!$continer) {
                 return response()->json(["msg" => "continer not found"], 404);
             }
-             $latest_trans = $continer->logs->last();
-             unset($continer->logs);
+            $latest_trans = $continer->logs->last();
+            unset($continer->logs);
             $transfer = $latest_trans->transfer;
 
             $destination = $transfer->destinationable;
-            $source=$transfer->sourceable;
+            $source = $transfer->sourceable;
             $employe = $request->employe;
             $employe = $request->employe;
             if ($employe->specialization->name != "super_admin") {
 
                 $authorized_in_place = $this->check_if_authorized_in_place($employe, $destination);
-                $authorized_in_place2=$this->check_if_authorized_in_place($employe, $source);
+                $authorized_in_place2 = $this->check_if_authorized_in_place($employe, $source);
                 if (!$authorized_in_place && !$authorized_in_place2) {
                     return response()->json(["msg" => "you are not last destination or source!"], 401);
                 }
             }
-            $actual_posetion = $continer->posetion_on_stom()->select(["id","imp_op_stor_id", "floor", "class", "positions_on_class"])->first();
-            
-            $movments = $continer->movments()->select(["id","imp_op_cont_id","prev_position_id","moved_why"])->orderby("created_at", "desc")->get();
+            $actual_posetion = $continer->posetion_on_stom()->select(["id", "imp_op_stor_id", "floor", "class", "positions_on_class"])->first();
 
-           
+            $movments = $continer->movments()->select(["id", "imp_op_cont_id", "prev_position_id", "moved_why"])->orderby("created_at", "desc")->get();
+
+
             foreach ($movments as $movment) {
                 $posetion = $movment->posetion_on_sto_m()->select(["imp_op_stor_id", "floor", "class", "positions_on_class"])->first();
 
-           
+
                 $storage_element = $posetion->storage_element;
-                
-                $posetion_of_storage_element = $storage_element->posetion_on_section()->select(["id","section_id","floor","class","positions_on_class",])->first();
-         
-                $section = $posetion_of_storage_element->section()->select(["id","name","existable_type","existable_id"])->first();
-              
+
+                $posetion_of_storage_element = $storage_element->posetion_on_section()->select(["id", "section_id", "floor", "class", "positions_on_class",])->first();
+
+                $section = $posetion_of_storage_element->section()->select(["id", "name", "existable_type", "existable_id"])->first();
+
                 $place = $section->existable;
-                 unset($section["existable"]);
-                 unset($place->created_at,$place->updated_at);
+                unset($section["existable"]);
+                unset($place->created_at, $place->updated_at);
                 $movment->place_type = str_replace("App\\Models\\", "", get_class($place));
                 $movment->place = $place;
                 $movment->section = $section;

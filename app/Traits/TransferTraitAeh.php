@@ -2,25 +2,27 @@
 
 namespace App\Traits;
 
-use App\Models\Vehicle;
-use App\Models\Containers_type;
-use App\Models\DistributionCenter;
-use App\Models\Import_operation;
-use App\Models\Product;
-use App\Models\Storage_media;
-use App\Models\Garage;
+use App\Models\type;
 use App\Models\User;
-use App\Models\Posetions_on_section;
+use App\Models\Garage;
+use App\Models\Product;
+use App\Models\Vehicle;
+use App\Models\Transfer;
+use App\Models\Warehouse;
+use Illuminate\Support\Str;
+use App\Models\Storage_media;
+use App\Models\Containers_type;
+use App\Models\Transfer_detail;
+use App\Traits\AlgorithmsTrait;
+use App\Models\Import_operation;
+use App\Models\Continer_transfer;
+use App\Models\Import_op_product;
+use App\Models\container_movments;
+use App\Models\DistributionCenter;
 use App\Models\Positions_on_sto_m;
 use App\Models\Import_op_container;
-use App\Models\Import_op_product;
-use App\Models\type;
-use App\Models\Transfer;
-use App\Models\Transfer_detail;
-use App\Models\Warehouse;
-use App\Models\Continer_transfer;
-use App\Traits\AlgorithmsTrait;
-use App\Models\container_movments;
+use App\Models\Posetions_on_section;
+use App\Notifications\Take_new_task;
 
 trait TransferTraitAeh
 {
@@ -43,15 +45,27 @@ trait TransferTraitAeh
                 "status" => $status_wo_load
             ]);
             $vehicle = Vehicle::find($block["vehicle_id"]);
+            $driver=$vehicle->driver;
+          
             if ($status_wo_load == "under_work") {
                 $vehicle->update([
                     "transfer_id" => $without_load_id,
                 ]);
+                
+                $task=Transfer::find($without_load_id);
+                $notification = new Take_new_task($task);
+                $this->send_not($notification,$driver);
             } else {
                 $vehicle->update([
                     "transfer_id" => $load_object_id,
                 ]);
+                $task=Transfer::find($load_object_id);
+                $notification = new Take_new_task($task);
+                $this->send_not($notification,$driver);
             }
+            
+           
+
             foreach ($block["container_ids"] as $continer_id) {
                 $continer = Import_op_container::find($continer_id);
                 $posetion = $continer->posetion_on_stom;

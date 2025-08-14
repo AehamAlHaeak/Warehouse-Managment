@@ -144,16 +144,7 @@ class DriverController extends Controller
                         $uuid = (string) Str::uuid();
                         $notification = new Load_incoming($transfer_detail->id);
 
-                        $notify = DatabaseNotification::create([
-                            'id' => $uuid,
-                            'type' => get_class($notification),
-                            'notifiable_type' => get_class($employe),
-                            'notifiable_id' => $employe->id,
-                            'data' => $notification->toArray($employe),
-                            'read_at' => null,
-                        ]);
-                        $notification->id = $notify->id;
-                        event(new Send_Notification($employe, $notification));
+                        $this->send_not($notification, $employe);
                     }
                 }
             } else {

@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Invoice;
 use App\Models\Vehicle;
 use App\Models\Violation;
+use Illuminate\Support\Str;
 use Illuminate\Bus\Queueable;
 use App\Models\Specialization;
 use App\Traits\AlgorithmsTrait;
@@ -15,9 +16,13 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Import_op_container;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Queue\SerializesModels;
+use App\Notifications\Violation_ocured;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Notifications\DatabaseNotification;
+use App\Events\Send_Notification;
+use App\Notifications\load_replaced;
 
 class TempViolation implements ShouldQueue
 {
@@ -43,6 +48,10 @@ class TempViolation implements ShouldQueue
 
     DB::BeginTransaction();
     try {
+      $admins=collect();
+       $fetched_continers = collect();
+       $super_admin = Specialization::where("name", "super_admin")->first()->employees()->first();
+       $admins->push($super_admin);
       $roles = ['warehouse_admin', 'distribution_center_admin', 'QA'];
       $violation = Violation::find($this->violation_id);
       $violation->status = "effected";
@@ -62,7 +71,8 @@ class TempViolation implements ShouldQueue
 
       if (get_class($place_of_vio) == "App\Models\Vehicle") {
         $driver = $place_of_vio->driver;
-        unset($place_of_vio["driver"]);
+        $admins->push($driver);
+                unset($place_of_vio["driver"]);
         if ($place_of_vio->transfer_id != null) {
 
           $transfer = $place_of_vio->actual_transfer;
@@ -127,7 +137,7 @@ class TempViolation implements ShouldQueue
               }
               Log::info("Final new_continers after all sections processed: " . json_encode(array_values($new_continers)));
               var_dump($new_continers);
-              $fetched_continers = collect();
+             
               foreach ($new_continers as $continer_id) {
                 $fetched_continer = Import_op_container::find($continer_id);
                 $fetched_continers->push($fetched_continer);
@@ -184,6 +194,23 @@ class TempViolation implements ShouldQueue
                   foreach ($block["container_ids"] as $continer_id) {
                     reserved_details::where("transfer_details_id", $load_of_vehicle->id)->update(["transfer_details_id" => $new_detail_intrans->id]);
                   }
+                   $quantity=0;
+            foreach($fetched_continers as $continer){
+              $quantity+=$this->inventory_on_continer($continer)["reserved_load"];
+            }
+            $uuid = (string) Str::uuid();
+                $notification = new Load_replaced($load_of_vehicle, $violation->parameter, $quantity);
+
+                $notify = DatabaseNotification::create([
+                    'id' => $uuid,
+                    'type' => get_class($notification),
+                    'notifiable_type' => get_class($destination),
+                    'notifiable_id' => $destination->id,
+                    'data' => $notification->toArray($destination),
+                    'read_at' => null,
+                ]);
+                $notification->id = $notify->id;
+                event(new Send_Notification($destination, $notification));
 
                 }
               } else {
@@ -227,6 +254,7 @@ class TempViolation implements ShouldQueue
             $meaning_in_source = $source->employees()
               ->whereHas('specialization', fn($query) => $query->whereIn('name', $roles))
               ->get();
+             $admins=$admins->merge($meaning_in_source);
           }
 
           if (get_class($destination) != 'App\Models\Import_operation' && get_class($destination) != 'App\Models\User') {
@@ -234,9 +262,8 @@ class TempViolation implements ShouldQueue
             $meaning_in_destination = $destination->employees()
               ->whereHas('specialization', fn($query) => $query->whereIn('name', $roles))
               ->get();
-          } elseif (get_class($destination) == 'App\Models\User') {
-            //send notefication
-          }
+             $admins=$admins->merge($meaning_in_destination);
+          } 
         } else {
           $garage = $place_of_vio->garage;
           $source = $garage->existable;
@@ -245,18 +272,9 @@ class TempViolation implements ShouldQueue
             ->get();
         }
 
-        $super_admin = Specialization::where("name", "super_admin")->first()->employees()->first();
-        //send not
-        if ($meaning_in_source->isNotEmpty()) {
-          foreach ($meaning_in_source as $employe) {
-            //send not 
-          }
-        }
-        if ($meaning_in_destination->isNotEmpty()) {
-          foreach ($meaning_in_destination as $employe) {
-            //send not 
-          }
-        }
+       
+        //send not $super_admin
+        
       } elseif (get_class($place_of_vio) == "App\Models\Import_op_storage_md") {
         $continers = $place_of_vio->impo_container;
         $section = $place_of_vio->section()->first();
@@ -266,19 +284,21 @@ class TempViolation implements ShouldQueue
           ->whereHas('specialization', fn($query) => $query->whereIn('name', $roles))
           ->get();
 
-        $super_admin = Specialization::where("name", "super_admin")->first()->employees()->first();
-        //send not
+        
         if ($meaning_in_destination->isNotEmpty()) {
-          foreach ($meaning_in_destination as $employe) {
-            //send not 
-          }
+          $admins=$admins->merge($meaning_in_destination);
         }
         foreach ($continers as $continer) {
           $continer->status = 'auto_reject';
           $continer->save();
         }
       }
-
+      foreach ($admins as $employe) {
+                $uuid = (string) Str::uuid();
+                $notification = new Violation_ocured($place_of_vio, $violation);
+                $this->send_not($notification, $employe);
+               
+            }
 
       DB::commit();
     } catch (\Throwable $e) {

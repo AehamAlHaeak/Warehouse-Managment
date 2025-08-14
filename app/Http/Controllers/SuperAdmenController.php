@@ -130,7 +130,9 @@ class SuperAdmenController extends Controller
             "QA"
 
         ];
-        echo "i am here";
+       
+
+        
         foreach ($requiredSpecs as $spec) {
             Specialization::firstOrCreate(['name' => $spec]);
         }

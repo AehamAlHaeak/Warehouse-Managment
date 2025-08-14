@@ -14,6 +14,7 @@ use App\Models\Supplier;
 use App\Models\Transfer;
 use App\Models\Warehouse;
 use App\Models\Bill_Detail;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\Storage_media;
 use App\Models\Specialization;
@@ -21,17 +22,19 @@ use Illuminate\Support\Carbon;
 use App\Models\reserved_details;
 use App\Models\Supplier_Product;
 use App\Models\Transfer_Vehicle;
+use App\Models\container_movments;
 use App\Models\DistributionCenter;
 use App\Models\Positions_on_sto_m;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Models\Import_op_container;
 use Illuminate\Support\Facades\Log;
 use App\Models\Imp_continer_product;
 use App\Models\Posetions_on_section;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Distribution_center_Product;
-use App\Models\Import_op_container;
-use App\Models\container_movments;
+use Illuminate\Notifications\DatabaseNotification;
+use App\Events\Send_Notification;
 trait AlgorithmsTrait
 {
     public function create_token($object)
@@ -795,5 +798,19 @@ trait AlgorithmsTrait
 
         return $sell_reserve; 
 
+    }
+
+    public function send_not($notification,$dest){
+        $uuid = (string) Str::uuid();
+      $notify = DatabaseNotification::create([
+                    'id' => $uuid,
+                    'type' => get_class($notification),
+                    'notifiable_type' => get_class($dest),
+                    'notifiable_id' => $dest->id,
+                    'data' => $notification->toArray($dest),
+                    'read_at' => null,
+                ]);
+                $notification->id = $notify->id;
+                event(new Send_Notification($dest, $notification));
     }
 }

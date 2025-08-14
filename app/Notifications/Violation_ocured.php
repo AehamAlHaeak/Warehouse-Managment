@@ -7,16 +7,15 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class Violation_in_element extends Notification
+class Violation_ocured extends Notification
 {
     use Queueable;
 
-    protected $place;
-    protected $type;
-    public function __construct($place,$type)
+   public $place,$violation;
+   public function __construct($place,$violation)
     {
         $this->place = $place;
-        $this->type = $type;
+        $this->violation = $violation;
     }
 
     
@@ -29,11 +28,11 @@ class Violation_in_element extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-          "msg"=>"the place has a violation after tow hours if not fixed it will be auto reject its content",
-          "type"=>$this->type, 
+          "msg"=>"the place has a violation have ocured the content auto rejected go to deal with the action",
+          "vilation_id"=>$this->violation->id,
+          "violation_type"=>$this->violation->parameter, 
           "place_type"=>strtolower(class_basename($this->place)),
-          "place_id"=>$this->place->id,
-          "internal_$this->type"=>$this->place["internal_"."$this->type"]
+          "place_id"=>$this->place->id
         ];
     }
 }

@@ -3,94 +3,31 @@
 namespace App\Http\Controllers;
 
 use Exception;
+use App\Models\Employe;
 use App\Models\Product;
 use App\Models\Vehicle;
+use App\Models\Violation;
 use App\Models\Warehouse;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\Storage_media;
+use App\Models\Specialization;
 use Illuminate\Support\Carbon;
 use App\Traits\AlgorithmsTrait;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use Illuminate\Validation\ValidationException;
-use App\Models\Import_op_container;
 use App\Traits\TransferTraitAeh;
+use App\Events\Send_Notification;
+use Illuminate\Support\Facades\DB;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Models\Import_op_container;
+use App\Notifications\Shortage_of_inventory;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Notifications\DatabaseNotification;
 
 class WarehouseController extends Controller
 {
     use AlgorithmsTrait;
     use TransferTraitAeh;
-    public function showGarage($id)
-    {
-        $garage = Warehouse::find($id)->garages;
-        return $garage;
-    }
-
-    public function showVehicles_OnGarage($garageid)
-    {
-        $vehicle = Vehicle::find($garageid)->vehicles;
-        return $vehicle;
-    }
-
-    public function showprod_In_Warehouse($id)
-    {
-        $ware_prod = Warehouse::find($id)->supported_roduct;
-        return  $ware_prod;
-    }
-
-    public function show_Storage_Md($id)
-    {
-
-        $warehouse = Warehouse::with('sections.posetions.storage_element.parent_storage_media')->findOrFail($id);
-
-        $storageMedias = collect();
-
-        foreach ($warehouse->sections as $section) {
-            foreach ($section->posetions as $position) {
-                if ($position->storage_element && $position->storage_element->parent_storage_media) {
-                    $storageMedias->push($position->storage_element->parent_storage_media);
-                }
-            }
-        }
-
-
-        $storageMedias = $storageMedias->unique('id')->values();
-
-
-        return response()->json([
-            'warehouse' => $warehouse->only('id', 'name', 'location'),
-
-        ]);
-    }
-
-    public function showEmployees($id)
-    {
-        $warehouse = Warehouse::with('employees')->findOrFail($id);
-
-        return response()->json([
-            'warehouse' => $warehouse->name,
-
-        ]);
-    }
-
-    public function showType($id)
-    {
-        $warehouse = Warehouse::with('type')->findOrFail($id);
-
-        return response()->json([
-            'warehouse' => $warehouse->name,
-            'type' => $warehouse->type,
-        ]);
-    }
-
-    public function showSections($id)
-    {
-        $warehouse = Warehouse::with('sections')->findOrFail($id);
-
-        return response()->json([
-            'warehouse' => $warehouse->name,
-
-        ]);
-    }
+    
 
     public function show_distrebution_centers_of_product(Request $request,$warehouse_id, $product_id)
     {
@@ -165,6 +102,7 @@ class WarehouseController extends Controller
     }
     public function send_products_from_To(Request $request)
     {
+        DB::beginTransaction();
         try {
             try {
                 $validated_values = $request->validate([
@@ -302,9 +240,40 @@ class WarehouseController extends Controller
             } elseif ($transfer_details == "No containers to transfer") {
                 return response()->json(["msg" => $transfer_details], 400);
             }
+            $source = $this->calcute_areas_on_place_for_a_specific_product($source, $product->id);
+             
+            if($source->actual_load_product <= $source->max_capacity_product){
+               
+            
+            $super_admin_specialization=Specialization::where("name","super_admin")->pluck("id");
+            $super_admin=Employe::where("specialization_id",$super_admin_specialization)->first();
+             
+            $goal_specialization=Specialization::whereIn("name",["warehouse_admin","distribution_center_admin"])->pluck("id");
+            
+            $admins=$source->employees()->whereIn("specialization_id",$goal_specialization)->get();
+            unset($source["garages"]);
+            $admins->push($super_admin);
+          
+             foreach ($admins as $employe) {
+                $uuid = (string) Str::uuid();
+                $notification = new Shortage_of_inventory($source, $product);
 
+                $notify = DatabaseNotification::create([
+                    'id' => $uuid,
+                    'type' => get_class($notification),
+                    'notifiable_type' => get_class($employe),
+                    'notifiable_id' => $employe->id,
+                    'data' => $notification->toArray($employe),
+                    'read_at' => null,
+                ]);
+                $notification->id = $notify->id;
+                event(new Send_Notification($employe, $notification));
+            }
+        }
+        DB::commit();
             return response()->json(["msg" => $transfer_details], 202);
         } catch (Exception $e) {
+            DB::rollBack();
             return response()->json([
 
                 'errors' => $e->getMessage(),
