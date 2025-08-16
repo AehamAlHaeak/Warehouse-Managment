@@ -163,38 +163,18 @@ class sell implements ShouldQueue
 
                 $transfer->delete($transfer->id);
             }
-            $uuid = (string) Str::uuid();
+           
             $notification = new Sell_under_work($invoice);
 
-            $notify = DatabaseNotification::create([
-                'id' => $uuid,
-                'type' => get_class($notification),
-                'notifiable_type' => get_class($user),
-                'notifiable_id' => $user->id,
-                'data' => $notification->toArray($user),
-                'read_at' => null,
-            ]);
-            $notification->id = $notify->id;
-            event(new Send_Notification($user, $notification));
-
+           $this->send_not($notification, $user);
 
 
             DB::commit();
         } catch (Throwable $e) {
-            $user = $invoice->user;
-            $uuid = (string) Str::uuid();
+            
             $notification = new Send_the_order_faild($invoice);
 
-            $notify = DatabaseNotification::create([
-                'id' => $uuid,
-                'type' => get_class($notification),
-                'notifiable_type' => get_class($user),
-                'notifiable_id' => $user->id,
-                'data' => $notification->toArray($user),
-                'read_at' => null,
-            ]);
-            $notification->id = $notify->id;
-            event(new Send_Notification($user, $notification));
+            $this->send_not($notification, $user);
             DB::rollBack();
             Log::error("Transaction failed in import operation: " . $e->getMessage());
             throw $e;

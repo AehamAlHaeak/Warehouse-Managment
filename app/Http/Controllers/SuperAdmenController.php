@@ -834,66 +834,7 @@ class SuperAdmenController extends Controller
         $products = Product::all();
 
         foreach ($products as $product) {
-            $actual_load_in_warehouses = 0;
-            $actual_load_in_distribution_centers = 0;
-            $max_load_in_warehouses = 0;
-            $max_load_in_distribution_centers = 0;
-            $avilable_load_in_warehouses = 0;
-            $max_load_in_distribution_centers = 0;
-            $avilable_load_in_distribution_centers = 0;
-            $average_in_warehouses = 0;
-            $deviation_in_warehouses = 0;
-            $salled_load = 0;
-            $rejected_load = 0;
-            $reserved_load = 0;
-            $sections = $product->sections;
-            $auto_rejected_load = 0;
-
-
-            foreach ($sections as $section) {
-                $section = $this->calculate_areas($section);
-                if ($section->existable_type == "App\\Models\\Warehouse") {
-
-                    $actual_load_in_warehouses +=  $section->actual_load_product;
-                    $max_load_in_warehouses +=  $section->max_capacity_products;
-                    $avilable_load_in_warehouses += $section->avilable_area_product;
-
-                    $auto_rejected_load += $section->auto_rejected_load;
-                    $date = Carbon::parse($section->created_at);
-
-                    $now = Carbon::now();
-                    $weeksPassed = $date->diffInWeeks($now);
-                    if ($weeksPassed != 0) {
-
-                        $deviation_in_warehouses += sqrt($product->import_cycle / 7) * sqrt($section->variance / $weeksPassed);
-                    }
-
-                    $average_in_warehouses += ($product->import_cycle / 7) * $section->average;
-                }
-                if ($section->existable_type == "App\\Models\\DistributionCenter") {
-                    $actual_load_in_distribution_centers +=  $section->actual_load_product;
-                    $max_load_in_distribution_centers += $section->max_capacity_products;
-                    $avilable_load_in_distribution_centers += $section->avilable_area_product;
-                }
-                $salled_load += $section->selled_load;
-                $rejected_load += $section->rejected_load;
-                $reserved_load += $section->reserved_load;
-            }
-            $product->avilable_load_on_warehouses = $avilable_load_in_warehouses;
-            $product->avilable_load_on_distribution_centers = $avilable_load_in_distribution_centers;
-            $product->max_load_on_warehouse = $max_load_in_warehouses;
-            $product->max_load_in_distribution_centers = $max_load_in_distribution_centers;
-            $product->actual_load_in_warehouses = $actual_load_in_warehouses;
-            $product->actual_load_in_distribution_centers = $actual_load_in_distribution_centers;
-            $product->average = $average_in_warehouses;
-            $product->deviation = $deviation_in_warehouses;
-            $product->max_load_on_company = $max_load_in_warehouses + $max_load_in_distribution_centers;
-            $product->load_on_company = $actual_load_in_warehouses + $actual_load_in_distribution_centers;
-            $product->salled_load = $salled_load;
-            $product->rejected_load = $rejected_load;
-            $product->reserved_load = $reserved_load;
-            $product->auto_rejected_load = $auto_rejected_load;
-            unset($product["sections"]);
+          $product=$this->invintory_product_in_company($product);
         }
         return response()->json(["msg" => "sucessfull", "products" => $products], 202);
     }

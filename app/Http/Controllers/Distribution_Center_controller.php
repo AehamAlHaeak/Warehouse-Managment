@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\check_load_of_company_pr;
 use Exception;
 use App\Models\User;
 use App\Models\Garage;
@@ -14,6 +15,7 @@ use App\Traits\LoadingTrait;
 use Illuminate\Http\Request;
 use app\Traits\TransferTrait;
 use App\Models\reject_details;
+use App\Models\Specialization;
 use App\Models\Transfer_detail;
 use App\Traits\AlgorithmsTrait;
 use App\Traits\ViolationsTrait;
@@ -30,14 +32,14 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Imp_continer_product;
 use App\Models\Import_op_storage_md;
 use App\Models\Posetions_on_section;
-use App\Notifications\you_have_changes;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
+use App\Notifications\you_have_changes;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
-
+use App\Notifications\send_products_for_me;
 class Distribution_Center_controller extends Controller
 {
     use AlgorithmsTrait;
@@ -833,7 +835,7 @@ class Distribution_Center_controller extends Controller
                 $validated_values = $request->validate([
                     "products" => "required|array|min:1",
                     "products.*.product_id" => "required|integer|exists:products,id",
-                    "products.*quantity" => "required|integer",
+                    "products.*.quantity" => "required|integer",
                     "destination_type" => "required|in:Warehouse,DistributionCenter",
                     "destination_id" => "required",
 
@@ -883,7 +885,25 @@ class Distribution_Center_controller extends Controller
                     ], 409);
                 }
             }
-            
+            if($validated_values["destination_type"] == "DistributionCenter"){
+              $warehouse=$destination->warehouse;
+              $wa_ad_spec=Specialization::where("name","warehouse_admin")->first();
+             
+              $admins=$warehouse->employees()->where("specialization_id",$wa_ad_spec->id)->get();
+               
+              foreach ($admins as $admin) {
+                  $notification=new Send_products_for_me($validated_values["destination_type"],$validated_values["products"],$validated_values["destination_id"]);
+                  $this->send_not($notification,$admin);
+              }
+            }
+            else{
+                $sup_ad_spec_id=Specialization::where("name","super_admin")->first()->id;
+                $super_Admin=Employe::where("specialization_id",$sup_ad_spec_id)->first();
+                $notification=new Send_products_for_me($validated_values["destination_type"],$validated_values["products"],$validated_values["destination_id"]);
+                $this->send_not($notification,$super_Admin);
+            }
+
+            return response()->json(["msg" => "the request has been sent successfully"], 202);
         } catch (Exception $e) {
             return response()->json(["msg" => $e->getMessage()], 500);
         }
@@ -1324,5 +1344,12 @@ class Distribution_Center_controller extends Controller
         } catch (Exception $e) {
             return response()->json(["msg" => $e->getMessage()], 500);
         }
+    }
+    public function activate_inv(){
+        $product=Product::find(1);
+    
+       check_load_of_company_pr::dispatch(1);
+           $product=$this->invintory_product_in_company($product);
+        return response()->json(["msg" => $product], 202);
     }
 }
