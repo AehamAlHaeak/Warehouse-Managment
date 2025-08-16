@@ -16,7 +16,7 @@
 ### php artisan queue:table
 ### goto .env modefi the constant QUEUE_CONECTION=sync to database
 ### evere start to the project activate php atisan queue:work
-### register in site https://pusher.com/ 
+### register in site https://pusher.com/
 ### composer require pusher/pusher-php-server
 ### add{ 
 ## BROADCAST_DRIVER=pusher

@@ -47,7 +47,7 @@ class EmployeController extends Controller
           }
         }
        $token=$this->create_token($employee);
-       return response()->json(["msg" => "Logged in successfully", "token" => $token], 200);
+       return response()->json(["msg" => "Logged in successfully", "token" => $token], 202);
      
      }
 
