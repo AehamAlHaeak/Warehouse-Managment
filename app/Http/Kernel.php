@@ -70,6 +70,7 @@ class Kernel extends HttpKernel
         "is_driver"=>\App\Http\Middleware\check_driver::class,
         "is_QA"=>\App\Http\Middleware\check_QA::class,
         "is_employe"=>\App\Http\Middleware\check_employe::class,
+        "check_token"=>\App\Http\Middleware\check_token::class
 
     ];
 }

@@ -13,6 +13,7 @@ use App\Http\Controllers\EmployeController;
 use App\Http\Controllers\SuperAdmenController;
 use App\Http\Controllers\Distribution_Center_controller;
 use App\Http\Controllers\DriverController;
+use App\Http\Controllers\Notification_controller;
 use App\Http\Controllers\QAController;
 use App\Http\Controllers\ViolationController;
 use App\Models\DistributionCenter;
@@ -148,7 +149,7 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
 
     Route::get("show_latest_import_op_vehicles", "show_latest_import_op_vehicles");
 
-
+    Route::get("show_live_import_op_vehicles","show_live_import_op_vehicles");
 
     //import operation product operations
     //this api is public can use it in difirent cases here and on show in supplier details
@@ -281,21 +282,23 @@ Route::controller(UserController::class)->group(function () {
     });
 }); // execute_invoice($invoice_id)
 
+Route::controller(Notification_controller::class)->middleware(['check_token'])->group(function () {
+         Route::get('allNotifications', 'allNotifications');
 
-//creeate_bil
+        
+        Route::get('readNotifications', 'readNotifications');
 
-//mean that the products recievd successfully
+    
+        Route::get('unreadNotifications', 'unreadNotifications');
 
+     
+        Route::get('markAsRead/{id}', 'markAsRead');
 
-
-Route::prefix('warehouses')->group(function () {
-    Route::get('{id}/employees', [WarehouseController::class, 'showEmployees']);
-    Route::get('{id}/type', [WarehouseController::class, 'showType']);
-    Route::get('{id}/sections', [WarehouseController::class, 'showSections']);
-    Route::get('{id}/garages', [WarehouseController::class, 'showGarage']);
-    Route::get('{id}/supported-products', [WarehouseController::class, 'showprod_In_Warehouse']);
-    Route::get('{id}/vehOnGar', [WarehouseController::class, 'showVehicles_OnGarage']);
-    Route::get('{id}/storage-media', [WarehouseController::class, 'show_Storage_Md']);
+        
 });
+
+
+
+
 
 //mean that the products recievd successfully

@@ -368,7 +368,8 @@ trait AlgorithmsTrait
     }
 
     public function calcute_areas_on_place_for_a_specific_product($object, $product_id)
-    {
+    {   
+        $product=Product::find($product_id);
         $avilable_area_product = 0;
         $max_capacity_product = 0;
         $auto_rejected_load = 0;
@@ -418,6 +419,7 @@ trait AlgorithmsTrait
         $object->rejected_load = $rejected_load;
         $object->actual_load_product = $actual_load_product;
         $object->auto_rejected_load = $auto_rejected_load;
+        $object->incoming_load=$this->invantory_of_incoming($product,$object);
         return $object;
     }
     public function check_if_authorized_in_place($employe, $place)
@@ -540,6 +542,7 @@ trait AlgorithmsTrait
         $product->rejected_load = $rejected_load;
         $product->reserved_load = $reserved_load;
         $product->auto_rejected_load = $auto_rejected_load;
+        $product->transfered_load=$this->invantory_of_incoming($product,$place);
         unset($product["sections"]);
         return $product;
     }
@@ -875,6 +878,38 @@ trait AlgorithmsTrait
             $product->reserved_load = $reserved_load;
             $product->auto_rejected_load = $auto_rejected_load;
             unset($product["sections"]);
+            $transfered_load=0;
+            $type=$product->type;
+            unset($product->type);
+            $warehouses=$type->warehouses;
+            $dist_cs=$type->distribution_centers;
+            foreach ($warehouses as $warehouse) {
+                $transfered_load+=$this->invantory_of_incoming($product,$warehouse);
+            }
+            foreach ($dist_cs as $dist_c) {
+                $transfered_load+=$this->invantory_of_incoming($product,$dist_c);
+            }
+            $product->transfered_load_on_company=$transfered_load;
+            $product->load_on_company = $actual_load_in_warehouses + $actual_load_in_distribution_centers + $transfered_load;
+            
             return $product;
     }
+    public function invantory_of_incoming($product,$destination){
+        
+    
+     $inventory_of_incoming = 0;
+            $product_continer = $product->container;
+            unset($product->container);
+            $transfers = $destination->resived_transfers()->whereNull("date_of_finishing")->get();
+            foreach ($transfers as $transfer) {
+
+                foreach ($transfer->transfer_details as $detail) {
+                    $containers_count = $detail->continers()->where("container_type_id", $product_continer->id)->where("status", "accepted")->whereDoesntHave("posetion_on_stom")->count();
+
+                   $inventory_of_incoming += $containers_count * $product_continer->capacity;
+                  
+                }
+            }
+            return $inventory_of_incoming;
+        }
 }

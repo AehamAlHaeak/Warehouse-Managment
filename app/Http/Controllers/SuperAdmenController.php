@@ -66,6 +66,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Notifications\DatabaseNotification;
 
 use App\Events\Send_Notification;
+
 class SuperAdmenController extends Controller
 {
     use TransferTraitAeh;
@@ -130,9 +131,9 @@ class SuperAdmenController extends Controller
             "QA"
 
         ];
-       
 
-        
+
+
         foreach ($requiredSpecs as $spec) {
             Specialization::firstOrCreate(['name' => $spec]);
         }
@@ -831,10 +832,11 @@ class SuperAdmenController extends Controller
 
     public function show_products()
     {
+
         $products = Product::all();
 
         foreach ($products as $product) {
-          $product=$this->invintory_product_in_company($product);
+            $product = $this->invintory_product_in_company($product);
         }
         return response()->json(["msg" => "sucessfull", "products" => $products], 202);
     }
@@ -1599,6 +1601,45 @@ class SuperAdmenController extends Controller
         return response()->json(["msg" => "vehicles under creating"], 202);
     }
 
+    public function show_live_import_op_vehicles()
+    {
+
+        $import_op_vehicles_keys = Cache::get("import_op_vehicles_keys");
+        if (!$import_op_vehicles_keys) {
+            return response()->json(["msg"=>"no operation"]);
+        }
+        $import_operations = [];
+        foreach ($import_op_vehicles_keys as $element) {
+            $import_operation = Cache::get($element["import_operation_key"]);
+            $vehicles = Cache::get($element["vehicles_key"]);
+            if (!$import_operation || !$vehicles) {
+                continue;
+            }
+
+            $element["supplier_id"] = $import_operation["supplier_id"];
+            $element["supplier"] = Supplier::find($import_operation["supplier_id"]);
+            $element["location"] = $import_operation["location"];
+            $element["latitude"] = $import_operation["latitude"];
+            $element["longitude"] = $import_operation["longitude"];
+           
+
+            foreach ($vehicles as $vehicle) {
+                $model = "App\\Models\\" . $vehicle["place_type"];
+                $vehicle["place"] = $model::find($vehicle["place_id"]);
+            }
+             $element["vehicles"] = $vehicles;
+            $import_operations[] = $element;
+        }
+
+        return response()->json(["msg" => "here the live import op vehicles", "imports" => $import_operations], 202);
+        try {
+        } catch (Exception $e) {
+            return response()->json(["msg" => $e->getMessage()], 400);
+        }
+    }
+
+
+
     public function show_latest_import_op_vehicles()
     {
         $import_op_vehicles_keys = Cache::get("import_op_vehicles_keys");
@@ -1709,8 +1750,6 @@ class SuperAdmenController extends Controller
 
         $supplier_products = $supplier->supplier_products;
         foreach ($supplier_products as $product) {
-
-
             $sections = $product->sections;
             $avilable_area = 0;
             $max_area = 0;
@@ -2324,7 +2363,7 @@ class SuperAdmenController extends Controller
             $uuid = (string) Str::uuid();
             $notification = new Importing_success("product");
 
-            $notify=DatabaseNotification::create([
+            $notify = DatabaseNotification::create([
                 'id' => $uuid,
                 'type' => get_class($notification),
                 'notifiable_type' => get_class($employe),
@@ -2332,8 +2371,8 @@ class SuperAdmenController extends Controller
                 'data' => $notification->toArray($employe),
                 'read_at' => null,
             ]);
-            
-         event(new Send_Notification($employe, $notification));
+
+            event(new Send_Notification($employe, $notification));
             DB::commit();
             return response()->json(["msg" => "notification sent", "notifi" => $notify], 202);
         } catch (\Exception $e) {

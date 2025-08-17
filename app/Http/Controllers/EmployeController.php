@@ -65,4 +65,7 @@ class EmployeController extends Controller
         return response()->json(["msg" => "Failed to logout, please try again later"], 500);
      }
      }
+     public function show_notification(){
+      
+     }
 }

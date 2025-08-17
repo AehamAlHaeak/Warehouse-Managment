@@ -32,8 +32,22 @@ class check_load_of_company_pr implements ShouldQueue
              $product=Product::find($this->product_id);
           
             $product=$this->invintory_product_in_company($product);
-               print_r($product);
-            if( $product->load_on_company<= $product->max_load_on_company*0.3){
+               
+            $transfered_load=0;
+            $type=$product->type;
+            unset($product->type);
+            $warehouses=$type->warehouses;
+            $dist_cs=$type->distribution_centers;
+            foreach ($warehouses as $warehouse) {
+                $transfered_load+=$this->invantory_of_incoming($product,$warehouse);
+            }
+            foreach ($dist_cs as $dist_c) {
+                $transfered_load+=$this->invantory_of_incoming($product,$dist_c);
+            }
+            $product->transfered_load_on_company=$transfered_load;
+            
+
+            if($product->load_on_company+$product->transfered_load_on_company<= $product->max_load_on_company*0.3){
              $super_admin_spec=Specialization::where("name","super_admin")->first();
              $super_admin=$super_admin_spec->employees()->first();
              $product=$product->toArray();
