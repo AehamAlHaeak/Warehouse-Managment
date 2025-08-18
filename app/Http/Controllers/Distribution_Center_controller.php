@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\calculate_sold_quantity_freq;
 use App\Jobs\check_load_of_company_pr;
 use Exception;
 use App\Models\User;
@@ -1348,7 +1349,8 @@ class Distribution_Center_controller extends Controller
     public function activate_inv(){
         $product=Product::find(1);
     
-       check_load_of_company_pr::dispatch(1);
+     //  check_load_of_company_pr::dispatch(1);
+     calculate_sold_quantity_freq::dispatch();
            $product=$this->invintory_product_in_company($product);
         return response()->json(["msg" => $product], 202);
     }

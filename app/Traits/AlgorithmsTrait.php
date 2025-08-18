@@ -35,6 +35,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\Distribution_center_Product;
 use Illuminate\Notifications\DatabaseNotification;
 use App\Events\Send_Notification;
+
 trait AlgorithmsTrait
 {
     public function create_token($object)
@@ -193,7 +194,7 @@ trait AlgorithmsTrait
         $distances = [];
         foreach ($items as $item) {
             $data = $this->calculate($item->latitude, $item->longitude, $latitude, $longitude);
-            
+
             $item->distance = $data['distances'][0][1]; //0 1 are from 0 to one form sourece to dest
             $item->duration = $data["duration"][0][1];
             $distances[] = $item;
@@ -368,8 +369,8 @@ trait AlgorithmsTrait
     }
 
     public function calcute_areas_on_place_for_a_specific_product($object, $product_id)
-    {   
-        $product=Product::find($product_id);
+    {
+        $product = Product::find($product_id);
         $avilable_area_product = 0;
         $max_capacity_product = 0;
         $auto_rejected_load = 0;
@@ -419,7 +420,7 @@ trait AlgorithmsTrait
         $object->rejected_load = $rejected_load;
         $object->actual_load_product = $actual_load_product;
         $object->auto_rejected_load = $auto_rejected_load;
-        $object->incoming_load=$this->invantory_of_incoming($product,$object);
+        $object->incoming_load = $this->invantory_of_incoming($product, $object);
         return $object;
     }
     public function check_if_authorized_in_place($employe, $place)
@@ -542,7 +543,7 @@ trait AlgorithmsTrait
         $product->rejected_load = $rejected_load;
         $product->reserved_load = $reserved_load;
         $product->auto_rejected_load = $auto_rejected_load;
-        $product->transfered_load=$this->invantory_of_incoming($product,$place);
+        $product->transfered_load = $this->invantory_of_incoming($product, $place);
         unset($product["sections"]);
         return $product;
     }
@@ -757,7 +758,7 @@ trait AlgorithmsTrait
     }
 
 
-    public function divide_load($last_continer,$reserved_loads_to_detail)
+    public function divide_load($last_continer, $reserved_loads_to_detail)
     {
         $parent_continer = $last_continer->parent_continer;
         $new_continer = Import_op_container::create([
@@ -768,7 +769,7 @@ trait AlgorithmsTrait
             $parent_load = $reserved->parent_load;
             $parent_load->load -= $reserved->reserved_load;
             $parent_load->save();
-            
+
             $same_load = $new_continer->loads()->where("imp_op_product_id", $parent_load->imp_op_product_id)->first();
             if ($same_load) {
                 $same_load->load += $reserved->reserved_load;
@@ -783,133 +784,163 @@ trait AlgorithmsTrait
             $reserved->imp_cont_prod_id = $same_load->id;
             $reserved->save();
         }
-        $posetion=$last_continer->posetion_on_stom;
+        $posetion = $last_continer->posetion_on_stom;
         container_movments::create([
-                        "imp_op_cont_id" => $new_continer->id,
-                        "prev_position_id" => $posetion->id,
+            "imp_op_cont_id" => $new_continer->id,
+            "prev_position_id" => $posetion->id,
 
-                        "moved_why" => "take loads from another continer ,the previos continer_id is : {$last_continer->id}"
-                    ]);
+            "moved_why" => "take loads from another continer ,the previos continer_id is : {$last_continer->id}"
+        ]);
         return $new_continer;
     }
-    public function reserved_sold_on_load($transfer_detail){
-        $sell_reserve=[];
-        $sell_reserve["sold"]=$transfer_detail->sell_loads->sum('sold_load');
-        
-        $sell_reserve["reserved"]=$transfer_detail->reserved_loads->sum("reserved_load");
-        unset($transfer_detail->sell_loads,$transfer_detail->reserved_loads);
+    public function reserved_sold_on_load($transfer_detail)
+    {
+        $sell_reserve = [];
+        $sell_reserve["sold"] = $transfer_detail->sell_loads->sum('sold_load');
 
-        return $sell_reserve; 
+        $sell_reserve["reserved"] = $transfer_detail->reserved_loads->sum("reserved_load");
+        unset($transfer_detail->sell_loads, $transfer_detail->reserved_loads);
 
+        return $sell_reserve;
     }
 
-    public function send_not($notification,$dest){
+    public function send_not($notification, $dest)
+    {
         $uuid = (string) Str::uuid();
-      $notify = DatabaseNotification::create([
-                    'id' => $uuid,
-                    'type' => get_class($notification),
-                    'notifiable_type' => get_class($dest),
-                    'notifiable_id' => $dest->id,
-                    'data' => $notification->toArray($dest),
-                    'read_at' => null,
-                ]);
-                $notification->id = $notify->id;
-                event(new Send_Notification($dest, $notification));
+        $notify = DatabaseNotification::create([
+            'id' => $uuid,
+            'type' => get_class($notification),
+            'notifiable_type' => get_class($dest),
+            'notifiable_id' => $dest->id,
+            'data' => $notification->toArray($dest),
+            'read_at' => null,
+        ]);
+        $notification->id = $notify->id;
+        event(new Send_Notification($dest, $notification));
     }
 
-    public function invintory_product_in_company($product){
-         $actual_load_in_warehouses = 0;
-            $actual_load_in_distribution_centers = 0;
-            $max_load_in_warehouses = 0;
-            $max_load_in_distribution_centers = 0;
-            $avilable_load_in_warehouses = 0;
-            $max_load_in_distribution_centers = 0;
-            $avilable_load_in_distribution_centers = 0;
-            $average_in_warehouses = 0;
-            $deviation_in_warehouses = 0;
-            $salled_load = 0;
-            $rejected_load = 0;
-            $reserved_load = 0;
-            $sections = $product->sections;
-            $auto_rejected_load = 0;
+    public function invintory_product_in_company($product)
+    {
+        $actual_load_in_warehouses = 0;
+        $actual_load_in_distribution_centers = 0;
+        $max_load_in_warehouses = 0;
+        $max_load_in_distribution_centers = 0;
+        $avilable_load_in_warehouses = 0;
+        $max_load_in_distribution_centers = 0;
+        $avilable_load_in_distribution_centers = 0;
+        $average_in_warehouses = 0;
+        $deviation_in_warehouses = 0;
+        $salled_load = 0;
+        $rejected_load = 0;
+        $reserved_load = 0;
+        $sections = $product->sections;
+        $auto_rejected_load = 0;
 
 
-            foreach ($sections as $section) {
-                $section = $this->calculate_areas($section);
-                if ($section->existable_type == "App\\Models\\Warehouse") {
+        foreach ($sections as $section) {
+            $section = $this->calculate_areas($section);
+            if ($section->existable_type == "App\\Models\\Warehouse") {
 
-                    $actual_load_in_warehouses +=  $section->actual_load_product;
-                    $max_load_in_warehouses +=  $section->max_capacity_products;
-                    $avilable_load_in_warehouses += $section->avilable_area_product;
+                $actual_load_in_warehouses +=  $section->actual_load_product;
+                $max_load_in_warehouses +=  $section->max_capacity_products;
+                $avilable_load_in_warehouses += $section->avilable_area_product;
 
-                    $auto_rejected_load += $section->auto_rejected_load;
-                    $date = Carbon::parse($section->created_at);
+                $auto_rejected_load += $section->auto_rejected_load;
+                $date = Carbon::parse($section->created_at);
 
-                    $now = Carbon::now();
-                    $weeksPassed = $date->diffInWeeks($now);
-                    if ($weeksPassed != 0) {
+                $now = Carbon::now();
+                $weeksPassed = $date->diffInWeeks($now);
+                if ($weeksPassed != 0) {
 
-                        $deviation_in_warehouses += sqrt($product->import_cycle / 7) * sqrt($section->variance / $weeksPassed);
-                    }
-
-                    $average_in_warehouses += ($product->import_cycle / 7) * $section->average;
+                    $deviation_in_warehouses += sqrt($product->import_cycle / 7) * sqrt($section->variance / $weeksPassed);
                 }
-                if ($section->existable_type == "App\\Models\\DistributionCenter") {
-                    $actual_load_in_distribution_centers +=  $section->actual_load_product;
-                    $max_load_in_distribution_centers += $section->max_capacity_products;
-                    $avilable_load_in_distribution_centers += $section->avilable_area_product;
-                }
-                $salled_load += $section->selled_load;
-                $rejected_load += $section->rejected_load;
-                $reserved_load += $section->reserved_load;
-            }
-            $product->avilable_load_on_warehouses = $avilable_load_in_warehouses;
-            $product->avilable_load_on_distribution_centers = $avilable_load_in_distribution_centers;
-            $product->max_load_on_warehouse = $max_load_in_warehouses;
-            $product->max_load_in_distribution_centers = $max_load_in_distribution_centers;
-            $product->actual_load_in_warehouses = $actual_load_in_warehouses;
-            $product->actual_load_in_distribution_centers = $actual_load_in_distribution_centers;
-            $product->average = $average_in_warehouses;
-            $product->deviation = $deviation_in_warehouses;
-            $product->max_load_on_company = $max_load_in_warehouses + $max_load_in_distribution_centers;
-            $product->load_on_company = $actual_load_in_warehouses + $actual_load_in_distribution_centers;
-            $product->salled_load = $salled_load;
-            $product->rejected_load = $rejected_load;
-            $product->reserved_load = $reserved_load;
-            $product->auto_rejected_load = $auto_rejected_load;
-            unset($product["sections"]);
-            $transfered_load=0;
-            $type=$product->type;
-            unset($product->type);
-            $warehouses=$type->warehouses;
-            $dist_cs=$type->distribution_centers;
-            foreach ($warehouses as $warehouse) {
-                $transfered_load+=$this->invantory_of_incoming($product,$warehouse);
-            }
-            foreach ($dist_cs as $dist_c) {
-                $transfered_load+=$this->invantory_of_incoming($product,$dist_c);
-            }
-            $product->transfered_load_on_company=$transfered_load;
-            $product->load_on_company = $actual_load_in_warehouses + $actual_load_in_distribution_centers + $transfered_load;
-            
-            return $product;
-    }
-    public function invantory_of_incoming($product,$destination){
-        
-    
-     $inventory_of_incoming = 0;
-            $product_continer = $product->container;
-            unset($product->container);
-            $transfers = $destination->resived_transfers()->whereNull("date_of_finishing")->get();
-            foreach ($transfers as $transfer) {
 
-                foreach ($transfer->transfer_details as $detail) {
-                    $containers_count = $detail->continers()->where("container_type_id", $product_continer->id)->where("status", "accepted")->whereDoesntHave("posetion_on_stom")->count();
-
-                   $inventory_of_incoming += $containers_count * $product_continer->capacity;
-                  
-                }
+                $average_in_warehouses += ($product->import_cycle / 7) * $section->average;
             }
-            return $inventory_of_incoming;
+            if ($section->existable_type == "App\\Models\\DistributionCenter") {
+                $actual_load_in_distribution_centers +=  $section->actual_load_product;
+                $max_load_in_distribution_centers += $section->max_capacity_products;
+                $avilable_load_in_distribution_centers += $section->avilable_area_product;
+            }
+            $salled_load += $section->selled_load;
+            $rejected_load += $section->rejected_load;
+            $reserved_load += $section->reserved_load;
         }
+        $product->avilable_load_on_warehouses = $avilable_load_in_warehouses;
+        $product->avilable_load_on_distribution_centers = $avilable_load_in_distribution_centers;
+        $product->max_load_on_warehouse = $max_load_in_warehouses;
+        $product->max_load_in_distribution_centers = $max_load_in_distribution_centers;
+        $product->actual_load_in_warehouses = $actual_load_in_warehouses;
+        $product->actual_load_in_distribution_centers = $actual_load_in_distribution_centers;
+        $product->average = $average_in_warehouses;
+        $product->deviation = $deviation_in_warehouses;
+        $product->max_load_on_company = $max_load_in_warehouses + $max_load_in_distribution_centers;
+        $product->load_on_company = $actual_load_in_warehouses + $actual_load_in_distribution_centers;
+        $product->salled_load = $salled_load;
+        $product->rejected_load = $rejected_load;
+        $product->reserved_load = $reserved_load;
+        $product->auto_rejected_load = $auto_rejected_load;
+        unset($product["sections"]);
+        $transfered_load = 0;
+        $type = $product->type;
+        unset($product->type);
+        $warehouses = $type->warehouses;
+        $dist_cs = $type->distribution_centers;
+        foreach ($warehouses as $warehouse) {
+            $transfered_load += $this->invantory_of_incoming($product, $warehouse);
+        }
+        foreach ($dist_cs as $dist_c) {
+            $transfered_load += $this->invantory_of_incoming($product, $dist_c);
+        }
+        $product->transfered_load_on_company = $transfered_load;
+        $product->load_on_company = $actual_load_in_warehouses + $actual_load_in_distribution_centers + $transfered_load;
+
+        return $product;
+    }
+    public function invantory_of_incoming($product, $destination)
+    {
+
+
+        $inventory_of_incoming = 0;
+        $product_continer = $product->container;
+        unset($product->container);
+        $transfers = $destination->resived_transfers()->whereNull("date_of_finishing")->get();
+        foreach ($transfers as $transfer) {
+
+            foreach ($transfer->transfer_details as $detail) {
+                $containers_count = $detail->continers()->where("container_type_id", $product_continer->id)->where("status", "accepted")->whereDoesntHave("posetion_on_stom")->count();
+
+                $inventory_of_incoming += $containers_count * $product_continer->capacity;
+            }
+        }
+        return $inventory_of_incoming;
+    }
+    public function calculate_salled_quantity_prod_sence_fore($place, $product, $date_start, $date_end)
+    {
+        $left_transfers = $place->sent_transfers()->where("destinationable_type", "App\\Models\\User")->where("date_of_resiving", ">=", $date_start)
+            ->where("date_of_resiving", "<=", $date_end)->get();
+        $parent_continer = $product->container;
+        unset($product->container);
+        $sold_quantity = 0;
+        foreach ($left_transfers as $transfer) {
+           $transfer_details = $transfer->transfer_details()
+        ->where('status', '!=', 'cut')
+        ->whereHas('continers', function ($q) use ($parent_continer) {
+            $q->where('container_type_id',  $parent_continer->id)
+              ->where('status', 'accepted')
+              ->whereDoesntHave('posetion_on_stom');
+        })
+        ->get();
+            foreach ($transfer_details as $detail) {
+                 $continers=$detail->continers;
+                 foreach($continers as $continer){
+                    $info=$this->inventory_on_continer($continer);
+                   
+                     $sold_quantity+=$info["reserved_load"]+$info["selled_load"];
+                 }
+              
+            }
+        }
+        return $sold_quantity;
+    }
 }

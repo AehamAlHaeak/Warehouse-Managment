@@ -56,7 +56,7 @@ class EmployeController extends Controller
         $token=JWTAuth::getToken();
         if($token){
            JWTAuth::invalidate();
-           return response()->json(["msg"=> "Successfully Logged out  "],200);
+           return response()->json(["msg"=> "Successfully Logged out  "],202);
         }
         return response()->json(["msg"=> "No Token Found"],400);
      }
@@ -65,7 +65,5 @@ class EmployeController extends Controller
         return response()->json(["msg" => "Failed to logout, please try again later"], 500);
      }
      }
-     public function show_notification(){
-      
-     }
+    
 }

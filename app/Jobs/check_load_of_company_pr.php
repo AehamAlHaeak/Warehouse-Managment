@@ -58,7 +58,6 @@ class check_load_of_company_pr implements ShouldQueue
         }
       catch (\Throwable $e) {
             Log::error($e->getMessage());
-
         }
     }
 }
