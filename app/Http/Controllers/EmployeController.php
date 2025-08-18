@@ -46,8 +46,10 @@ class EmployeController extends Controller
 
           }
         }
+        $place_id=$employee->workable_id;
+        $place_type=str_replace("App\\Models\\", "", $employee->workable_type);
        $token=$this->create_token($employee);
-       return response()->json(["msg" => "Logged in successfully", "token" => $token], 202);
+       return response()->json(["msg" => "Logged in successfully", "place_type"=>$place_type,"place_id"=>"$place_id","token" => $token], 202);
      
      }
 
