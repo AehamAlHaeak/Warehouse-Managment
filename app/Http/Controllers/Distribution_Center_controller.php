@@ -359,7 +359,8 @@ class Distribution_Center_controller extends Controller
             }
 
             $contents = [];
-
+             $imp_prod=$imp_op_product=$continer->imp_op_product()->first();
+             $product=$imp_prod->parent_product;
             $i = 0;
             $contined_load = Imp_continer_product::where("imp_op_cont_id", $continer->id)->get();
 
@@ -372,16 +373,11 @@ class Distribution_Center_controller extends Controller
                 $imp_op_product->rejected_load = $logs["rejected_load"];
                 $imp_op_product->remine_load = $logs["remine_load"];
 
-                $parent_product = $imp_op_product->parent_product;
-                unset($imp_op_product["pivot"]);
-                unset($imp_op_product["parent_product"]);
-                $parent_product->setting_id = $load->id;
-                $parent_product->container_id = $continer->id;
-                $contents[$i] = $parent_product;
-                $parent_product->imp_op_product = $imp_op_product;
+               
+                $contents[$i] =  $imp_op_product;
                 $i++;
             }
-            return response()->json(["msg" => "here the details", "product" => $contents], 202);
+            return response()->json(["msg" => "here the details","product"=>$product ,"contents" => $contents], 202);
         } catch (Exception $e) {
             return response()->json(["msg" => $e->getMessage()], 500);
         }
