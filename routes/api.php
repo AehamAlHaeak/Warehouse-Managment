@@ -227,8 +227,9 @@ Route::controller(Distribution_Center_controller::class)->middleware('is_QA')->g
     Route::post("reject_continer", "reject_continer");
     Route::post("serch", "search");
     Route::get("show_continer_movments/{continer_id}", "show_continer_movments");
+    Route::get("show_sections_of_continer_in_place/{place_type}/{place_id}/{continer_id}", "show_sections_of_continer_in_place");
 });
-//resive_notification
+//show_sections_of_continer_in_place(Request $request, $place_type, $place_id,$continer_id)
 Route::post("login_employe", [EmployeController::class, 'login_employe']);
 
 Route::controller(EmployeController::class)->middleware('is_employe')->group(function () {

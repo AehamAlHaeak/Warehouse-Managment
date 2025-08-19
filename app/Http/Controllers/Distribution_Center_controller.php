@@ -141,6 +141,56 @@ class Distribution_Center_controller extends Controller
         }
     }
 
+
+    public function show_sections_of_continer_in_place(Request $request, $place_type, $place_id,$continer_id){
+       try {
+            $model = "App\\Models\\" . $place_type;
+
+            $place = $model::find($place_id);
+           
+            if (!$place) {
+                return response()->json(["msg" => "the place which you want is not exist"], 404);
+            }
+            $continer=Import_op_container::find($continer_id);
+           
+            if (!$continer) {
+                return response()->json(['msg' => 'Container not found'], 404);
+            }
+            $latest_trans = $continer->logs->last();
+            
+            $transfer = $latest_trans->transfer;
+             
+            $destination = $transfer->destinationable;
+            $employe = $request->employe;
+     
+            if ($employe->specialization->name != "super_admin") {
+
+                $authorized_in_place = $this->check_if_authorized_in_place($employe, $place);
+                if (!$authorized_in_place) {
+                    return response()->json(["msg" => "Unauthorized - Invalid or missing employe token or dont work in the place"], 401);
+                }
+                $authorized_in_place=$this->check_if_authorized_in_place($employe, $destination);
+                if (!$authorized_in_place) {
+                    return response()->json(["msg" => "Unauthorized - Invalid or missing employe token or dont have the continer"], 401);
+                }
+            }
+            
+           $imp_op_product=$continer->imp_op_product()->first();
+       
+           $sections=$place->sections()->where("product_id", $imp_op_product->id)->get();
+              
+           
+            foreach ($sections as $section) {
+                $section = $this->calculate_areas($section);
+            }
+            if ($sections->isEmpty()) {
+                return response()->json(["msg" => "there are no sections on this place"], 404);
+            }
+            return response()->json(["msg" => "sections on this place", "sections" => $sections], 202);
+        } catch (Exception $e) {
+            return response()->json(["msg" => $e->getMessage()], 404);
+        }
+    }
     public function show_storage_elements_on_section(Request $request, $section_id)
     {
         $section = Section::find($section_id);
@@ -299,7 +349,7 @@ class Distribution_Center_controller extends Controller
 
             $destination = $transfer->destinationable;
             $employe = $request->employe;
-            $employe = $request->employe;
+           
             if ($employe->specialization->name != "super_admin") {
 
                 $authorized_in_place = $this->check_if_authorized_in_place($employe, $destination);
