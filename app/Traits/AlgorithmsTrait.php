@@ -943,4 +943,28 @@ trait AlgorithmsTrait
         }
         return $sold_quantity;
     }
+public function show_dit_Cs_of_product_in_warehouse($warehous,$product){
+     $distribution_centers_of_product = [];
+
+        $distributionCenters = $warehous->distribution_centers;
+        if ($distributionCenters->isEmpty()) {
+            return response()->json(["msg" => "the warehouse dont have distribution centers"], 404);
+        }
+        $i = 0;
+        foreach ($distributionCenters as $distC) {
+            $has_a_section_of_product = $distC->sections()->where("product_id", $product->id)->exists();
+             if($has_a_section_of_product){
+            $distC = $this->calcute_areas_on_place_for_a_specific_product($distC, $product->id);
+            $distC= $this->calculate_ready_vehiscles($distC,$product);
+            $distribution_centers_of_product[$i] = $distC;
+             }
+            $i++;
+        }
+        if (empty($distribution_centers_of_product)) {
+            return  "the warehouse dont have distribution centers";
+        }
+        return $distribution_centers_of_product; 
+}
+
+    
 }

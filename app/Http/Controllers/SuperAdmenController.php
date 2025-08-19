@@ -279,7 +279,7 @@ class SuperAdmenController extends Controller
                 "latitude" => "numeric",
                 "longitude" => "numeric",
                 "type_id" => "integer",
-                "num_sections" => "integer"
+                "num_sections" => "integer|min:1"
 
             ]);
         } catch (ValidationException $e) {
@@ -305,6 +305,12 @@ class SuperAdmenController extends Controller
                 if ($has_sections) {
                     return response()->json(["msg" => "the waehouse has sections contain products of this type! cannot edit it"], 400);
                 }
+            }
+        }
+        if(!empty($validated_values["num_sections"])){
+            $sections=$warehouse->sections()->where("status","!=","deleted")->count();
+            if($validated_values["num_sections"]<$sections){
+              return response()->json(["msg" => "the warehouse has sections more than the new number"], 400);
             }
         }
         try {
@@ -449,7 +455,7 @@ class SuperAdmenController extends Controller
                 "latitude" => "numeric",
                 "longitude" => "numeric",
                 "warehouse_id" => "numeric",
-                "num_sections" => "integer"
+                "num_sections" => "integer|min:1"
             ]);
         } catch (ValidationException $e) {
 
@@ -484,6 +490,12 @@ class SuperAdmenController extends Controller
                         ], 400);
                     }
                 }
+            }
+        }
+        if(!empty($validated_values["num_sections"])){
+            $sections=$warehouse->sections()->where("status","!=","deleted")->count();
+            if($validated_values["num_sections"]<$sections){
+              return response()->json(["msg" => "the warehouse has sections more than the new number"], 400);
             }
         }
         try {
@@ -833,8 +845,8 @@ class SuperAdmenController extends Controller
     public function show_products()
     {
 
-        $products = Product::all();
-
+        $products = Product::all(); 
+        
         foreach ($products as $product) {
             $product = $this->invintory_product_in_company($product);
         }
@@ -1968,9 +1980,15 @@ class SuperAdmenController extends Controller
         return $this->show_warehouses_of_product($product->id);
     }
 
-    public function show_sections_of_storage_media_on_warehouse($storage_media_id, $warehouse_id)
-    {
-
+    public function show_sections_of_storage_media_on_place($storage_media_id, $place_type,$place_id)
+    { 
+        try{
+          $model="App\\Models\\".$place_type;
+          
+          $place=$model::find($place_id);
+          if(!$place){
+              return response()->json(["msg"=>"place not found"],404);
+          }
         $storage_media = Storage_media::find($storage_media_id);
         if (!$storage_media) {
             return response()->json(["msg" => "storage_media not found"], 404);
@@ -1978,11 +1996,9 @@ class SuperAdmenController extends Controller
 
         $product = $storage_media->product;
 
-        $warehouse = Warehouse::find($warehouse_id);
-        if (!$warehouse) {
-            return response()->json(["msg" => "warehouse not found"], 404);
-        }
-        $sections = $warehouse->sections()
+        
+        
+        $sections = $place->sections()
             ->where('product_id', $product->id)->where("status", "!=", "deleted")
             ->select([
                 'id',
@@ -2009,6 +2025,10 @@ class SuperAdmenController extends Controller
         }
         return response()->json(["msg" => "here the sections", "sections" => $sections], 202);
     }
+    catch(Exception $e){
+       return response()->json(["msg"=>$e->getMessage()],404);
+    }
+}
 
     public function show_all_types()
     {

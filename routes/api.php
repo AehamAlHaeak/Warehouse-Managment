@@ -132,7 +132,7 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
 
     Route::get("show_supplier_of_storage_media/{storage_media_id}", "show_supplier_of_storage_media");
 
-    Route::get("show_sections_of_storage_media_on_warehouse/{storage_media_id}/{warehouse_id}", "show_sections_of_storage_media_on_warehouse");
+    Route::get("show_sections_of_storage_media_on_place/{storage_media_id}/{place_type}/{place_id}", "show_sections_of_storage_media_on_place");
 
     Route::get("show_warehouse_of_storage_media/{storage_media_id}", "show_warehouse_of_storage_media");
 

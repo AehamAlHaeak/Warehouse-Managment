@@ -97,8 +97,14 @@ class WarehouseController extends Controller
 
 
         $product = $storage_media->product;
-
-        return $this->show_distrebution_centers_of_product($request,$warehous->id, $product->id);
+         $response=$this->show_dit_Cs_of_product_in_warehouse($warehous,$product);
+         if($response=="the warehouse dont have distribution centers"){
+           return response()->json(["msg" => "the warehouse dont have distribution centers"], 404);
+         }
+        return response()->json([
+            "msg" => "here the disribution centers ",
+            "distribution_centers" => $response
+        ],202);
     }
     public function send_products_from_To(Request $request)
     {
