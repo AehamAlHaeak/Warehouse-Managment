@@ -928,7 +928,9 @@ class Distribution_Center_controller extends Controller
 
 
             $load = Transfer_detail::find($validated_values["load_id"]);
-
+             if(!$load){
+              return response()->json(["msg" => "the load not found"], 404);
+             }
             $transfer = $load->transfer;
             $destination = $transfer->destinationable;
             $employe = $request->employe;
