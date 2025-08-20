@@ -333,13 +333,11 @@ class Distribution_Center_controller extends Controller
             }
         }
 
-
-
-        $continers = $load->continers;
+        $continers = $load->continers()->get()->makeHidden(['pivot',"created_at","updated_at"]);
         if ($continers->isEmpty()) {
             return response()->json(['msg' => 'No containers in this load'], 404);
         }
-        return response()->json(["msg" => "here the load details", "continers" => $load], 202);
+        return response()->json(["msg" => "here the load details", "continers" => $continers], 202);
     }
 
     public function show_container_details(Request $request, $load_id)
@@ -1004,19 +1002,19 @@ class Distribution_Center_controller extends Controller
                 $load->update(["status" => "received"]);
                 $vehicle = $load->vehicle;
                 if ($transfer->sourceable_type == "App\Models\DistributionCenter" || $transfer->sourceable_type == "App\Models\Warehouse") {
-                
+
                     $next_transfer = $transfer->next_transfer;
-                    
+
                     if ($next_transfer) {
-                     
+
                         $vehicle->transfer_id = $next_transfer->id;
                         $detail_of_veh = $next_transfer->transfer_details()->where("vehicle_id", $vehicle->id)->first();
-                       
+
                         $detail_of_veh->status = "under_work";
                         $detail_of_veh->save();
                         $vehicle->save();
-                        $next_transfer->date_of_resiving=now();
-                        $next_transfer->save(); 
+                        $next_transfer->date_of_resiving = now();
+                        $next_transfer->save();
                     } else {
                         $vehicle->transfer_id = null;
                         $vehicle->save();
@@ -1025,8 +1023,8 @@ class Distribution_Center_controller extends Controller
                     $vehicle->transfer_id = null;
                     $vehicle->save();
                 }
-               
-               DB::commit();
+
+                DB::commit();
                 return response()->json(["msg" => "load passed successfully", "destination" => $destination, "continers" => $continers], 202);
             } catch (Exception $e) {
                 DB::rollBack();
