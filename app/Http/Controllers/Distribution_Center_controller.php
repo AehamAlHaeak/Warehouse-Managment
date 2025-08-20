@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\calculate_sold_quantity_freq;
-use App\Jobs\check_load_of_company_pr;
 use Exception;
+use App\Models\type;
 use App\Models\User;
 use App\Models\Garage;
 use App\Models\Employe;
@@ -35,12 +34,15 @@ use App\Models\Import_op_storage_md;
 use App\Models\Posetions_on_section;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\File;
+use App\Jobs\check_load_of_company_pr;
 use Illuminate\Support\Facades\Schema;
 use App\Notifications\you_have_changes;
 use Illuminate\Support\Facades\Validator;
+use App\Jobs\calculate_sold_quantity_freq;
+use App\Notifications\send_products_for_me;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
-use App\Notifications\send_products_for_me;
+use App\Models\Containers_type;
 
 class Distribution_Center_controller extends Controller
 {
@@ -919,6 +921,63 @@ class Distribution_Center_controller extends Controller
                 return response()->json(["msg" => "there are no incoming transfers on this place"], 404);
             }
             return response()->json(["msg" => "left transfers from thie place", "live" => $live, "archiv" => $archiv, "wait" => $wait], 202);
+        } catch (Exception $e) {
+            return response()->json(["msg" => $e->getMessage()], 500);
+        }
+    }
+    public function inv_transfer(Request $request, $trasnsfer_id)
+    {
+        try {
+            $transfer = Transfer::find($trasnsfer_id);
+            $destination = $transfer->destinationable;
+            $employe = $request->employe;
+            if ($employe->specialization->name != "super_admin") {
+
+                $authorized_in_place = $this->check_if_authorized_in_place($employe, $destination);
+                if (!$authorized_in_place) {
+                    return response()->json(["msg" => "Unauthorized - Invalid or missing employe token"], 401);
+                }
+            }
+            $details = $transfer->transfer_details()
+                ->with('continers')
+                ->get();
+
+            
+            $details = $details->filter(function ($detail) {
+                return $detail->continers->isNotEmpty();
+            });
+
+           
+            $grouped = $details->groupBy(function ($detail) {
+                return $detail->continers->first()->container_type_id;
+            });
+            $products=collect();
+            foreach($grouped as $con_id=>$details){
+              $continer=Containers_type::find($con_id);
+              $product= $continer->product;
+              
+              $sold_load=0;
+              $reserved_load=0;
+              $rejected_load=0;
+              $remine_load=0;
+              foreach($details as $detail){
+                  $data=$this->inv_detail($detail);
+                  $sold_load+=$data["sold_load"];
+                  $reserved_load+=$data["reserved_load"];
+                  $rejected_load+=$data["rejected_load"];
+                  $remine_load+=$data["remine_load"];
+              }
+          $product->sold_load= $sold_load;
+          $product->reserved_load=$reserved_load;
+          $product->rejected_load= $rejected_load;
+          $product->remine_load=$remine_load;
+           
+          $products->push($product);
+
+
+            }
+             $details->makeHidden("continers");
+           return response()->json(["msg"=>"here the products invintory in the transfer","products"=>$products,"details"=>$details],202);
         } catch (Exception $e) {
             return response()->json(["msg" => $e->getMessage()], 500);
         }

@@ -205,9 +205,12 @@ Route::controller(Distribution_Center_controller::class)->middleware("is_dist_c_
     Route::post("ask_products_from_up", "ask_products_from_up");
 
     Route::post("activate_inv", "activate_inv");
+
     Route::get("show_left_transfers_on_place/{place_type}/{place_id}", "show_left_transfers_on_place");
+    
+    Route::get("inv_transfer/{transfer_id}","inv_transfer");
 });
-//set_driver_for_vehicle activate_inv
+//inv_transfer
 
 Route::controller(Distribution_Center_controller::class)->middleware('is_QA')->group(function () {
     Route::get("show_actual_loads", "show_actual_loads");

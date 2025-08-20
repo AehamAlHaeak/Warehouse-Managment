@@ -13,7 +13,8 @@ use App\Models\Favorite;
 use App\Models\Supplier;
 use App\Models\Transfer;
 use App\Models\Warehouse;
-use App\Models\Bill_Detail;
+
+
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\Storage_media;
@@ -923,28 +924,28 @@ trait AlgorithmsTrait
         unset($product->container);
         $sold_quantity = 0;
         foreach ($left_transfers as $transfer) {
-           $transfer_details = $transfer->transfer_details()
-        ->where('status', '!=', 'cut')
-        ->whereHas('continers', function ($q) use ($parent_continer) {
-            $q->where('container_type_id',  $parent_continer->id)
-              ->where('status', 'accepted')
-              ->whereDoesntHave('posetion_on_stom');
-        })
-        ->get();
+            $transfer_details = $transfer->transfer_details()
+                ->where('status', '!=', 'cut')
+                ->whereHas('continers', function ($q) use ($parent_continer) {
+                    $q->where('container_type_id',  $parent_continer->id)
+                        ->where('status', 'accepted')
+                        ->whereDoesntHave('posetion_on_stom');
+                })
+                ->get();
             foreach ($transfer_details as $detail) {
-                 $continers=$detail->continers;
-                 foreach($continers as $continer){
-                    $info=$this->inventory_on_continer($continer);
-                   
-                     $sold_quantity+=$info["reserved_load"]+$info["selled_load"];
-                 }
-              
+                $continers = $detail->continers;
+                foreach ($continers as $continer) {
+                    $info = $this->inventory_on_continer($continer);
+
+                    $sold_quantity += $info["reserved_load"] + $info["selled_load"];
+                }
             }
         }
         return $sold_quantity;
     }
-public function show_dit_Cs_of_product_in_warehouse($warehous,$product){
-     $distribution_centers_of_product = [];
+    public function show_dit_Cs_of_product_in_warehouse($warehous, $product)
+    {
+        $distribution_centers_of_product = [];
 
         $distributionCenters = $warehous->distribution_centers;
         if ($distributionCenters->isEmpty()) {
@@ -953,18 +954,32 @@ public function show_dit_Cs_of_product_in_warehouse($warehous,$product){
         $i = 0;
         foreach ($distributionCenters as $distC) {
             $has_a_section_of_product = $distC->sections()->where("product_id", $product->id)->exists();
-             if($has_a_section_of_product){
-            $distC = $this->calcute_areas_on_place_for_a_specific_product($distC, $product->id);
-            $distC= $this->calculate_ready_vehiscles($distC,$product);
-            $distribution_centers_of_product[$i] = $distC;
-             }
+            if ($has_a_section_of_product) {
+                $distC = $this->calcute_areas_on_place_for_a_specific_product($distC, $product->id);
+                $distC = $this->calculate_ready_vehiscles($distC, $product);
+                $distribution_centers_of_product[$i] = $distC;
+            }
             $i++;
         }
         if (empty($distribution_centers_of_product)) {
             return  "the warehouse dont have distribution centers";
         }
-        return $distribution_centers_of_product; 
-}
-
-    
+        return $distribution_centers_of_product;
+    }
+    public function inv_detail($detail)
+    {
+        $sold_load = 0;
+        $reserved_load = 0;
+        $rejected_load = 0;
+        $remine_load = 0;
+        $continers = $detail->continers;
+        foreach ($continers as $continer) {
+            $data = $this->inventory_on_continer($continer);
+            $sold_load += $data["selled_load"];
+            $reserved_load += $data["reserved_load"];
+            $rejected_load += $data["rejected_load"];
+            $remine_load += $data["remine_load"];
+        }
+        return ["sold_load" => $sold_load, "reserved_load" => $reserved_load, "rejected_load" => $rejected_load, "remine_load" => $remine_load];
+    }
 }
