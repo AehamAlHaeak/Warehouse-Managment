@@ -333,7 +333,7 @@ class Distribution_Center_controller extends Controller
             }
         }
 
-        $continers = $load->continers()->get()->makeHidden(['pivot',"created_at","updated_at"]);
+        $continers = $load->continers()->get()->makeHidden(['pivot', "created_at", "updated_at"]);
         if ($continers->isEmpty()) {
             return response()->json(['msg' => 'No containers in this load'], 404);
         }
@@ -700,7 +700,7 @@ class Distribution_Center_controller extends Controller
 
 
             $avilable_area_on_sto_m = $storage_element->posetions->whereNull("imp_op_contin_id")->count();
-            if ($avilable_area_on_sto_m <= $containers->count()) {
+            if ($avilable_area_on_sto_m < $containers->count()) {
                 return response()->json(["msg" => "there is no avilable area on storage media for all continers", "avilable_area" => $avilable_area_on_sto_m], 400);
             }
             foreach ($containers as $container) {
@@ -719,7 +719,7 @@ class Distribution_Center_controller extends Controller
                         return response()->json(["msg" => "Unauthorized - Invalid or missing employe token or you dont have the contianer {$container->id}"], 401);
                     }
                 }
-                if ($latest_trans->status != "in_QA" && !$latest_trans->status != "resived") {
+                if ($latest_trans->status != "in_QA" && $latest_trans->status != "received") {
                     return response()->json(["msg" => "you dont have this continer yet!", "continer" => $container], 400);
                 }
                 $parent_continer = $container->parent_continer;
@@ -878,6 +878,51 @@ class Distribution_Center_controller extends Controller
             return response()->json(["msg" => $e->getMessage()], 500);
         }
     }
+    public function show_left_transfers_on_place(Request $request, $place_type, $place_id)
+    {
+        try {
+            $model = "App\\Models\\" . $place_type;
+            $place = $model::find($place_id);
+            if (!$place) {
+                return response()->json(["msg" => "the place which you want is not exist"], 404);
+            }
+            $employe = $request->employe;
+            if ($employe->specialization->name != "super_admin") {
+
+                $authorized_in_place = $this->check_if_authorized_in_place($employe, $place);
+                if (!$authorized_in_place) {
+                    return response()->json(["msg" => "Unauthorized - Invalid or missing employe token"], 401);
+                }
+            }
+            $live = collect();
+            $archiv = collect();
+            $wait = collect();
+
+            $incoming_transfers = $place->sent_transfers()->with("destinationable")->get();
+            foreach ($incoming_transfers as $incoming_transfer) {
+                if (!$incoming_transfer->contents()) {
+                    $incoming_transfer->status = "return";
+                } else {
+                    $incoming_transfer->status = "contained";
+                }
+                if ($incoming_transfer->date_of_resiving != null && $incoming_transfer->date_of_finishing == null) {
+                    $live->push($incoming_transfer);
+                } elseif ($incoming_transfer->date_of_resiving != null && $incoming_transfer->date_of_finishing != null) {
+                    $archiv->push($incoming_transfer);
+                } elseif ($incoming_transfer->date_of_resiving == null && $incoming_transfer->date_of_finishing == null) {
+                    $wait->push($incoming_transfer);
+                }
+            }
+
+
+            if ($incoming_transfers->isEmpty()) {
+                return response()->json(["msg" => "there are no incoming transfers on this place"], 404);
+            }
+            return response()->json(["msg" => "left transfers from thie place", "live" => $live, "archiv" => $archiv, "wait" => $wait], 202);
+        } catch (Exception $e) {
+            return response()->json(["msg" => $e->getMessage()], 500);
+        }
+    }
     public function ask_products_from_up(Request $request)
     {
         try {
@@ -1023,7 +1068,14 @@ class Distribution_Center_controller extends Controller
                     $vehicle->transfer_id = null;
                     $vehicle->save();
                 }
+                $curent_trans_not_finished =  $transfer->transfer_details()->where("status", "!=", "resived")->where("status", "!=", "cut")->get()->count();
 
+
+                if ($curent_trans_not_finished == 0) {
+                    $transfer->update([
+                        "date_of_finishing" => now()
+                    ]);
+                }
                 DB::commit();
                 return response()->json(["msg" => "load passed successfully", "destination" => $destination, "continers" => $continers], 202);
             } catch (Exception $e) {

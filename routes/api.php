@@ -149,7 +149,7 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
 
     Route::get("show_latest_import_op_vehicles", "show_latest_import_op_vehicles");
 
-    Route::get("show_live_import_op_vehicles","show_live_import_op_vehicles");
+    Route::get("show_live_import_op_vehicles", "show_live_import_op_vehicles");
 
     //import operation product operations
     //this api is public can use it in difirent cases here and on show in supplier details
@@ -173,7 +173,6 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
 
     Route::get("try_choise_trucks/{warehouse_id}/{import_operation_id}", "try_choise_trucks");
     Route::get("resive_notification", "resive_notification");
-   
 });
 //show_import_opreation_content($imp_op_id)
 
@@ -205,7 +204,8 @@ Route::controller(Distribution_Center_controller::class)->middleware("is_dist_c_
 
     Route::post("ask_products_from_up", "ask_products_from_up");
 
-    Route::post("activate_inv","activate_inv");
+    Route::post("activate_inv", "activate_inv");
+    Route::get("show_left_transfers_on_place/{place_type}/{place_id}", "show_left_transfers_on_place");
 });
 //set_driver_for_vehicle activate_inv
 
@@ -284,18 +284,16 @@ Route::controller(UserController::class)->group(function () {
 }); // execute_invoice($invoice_id)
 
 Route::controller(Notification_controller::class)->middleware(['check_token'])->group(function () {
-         Route::get('allNotifications', 'allNotifications');
+    Route::get('allNotifications', 'allNotifications');
 
-        
-        Route::get('readNotifications', 'readNotifications');
 
-    
-        Route::get('unreadNotifications', 'unreadNotifications');
+    Route::get('readNotifications', 'readNotifications');
 
-     
-        Route::get('markAsRead/{id}', 'markAsRead');
 
-        
+    Route::get('unreadNotifications', 'unreadNotifications');
+
+
+    Route::get('markAsRead/{id}', 'markAsRead');
 });
 
 
