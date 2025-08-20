@@ -317,6 +317,9 @@ class Distribution_Center_controller extends Controller
     public function show_load_details(Request $request, $load_id)
     {
         $load = Transfer_detail::find($load_id);
+        if(!$load){
+            return response()->json(["msg" => "the load not found"], 404);
+        }
         $transfer = $load->transfer;
         $destination = $transfer->destinationable;
         $employe = $request->employe;
