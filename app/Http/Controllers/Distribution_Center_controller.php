@@ -1004,14 +1004,14 @@ class Distribution_Center_controller extends Controller
                 $load->update(["status" => "received"]);
                 $vehicle = $load->vehicle;
                 if ($transfer->sourceable_type == "App\Models\DistributionCenter" || $transfer->sourceable_type == "App\Models\Warehouse") {
-                  echo "source type is warehouse or DistributionCenter\n";
+                
                     $next_transfer = $transfer->next_transfer;
                     
                     if ($next_transfer) {
-                        echo "next transfer is not null\n";
+                     
                         $vehicle->transfer_id = $next_transfer->id;
                         $detail_of_veh = $next_transfer->transfer_details()->where("vehicle_id", $vehicle->id)->first();
-                         echo "detail of vehicle is not null : $detail_of_veh->id\n";
+                       
                         $detail_of_veh->status = "under_work";
                         $detail_of_veh->save();
                         $vehicle->save();
