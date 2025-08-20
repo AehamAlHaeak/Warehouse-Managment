@@ -63,6 +63,6 @@ class Notification_controller extends Controller
    $user = auth()->user() ?? auth('employee')->user();
     $unread = $user->unreadNotifications;
 
-    return response()->json($unread);
+    return response()->json(["uneread notification"=>$unread],202);
 }
 }
