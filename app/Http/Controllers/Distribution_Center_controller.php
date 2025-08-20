@@ -41,6 +41,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
 use App\Notifications\send_products_for_me;
+
 class Distribution_Center_controller extends Controller
 {
     use AlgorithmsTrait;
@@ -142,44 +143,45 @@ class Distribution_Center_controller extends Controller
     }
 
 
-    public function show_sections_of_continer_in_place(Request $request, $place_type, $place_id,$continer_id){
-       try {
+    public function show_sections_of_continer_in_place(Request $request, $place_type, $place_id, $continer_id)
+    {
+        try {
             $model = "App\\Models\\" . $place_type;
 
             $place = $model::find($place_id);
-           
+
             if (!$place) {
                 return response()->json(["msg" => "the place which you want is not exist"], 404);
             }
-            $continer=Import_op_container::find($continer_id);
-           
+            $continer = Import_op_container::find($continer_id);
+
             if (!$continer) {
                 return response()->json(['msg' => 'Container not found'], 404);
             }
             $latest_trans = $continer->logs->last();
-            
+
             $transfer = $latest_trans->transfer;
-             
+
             $destination = $transfer->destinationable;
             $employe = $request->employe;
-     
+
             if ($employe->specialization->name != "super_admin") {
 
                 $authorized_in_place = $this->check_if_authorized_in_place($employe, $place);
                 if (!$authorized_in_place) {
                     return response()->json(["msg" => "Unauthorized - Invalid or missing employe token or dont work in the place"], 401);
                 }
-                $authorized_in_place=$this->check_if_authorized_in_place($employe, $destination);
+                $authorized_in_place = $this->check_if_authorized_in_place($employe, $destination);
                 if (!$authorized_in_place) {
                     return response()->json(["msg" => "Unauthorized - Invalid or missing employe token or dont have the continer"], 401);
                 }
             }
-            
-           $imp_op_product=$continer->imp_op_product()->first();
-       
-           $sections=$place->sections()->where("product_id", $imp_op_product->id)->get();
-              
-           
+
+            $imp_op_product = $continer->imp_op_product()->first();
+
+            $sections = $place->sections()->where("product_id", $imp_op_product->id)->get();
+
+
             foreach ($sections as $section) {
                 $section = $this->calculate_areas($section);
             }
@@ -317,7 +319,7 @@ class Distribution_Center_controller extends Controller
     public function show_load_details(Request $request, $load_id)
     {
         $load = Transfer_detail::find($load_id);
-        if(!$load){
+        if (!$load) {
             return response()->json(["msg" => "the load not found"], 404);
         }
         $transfer = $load->transfer;
@@ -352,7 +354,7 @@ class Distribution_Center_controller extends Controller
 
             $destination = $transfer->destinationable;
             $employe = $request->employe;
-           
+
             if ($employe->specialization->name != "super_admin") {
 
                 $authorized_in_place = $this->check_if_authorized_in_place($employe, $destination);
@@ -362,8 +364,8 @@ class Distribution_Center_controller extends Controller
             }
 
             $contents = [];
-             $imp_prod=$imp_op_product=$continer->imp_op_product()->first();
-             $product=$imp_prod->parent_product;
+            $imp_prod = $imp_op_product = $continer->imp_op_product()->first();
+            $product = $imp_prod->parent_product;
             $i = 0;
             $contined_load = Imp_continer_product::where("imp_op_cont_id", $continer->id)->get();
 
@@ -376,11 +378,11 @@ class Distribution_Center_controller extends Controller
                 $imp_op_product->rejected_load = $logs["rejected_load"];
                 $imp_op_product->remine_load = $logs["remine_load"];
 
-               
+
                 $contents[$i] =  $imp_op_product;
                 $i++;
             }
-            return response()->json(["msg" => "here the details","product"=>$product ,"contents" => $contents], 202);
+            return response()->json(["msg" => "here the details", "product" => $product, "contents" => $contents], 202);
         } catch (Exception $e) {
             return response()->json(["msg" => $e->getMessage()], 500);
         }
@@ -935,22 +937,21 @@ class Distribution_Center_controller extends Controller
                     ], 409);
                 }
             }
-            if($validated_values["destination_type"] == "DistributionCenter"){
-              $warehouse=$destination->warehouse;
-              $wa_ad_spec=Specialization::where("name","warehouse_admin")->first();
-             
-              $admins=$warehouse->employees()->where("specialization_id",$wa_ad_spec->id)->get();
-               
-              foreach ($admins as $admin) {
-                  $notification=new Send_products_for_me($validated_values["destination_type"],$validated_values["products"],$validated_values["destination_id"]);
-                  $this->send_not($notification,$admin);
-              }
-            }
-            else{
-                $sup_ad_spec_id=Specialization::where("name","super_admin")->first()->id;
-                $super_Admin=Employe::where("specialization_id",$sup_ad_spec_id)->first();
-                $notification=new Send_products_for_me($validated_values["destination_type"],$validated_values["products"],$validated_values["destination_id"]);
-                $this->send_not($notification,$super_Admin);
+            if ($validated_values["destination_type"] == "DistributionCenter") {
+                $warehouse = $destination->warehouse;
+                $wa_ad_spec = Specialization::where("name", "warehouse_admin")->first();
+
+                $admins = $warehouse->employees()->where("specialization_id", $wa_ad_spec->id)->get();
+
+                foreach ($admins as $admin) {
+                    $notification = new Send_products_for_me($validated_values["destination_type"], $validated_values["products"], $validated_values["destination_id"]);
+                    $this->send_not($notification, $admin);
+                }
+            } else {
+                $sup_ad_spec_id = Specialization::where("name", "super_admin")->first()->id;
+                $super_Admin = Employe::where("specialization_id", $sup_ad_spec_id)->first();
+                $notification = new Send_products_for_me($validated_values["destination_type"], $validated_values["products"], $validated_values["destination_id"]);
+                $this->send_not($notification, $super_Admin);
             }
 
             return response()->json(["msg" => "the request has been sent successfully"], 202);
@@ -977,9 +978,9 @@ class Distribution_Center_controller extends Controller
 
 
             $load = Transfer_detail::find($validated_values["load_id"]);
-             if(!$load){
-              return response()->json(["msg" => "the load not found"], 404);
-             }
+            if (!$load) {
+                return response()->json(["msg" => "the load not found"], 404);
+            }
             $transfer = $load->transfer;
             $destination = $transfer->destinationable;
             $employe = $request->employe;
@@ -1001,7 +1002,31 @@ class Distribution_Center_controller extends Controller
 
 
                 $load->update(["status" => "received"]);
-                DB::commit();
+                $vehicle = $load->vehicle;
+                if ($transfer->sourceable_type == "App\Models\DistributionCenter" || $transfer->sourceable_type == "App\Models\Warehouse") {
+                  echo "source type is warehouse or DistributionCenter\n";
+                    $next_transfer = $transfer->next_transfer;
+                    
+                    if ($next_transfer) {
+                        echo "next transfer is not null\n";
+                        $vehicle->transfer_id = $next_transfer->id;
+                        $detail_of_veh = $next_transfer->transfer_details()->where("vehicle_id", $vehicle->id)->first();
+                         echo "detail of vehicle is not null : $detail_of_veh->id\n";
+                        $detail_of_veh->status = "under_work";
+                        $detail_of_veh->save();
+                        $vehicle->save();
+                        $next_transfer->date_of_resiving=now();
+                        $next_transfer->save(); 
+                    } else {
+                        $vehicle->transfer_id = null;
+                        $vehicle->save();
+                    }
+                } else {
+                    $vehicle->transfer_id = null;
+                    $vehicle->save();
+                }
+               
+               DB::commit();
                 return response()->json(["msg" => "load passed successfully", "destination" => $destination, "continers" => $continers], 202);
             } catch (Exception $e) {
                 DB::rollBack();
@@ -1064,17 +1089,15 @@ class Distribution_Center_controller extends Controller
             }
 
             if ($vehicle->driver_id != null) {
-               if($vehicle->driver_id==$validated_values["driver_id"]){
-                  return response()->json(["msg" => "the vehicle already has this driver"], 409);
-               }
-               
+                if ($vehicle->driver_id == $validated_values["driver_id"]) {
+                    return response()->json(["msg" => "the vehicle already has this driver"], 409);
+                }
+
                 $last_driver = $vehicle->driver;
                 $notification = new you_have_changes("you canseled from the vehicle $vehicle->id and still work in the same place");
-                $this->send_not($notification,$last_driver);
+                $this->send_not($notification, $last_driver);
                 $notification = new you_have_changes("you take the work in $vehicle->id ");
-                $this->send_not($notification,$driver);
-
-                
+                $this->send_not($notification, $driver);
             }
             $driver_vehicle = $driver->vehicle;
             if ($driver_vehicle) {
@@ -1105,9 +1128,9 @@ class Distribution_Center_controller extends Controller
             }
             $driver = $vehicle->driver;
             if ($driver) {
-               $driver = $vehicle->driver;
+                $driver = $vehicle->driver;
                 $notification = new you_have_changes("you canseled from the vehicle $vehicle->id and still work in the same place");
-                $this->send_not($notification,$driver);
+                $this->send_not($notification, $driver);
             }
             if ($vehicle->driver_id == null) {
                 return response()->json(["msg" => "the vehicle has no driver"], 404);
@@ -1397,12 +1420,13 @@ class Distribution_Center_controller extends Controller
             return response()->json(["msg" => $e->getMessage()], 500);
         }
     }
-    public function activate_inv(){
-        $product=Product::find(1);
-    
-     //  check_load_of_company_pr::dispatch(1);
-     calculate_sold_quantity_freq::dispatch();
-           $product=$this->invintory_product_in_company($product);
+    public function activate_inv()
+    {
+        $product = Product::find(1);
+
+        //  check_load_of_company_pr::dispatch(1);
+        calculate_sold_quantity_freq::dispatch();
+        $product = $this->invintory_product_in_company($product);
         return response()->json(["msg" => $product], 202);
     }
 }
