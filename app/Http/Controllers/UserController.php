@@ -127,7 +127,7 @@ class UserController extends Controller
             $token = $this->token_user($user);
 
 
-            return response()->json(['msg' => 'Logged in successfully', 'token' => $token], 200);
+            return response()->json(['msg' => 'Logged in successfully', 'token' => $token], 202);
         } catch (Exception $e) {
 
             return response()->json(['msg' => $e->getMessage()], 500);
@@ -374,7 +374,7 @@ class UserController extends Controller
 
             $invoice->delete($invoice->id);
             DB::commit();
-            return response()->json(["msg" => "success"], 200);
+            return response()->json(["msg" => "success"], 202);
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json(["error" => $e->getMessage()], 400);

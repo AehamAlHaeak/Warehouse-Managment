@@ -43,7 +43,7 @@ class ViolationController extends Controller
                 return response()->json(["msg" => "the place which you want is not exist"], 404);
             }
              $output=$this->deal_with_variable_conditions($place, $validated_values["parameter"], $validated_values["value"]);
-            return response()->json(["msg" => "done"], 200);
+            return response()->json(["msg" => "done"], 202);
         } catch (Exception $e) {
             return response()->json(["error" => $e->getMessage()], 409);
         }

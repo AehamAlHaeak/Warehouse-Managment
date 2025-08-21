@@ -317,7 +317,7 @@ class Distribution_Center_controller extends Controller
             if ($in_QA_loads->isEmpty()) {
                 return response()->json(['msg' => 'No active transfers in QA'], 404);
             }
-            return response()->json(["msg" => "here the loads", "lads" => $in_QA_loads], 200);
+            return response()->json(["msg" => "here the loads", "lads" => $in_QA_loads], 202);
         } catch (Exception $e) {
             return response()->json(["msg" => $e->getMessage()], 500);
         }
