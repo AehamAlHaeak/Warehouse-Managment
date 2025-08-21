@@ -187,7 +187,7 @@ class UserController extends Controller
 
                 $user = Auth()->user();
 
-                // $user->update($data);
+                $user->update($data);
                 return response()->json(["msg" => "updated seccessfully", 'user' => $user], 202);
             } catch (\Exception $e) {
                 return response()->json([
