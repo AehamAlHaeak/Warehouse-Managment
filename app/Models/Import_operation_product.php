@@ -19,7 +19,7 @@ class Import_operation_product extends Model
     }
 
     public function loads(){
-        return $this->HasMany(Imp_continer_product::class,"imp_op_product_id");
+        return $this->hasMany(Imp_continer_product::class,"imp_op_product_id");
     }
     public function parent_product(){
         return $this->belongsTo(Product::class,"product_id");

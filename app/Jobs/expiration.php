@@ -24,7 +24,7 @@ class expiration implements ShouldQueue
     public function __construct($import_op_product)
     {
        
-        $this->$import_op_product=$import_op_product;
+        $this->import_op_product=$import_op_product;
     }
 
     /**
@@ -36,15 +36,20 @@ class expiration implements ShouldQueue
             $expired_quantity=0;
             $selled_load=0;
             $rejected_load=0;
+  
             $import_op_prod=Import_operation_product::find($this->import_op_product);
+            
             $loads=$import_op_prod->loads;
+            unset($import_op_prod->loads);
              $places=[];
             foreach($loads as $load){
               $logs=$this->calculate_load_logs($load); 
               $selled_load+=$logs["selled_load"];
               $rejected_load+=$logs["rejected_load"];
               if($logs["remine_load"]>0){
+
                $expired_quantity+=$logs["remine_load"];
+                Log::info("remine_load : " .$expired_quantity);
                reject_details::create([
 
                 "rejected_load" => $logs["remine_load"],
@@ -52,18 +57,21 @@ class expiration implements ShouldQueue
                 "why" => "expiration "
             ]);
 
-               $continer=$load->continer;
-               //'accepted', 'rejected', 'sold','auto_reject'
+               $continer=$load->container;
+               
                   if($continer->status!="sold"){
                     $continer->status="rejected";
                     $continer->save();
                     $posetion=$continer->posetion_on_stom;
+                    Log::info("posetion : " .$posetion);
                     if($posetion){
                     $posetion->imp_op_contin_id=null;
-                    $section=$posetion->section;
+                    $storage_element=$posetion->storage_element;
+                    $section=$storage_element->section()->first();
                     $place=$section->existable;
                     $places[$place->id]["place"]=$place;
-                     if(!empty($places[$place->id])){
+                    Log::info("place : " .$place);
+                     if(!empty($places[$place->id]["expired_quantity"])){
                          $places[$place->id]["expired_quantity"]+=$logs["remine_load"];
                          
                      }
@@ -81,8 +89,10 @@ class expiration implements ShouldQueue
             foreach($places as $blok){
              $admins=$blok["place"]->employees()->whereIn("specialization_id", $goal_spec_ids)->get();
               $tmp_imp_prod=$import_op_prod;
+           
                $tmp_imp_prod->expired_quantity=$blok["expired_quantity"];
              foreach($admins as $admin){
+                   $tmp_imp_prod=$tmp_imp_prod->toArray();
                  $notification=new expiration_not($tmp_imp_prod);
                  $this->send_not($notification,$admin);
              }
@@ -96,10 +106,11 @@ class expiration implements ShouldQueue
              $import_op_prod->expired_quantity=$expired_quantity;
              $super_admin_spec_id = Specialization::where("name", "super_admin")->value("id");
                 $super_admin = Employe::where("specialization_id", $super_admin_spec_id)->first();
-                $notification=new expiration_not( $import_op_prod);
+                $import_op_prod=$import_op_prod->toArray();
+                $notification=new expiration_not($import_op_prod);
                  $this->send_not($notification,$super_admin);
 
-        // DB::commit();
+        DB::commit();
         }
         catch (\Throwable $e) {
             DB::rollBack();

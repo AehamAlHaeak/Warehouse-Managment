@@ -562,7 +562,9 @@ class UserController extends Controller
                 return response()->json(["msg" => "the load not found"], 404);
             }
             $transfer = $transfer_detail->transfer;
-
+            if( $transfer->destinationable_type!="App\Models\User"){
+              return response(json_encode(["msg" => "the load not found"]), 404);
+            }
             $invoice = $transfer->invonice;
 
             $user = Auth::user();

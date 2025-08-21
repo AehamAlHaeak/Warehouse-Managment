@@ -44,6 +44,7 @@ use App\Notifications\send_products_for_me;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
 use App\Models\Containers_type;
+use App\Models\Import_operation_product;
 
 class Distribution_Center_controller extends Controller
 {
@@ -1533,13 +1534,13 @@ class Distribution_Center_controller extends Controller
     public function activate_inv()
     {
         try{
-        $product = Product::find(1);
+        $import_op_prod=Import_operation_product::find(1);
 
         //  check_load_of_company_pr::dispatch(1);
         //calculate_sold_quantity_freq::dispatch();
-        expiration::dispatch(2);
-        $product = $this->invintory_product_in_company($product);
-        return response()->json(["msg" => $product], 202);
+        expiration::dispatch(1);
+        //$product = $this->invintory_product_in_company($product);
+        return response()->json(["msg" =>  $import_op_prod], 202);
     }
     catch (Exception $e) {
             return response()->json(["msg" => $e->getMessage()], 500);
