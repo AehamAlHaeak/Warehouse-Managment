@@ -562,8 +562,8 @@ class UserController extends Controller
                 return response()->json(["msg" => "the load not found"], 404);
             }
             $transfer = $transfer_detail->transfer;
-            if( $transfer->destinationable_type!="App\Models\User"){
-              return response(json_encode(["msg" => "the load not found"]), 404);
+            if ($transfer->destinationable_type != "App\Models\User") {
+                return response(json_encode(["msg" => "the load not found"]), 404);
             }
             $invoice = $transfer->invonice;
 
@@ -605,8 +605,8 @@ class UserController extends Controller
                 return response()->json(["msg" => "the load not found"], 404);
             }
             $transfer = $transfer_detail->transfer;
-            if( $transfer->destinationable_type!="App\Models\User"){
-              return response(json_encode(["msg" => "the load not found"]), 404);
+            if ($transfer->destinationable_type != "App\Models\User") {
+                return response(json_encode(["msg" => "the load not found"]), 404);
             }
             $invoice = $transfer->invonice;
             $user = Auth::user();
@@ -622,24 +622,23 @@ class UserController extends Controller
             }
             $dist_C = $transfer->sourceable;
             if ($invoice->type = "transfered") {
-            
+
                 $continer = $transfer_detail->continers()->first();
                 $parent_continer = $continer->parent_continer;
                 $product = $parent_continer->product;
                 $min_Capacity = $parent_continer->cpacity;
-                
+
                 $garages = $dist_C->garages()->pluck("id")->toArray();
 
                 if (!empty($garages)) {
 
                     $min_Capacity = (Vehicle::whereIn("garage_id", $garages)->min("capacity") / 2) * $parent_continer->capacity;
-                    
                 }
                 if (is_null($min_Capacity)) {
                     return response()->json(["msg" => "the order is not enogh to transfer it by us ", "DistributionCenter" => $dist_C], 400);
                 }
-                if($validated_values["quantity"]<$min_Capacity){
-                   return response()->json(["msg" => "the order is not enogh to transfer it by us ", "DistributionCenter" => $dist_C], 400);
+                if ($validated_values["quantity"] < $min_Capacity) {
+                    return response()->json(["msg" => "the order is not enogh to transfer it by us ", "DistributionCenter" => $dist_C], 400);
                 }
                 $dist_C = $this->calculate_ready_vehiscles($dist_C, $product);
                 if ($dist_C->can_to_translate_load < $validated_values["quantity"]) {
@@ -662,75 +661,146 @@ class UserController extends Controller
                     DB::rollBack();
                     return response()->json(["msg" => $out_put], 400);
                 }
-            }
-            elseif($old_reserve > $validated_values["quantity"]) {
+            } elseif ($old_reserve > $validated_values["quantity"]) {
 
                 $surplus_quantity = $old_reserve - $validated_values["quantity"];
                 $reserved_loads = $transfer_detail->reserved_loads()->orderByDesc('id')->get();
-                 while($surplus_quantity >0){
-                    $reserved_load=$reserved_loads->splice(0, 1)->first();
-                    
-                  $new_reserve=min($reserved_load->reserved_load,$surplus_quantity);
-               
-                  $surplus_quantity-=$new_reserve;
-                  $reserved_load->reserved_load-=$new_reserve;
-                  
-                  if($reserved_load->reserved_load==0){
-                      $reserved_load->delete($reserved_load->id);
-                      $parent_load=$reserved_load->parent_load;
-                      $parent_continer=$parent_load->container;
-                    
-                      Continer_transfer::where("transfer_detail_id",$transfer_detail->id)->where("imp_op_contin_id",$parent_continer->id)->delete();
-                      
-                  }
-                  else{
-                    $reserved_load->save();
-                  }
-                 }
-            }
- 
+                while ($surplus_quantity > 0) {
+                    $reserved_load = $reserved_loads->splice(0, 1)->first();
 
-           DB::commit();
-                      $new_reserve=$this->reserved_sold_on_load($transfer_detail)["reserved"];
-           return response()->json(["msg" => "the load edited","new_quantity"=> $new_reserve], 202);
+                    $new_reserve = min($reserved_load->reserved_load, $surplus_quantity);
+
+                    $surplus_quantity -= $new_reserve;
+                    $reserved_load->reserved_load -= $new_reserve;
+
+                    if ($reserved_load->reserved_load == 0) {
+                        $reserved_load->delete($reserved_load->id);
+                        $parent_load = $reserved_load->parent_load;
+                        $parent_continer = $parent_load->container;
+
+                        Continer_transfer::where("transfer_detail_id", $transfer_detail->id)->where("imp_op_contin_id", $parent_continer->id)->delete();
+                    } else {
+                        $reserved_load->save();
+                    }
+                }
+            }
+
+
+            DB::commit();
+            $new_reserve = $this->reserved_sold_on_load($transfer_detail)["reserved"];
+            return response()->json(["msg" => "the load edited", "new_quantity" => $new_reserve], 202);
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json(["error" => $e->getMessage()], 400);
         }
     }
-    public function execute_invoice($invoice_id){
-       DB::beginTransaction();
-       try{
-           $invoice=Invoice::find($invoice_id);
-           if(!$invoice){
-             return response()->json(["msg" => "the invoice not found"], 404);
-           }
-           $user=Auth::user();
-           if($invoice->user_id!=$user->id){
-            return response()->json(["msg" => "the invoice not for you"], 401);
-           }
-           if($invoice->status=="accepted"){
-            return response()->json(["msg" => "the invoice is implemented"], 400);
-           }
-          $job=Job::find($invoice->job_id);
-          if($job){
-          $job->delete($job->id); 
-          }
-        
+    public function execute_invoice($invoice_id)
+    {
+        DB::beginTransaction();
+        try {
+            $invoice = Invoice::find($invoice_id);
+            if (!$invoice) {
+                return response()->json(["msg" => "the invoice not found"], 404);
+            }
+            $user = Auth::user();
+            if ($invoice->user_id != $user->id) {
+                return response()->json(["msg" => "the invoice not for you"], 401);
+            }
+            if ($invoice->status == "accepted") {
+                return response()->json(["msg" => "the invoice is implemented"], 400);
+            }
+            $job = Job::find($invoice->job_id);
+            if ($job) {
+                $job->delete($job->id);
+            }
+
             $job = new sell($invoice->id);
             $jobId = Queue::later(now()->addMinutes(0), $job);
             $invoice->job_id = $jobId;
             $invoice->save();
             DB::commit();
-        return response()->json(["msg" => "the invoice is under execute","invoice_id"=>$invoice_id,"job_id"=>$jobId], 202);
-        
-       }
-       catch (Exception $e) {
+            return response()->json(["msg" => "the invoice is under execute", "invoice_id" => $invoice_id, "job_id" => $jobId], 202);
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json(["error" => $e->getMessage()], 400);
         }
     }
 
+    public function edit_invoice(Request $request)
+    {   
+        DB::beginTransaction();
+        try {
+            try {
+                $validated_values = $request->validate([
+                    "invoice_id" => "required|integer",
+                    "type" => "required|in:transfered,Un_transfered",
+                ]);
+            } catch (ValidationException $e) {
+                return response()->json([
+                    'msg' => 'Validation failed',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
+            $invoice = Invoice::find($validated_values["invoice_id"]);
+            if (!$invoice) {
+                return response()->json(["msg" => "the invoice not found"], 404);
+            }
+            $user = Auth::user();
+            if ($invoice->user_id != $user->id) {
+                return response()->json(["msg" => "the invoice not for you"], 401);
+            }
+            if ($invoice->status == "accepted") {
+                return response()->json(["msg" => "the invoice is implemented"], 401);
+            }
+            if($invoice->type==$validated_values["type"]){
+             return response()->json(["msg"=>"the invoice type not changed"],400);
+            }
+            if($validated_values["type"]=="transfered"){
+               $transfers=$invoice->transfers;
+               foreach($transfers as $transfer){
+                $dist_C=$transfer->sourceable;
+                   $details=$transfer->transfer_details;
+                   foreach($details as $detail){
+                    $first_cont=$detail->continers()->first();
+                     $parent_cont=$first_cont->parent_continer;
+                     $product=$parent_cont->product;
+                     $totalReserved = $detail->reserved_loads()->sum('reserved_load');
+                     $garages = $dist_C->garages()->pluck("id")->toArray(); //,,,
 
+                    
+                    if (!empty($garages)) {
 
+                        $min_Capacity = Vehicle::whereIn("garage_id", $garages)->min("capacity");
+                        
+                    }
+                    else{
+                         return response()->json(["msg" => " the dist center dont have vehicles ", "DistributionCenter" => $dist_C], 404);
+                    }
+                    if (is_null($min_Capacity)) {
+                        return response()->json(["msg" => "the order is not enogh to transfer it by us ", "DistributionCenter" => $dist_C], 400);
+                    }
+                    $dist_C = $this->calculate_ready_vehiscles($dist_C, $product);
+                     if($totalReserved <($min_Capacity/2)*$parent_cont->capacity){
+                       return response()->json(["msg" => "the quantity is not enogh in to transfer by company ", "reserved" => $totalReserved,"main quantity"=>($min_Capacity/2)*$parent_cont->capacity], 404);
+                     }
+                       if ($dist_C->can_to_translate_load < $totalReserved) {
+
+                        return response()->json(["msg" => "the vehicles is not enogh in the dist center ", "DistributionCenter" => $dist_C], 404);
+                    }
+                    
+                       
+                   
+               }
+            }
+        }
+            $invoice->type=$validated_values["type"];
+            $invoice->save();
+            DB::commit();
+            return response()->json(["msg" => "the invoice edited", "invoice_id" => $request->invoice_id], 202);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json(["error" => $e->getMessage()], 400);
+        }
+    
+    }
 }

@@ -283,8 +283,9 @@ Route::controller(UserController::class)->group(function () {
         Route::post("edit_load", "edit_load");
 
         Route::get("execute_invoice/{invoice_id}", "execute_invoice");
+        Route::post("edit_invoice", "edit_invoice");
     });
-}); // execute_invoice($invoice_id)
+}); // edit_invoice
 
 Route::controller(Notification_controller::class)->middleware(['check_token'])->group(function () {
     Route::get('allNotifications', 'allNotifications');
