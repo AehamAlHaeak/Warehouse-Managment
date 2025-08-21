@@ -39,6 +39,7 @@ use Illuminate\Support\Facades\Schema;
 use App\Notifications\you_have_changes;
 use Illuminate\Support\Facades\Validator;
 use App\Jobs\calculate_sold_quantity_freq;
+use App\Jobs\expiration;
 use App\Notifications\send_products_for_me;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
@@ -1531,11 +1532,17 @@ class Distribution_Center_controller extends Controller
     }
     public function activate_inv()
     {
+        try{
         $product = Product::find(1);
 
         //  check_load_of_company_pr::dispatch(1);
-        calculate_sold_quantity_freq::dispatch();
+        //calculate_sold_quantity_freq::dispatch();
+        expiration::dispatch(2);
         $product = $this->invintory_product_in_company($product);
         return response()->json(["msg" => $product], 202);
     }
+    catch (Exception $e) {
+            return response()->json(["msg" => $e->getMessage()], 500);
+        }
+}
 }

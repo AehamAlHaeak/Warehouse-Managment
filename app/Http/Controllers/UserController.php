@@ -437,7 +437,7 @@ class UserController extends Controller
 
             $distribution_centers = $this->sort_the_near_by_location($distribution_centers, $latitude, $longitude);
 
-            return $distribution_centers;
+            return response()->json(["msg" => "here the centers", "distribuction_centers" => $distribution_centers], 202);
         } catch (Exception $e) {
             return response()->json(["error" => $e->getMessage()], 400);
         }

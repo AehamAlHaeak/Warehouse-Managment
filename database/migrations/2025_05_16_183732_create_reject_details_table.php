@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('reject_details', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
-            $table->unsignedBigInteger("employe_id");
+            $table->unsignedBigInteger("employe_id")->nullable();
             $table->foreign("employe_id")->references("id")->on("employes");
             $table->integer("rejected_load");
             $table->unsignedBigInteger("imp_cont_prod_id");
