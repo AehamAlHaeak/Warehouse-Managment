@@ -1065,7 +1065,7 @@ class Distribution_Center_controller extends Controller
     }
 
     public function pass_load(Request $request)
-    { 
+    {
         DB::beginTransaction();
         try {
             try {
@@ -1100,61 +1100,55 @@ class Distribution_Center_controller extends Controller
             if ($load->status != "in_QA") {
                 return response()->json(["msg" => "the load is not in QA"], 409);
             }
-            DB::beginTransaction();
-            try {
-
-                $continers = $this->unload($load, $destination);
 
 
-                $load->update(["status" => "received"]);
-                $vehicle = $load->vehicle;
-                if ($transfer->sourceable_type == "App\Models\DistributionCenter" || $transfer->sourceable_type == "App\Models\Warehouse") {
 
-                    $next_transfer = $transfer->next_transfer;
-                     
-                    if ($next_transfer) {
+            $continers = $this->unload($load, $destination);
 
-                        $vehicle->transfer_id = $next_transfer->id;
-                        $detail_of_veh = $next_transfer->transfer_details()->where("vehicle_id", $vehicle->id)->first();
 
-                        $detail_of_veh->status = "under_work";
-                        $detail_of_veh->save();
-                        $vehicle->save();
-                        $next_transfer->date_of_resiving = now();
-                        $next_transfer->save();
-                        $driver = $vehicle->driver;
-                        $task = Transfer::find($next_transfer->id);
-                        $notification = new Take_new_task($task);
-                        $this->send_not($notification, $driver);
-                    } else {
-                        if($vehicle){
+            $load->update(["status" => "received"]);
+
+            $vehicle = $load->vehicle;
+            if ($transfer->sourceable_type == "App\Models\DistributionCenter" || $transfer->sourceable_type == "App\Models\Warehouse") {
+
+                $next_transfer = $transfer->next_transfer;
+
+                if ($next_transfer) {
+
+                    $vehicle->transfer_id = $next_transfer->id;
+                    $detail_of_veh = $next_transfer->transfer_details()->where("vehicle_id", $vehicle->id)->first();
+
+                    $detail_of_veh->status = "under_work";
+                    $detail_of_veh->save();
+                    $vehicle->save();
+                    $next_transfer->date_of_resiving = now();
+                    $next_transfer->save();
+                    $driver = $vehicle->driver;
+                    $task = Transfer::find($next_transfer->id);
+                    $notification = new Take_new_task($task);
+                    $this->send_not($notification, $driver);
+                } else {
+                    if ($vehicle) {
                         $vehicle->transfer_id = null;
                         $vehicle->save();
-                        }
-                        
                     }
-                } else {
-                    if($vehicle){
+                }
+            } else {
+                if ($vehicle) {
                     $vehicle->transfer_id = null;
                     $vehicle->save();
-                    }
-                    
                 }
-                $curent_trans_not_finished =  $transfer->transfer_details()->where("status", "!=", "resived")->where("status", "!=", "cut")->get()->count();
+            }
+            $curent_trans_not_finished =  $transfer->transfer_details()->where("status", "!=", "resived")->where("status", "!=", "cut")->get()->count();
 
 
-                if ($curent_trans_not_finished == 0) {
-                    $transfer->update([
-                        "date_of_finishing" => now()
-                    ]);
-                }
-                DB::commit();
-                return response()->json(["msg" => "load passed successfully", "destination" => $destination, "continers" => $continers], 202);
-            } catch (Exception $e) {
-                DB::rollBack();
-                return response()->json(["msg" => $e->getMessage()], 500);
+            if ($curent_trans_not_finished == 0) {
+                $transfer->update([
+                    "date_of_finishing" => now()
+                ]);
             }
             DB::commit();
+            return response()->json(["msg" => "load passed successfully", "destination" => $destination, "continers" => $continers], 202);
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json(["msg" => $e->getMessage()], 500);
