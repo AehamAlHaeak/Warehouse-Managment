@@ -1065,7 +1065,8 @@ class Distribution_Center_controller extends Controller
     }
 
     public function pass_load(Request $request)
-    {
+    { 
+        DB::beginTransaction();
         try {
             try {
                 $validated_values = $request->validate([
@@ -1110,7 +1111,7 @@ class Distribution_Center_controller extends Controller
                 if ($transfer->sourceable_type == "App\Models\DistributionCenter" || $transfer->sourceable_type == "App\Models\Warehouse") {
 
                     $next_transfer = $transfer->next_transfer;
-
+                     
                     if ($next_transfer) {
 
                         $vehicle->transfer_id = $next_transfer->id;
@@ -1126,12 +1127,18 @@ class Distribution_Center_controller extends Controller
                         $notification = new Take_new_task($task);
                         $this->send_not($notification, $driver);
                     } else {
+                        if($vehicle){
                         $vehicle->transfer_id = null;
                         $vehicle->save();
+                        }
+                        
                     }
                 } else {
+                    if($vehicle){
                     $vehicle->transfer_id = null;
                     $vehicle->save();
+                    }
+                    
                 }
                 $curent_trans_not_finished =  $transfer->transfer_details()->where("status", "!=", "resived")->where("status", "!=", "cut")->get()->count();
 
@@ -1147,7 +1154,9 @@ class Distribution_Center_controller extends Controller
                 DB::rollBack();
                 return response()->json(["msg" => $e->getMessage()], 500);
             }
+            DB::commit();
         } catch (Exception $e) {
+            DB::rollBack();
             return response()->json(["msg" => $e->getMessage()], 500);
         }
     }

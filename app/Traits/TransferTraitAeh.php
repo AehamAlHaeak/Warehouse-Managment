@@ -98,6 +98,7 @@ trait TransferTraitAeh
             ->whereDoesntHave('posetion_on_stom')
             ->whereNotIn('status', ['rejected', 'auto_reject'])
             ->get();
+            
         $parent_cont = $continers->first()->parent_continer;
         $product =  $parent_cont->product;
 

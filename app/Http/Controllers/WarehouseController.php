@@ -25,15 +25,17 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Notifications\DatabaseNotification;
 use App\Models\Transfer_detail;
 use App\Models\Continer_transfer;
+use App\Models\container_movments;
+
 class WarehouseController extends Controller
 {
     use AlgorithmsTrait;
     use TransferTraitAeh;
-    
 
-    public function show_distrebution_centers_of_product(Request $request,$warehouse_id, $product_id)
+
+    public function show_distrebution_centers_of_product(Request $request, $warehouse_id, $product_id)
     {
-        
+
         $warehous = Warehouse::find($warehouse_id);
         if (!$warehous) {
             return response()->json(["msg" => "warehouse not found"], 404);
@@ -60,11 +62,11 @@ class WarehouseController extends Controller
         $i = 0;
         foreach ($distributionCenters as $distC) {
             $has_a_section_of_product = $distC->sections()->where("product_id", $product_id)->exists();
-             if($has_a_section_of_product){
-            $distC = $this->calcute_areas_on_place_for_a_specific_product($distC, $product_id);
-            $distC= $this->calculate_ready_vehicles($distC,$product);
-            $distribution_centers_of_product[$i] = $distC;
-             }
+            if ($has_a_section_of_product) {
+                $distC = $this->calcute_areas_on_place_for_a_specific_product($distC, $product_id);
+                $distC = $this->calculate_ready_vehicles($distC, $product);
+                $distribution_centers_of_product[$i] = $distC;
+            }
             $i++;
         }
         if (empty($distribution_centers_of_product)) {
@@ -78,7 +80,7 @@ class WarehouseController extends Controller
     }
 
 
-    public function show_distribution_centers_of_storage_media_in_warehouse(Request $request,$warehouse_id, $storage_media_id)
+    public function show_distribution_centers_of_storage_media_in_warehouse(Request $request, $warehouse_id, $storage_media_id)
     {
         $storage_media = Storage_media::find($storage_media_id);
         if (!$storage_media) {
@@ -88,7 +90,7 @@ class WarehouseController extends Controller
         if (!$warehous) {
             return response()->json(["msg" => "warehouse not found"], 404);
         }
-         $employe = $request->employe;
+        $employe = $request->employe;
         if ($employe->specialization->name != "super_admin") {
 
             $authorized_in_place = $this->check_if_authorized_in_place($employe, $warehous);
@@ -99,14 +101,14 @@ class WarehouseController extends Controller
 
 
         $product = $storage_media->product;
-         $response=$this->show_dit_Cs_of_product_in_warehouse($warehous,$product);
-         if($response=="the warehouse dont have distribution centers"){
-           return response()->json(["msg" => "the warehouse dont have distribution centers"], 404);
-         }
+        $response = $this->show_dit_Cs_of_product_in_warehouse($warehous, $product);
+        if ($response == "the warehouse dont have distribution centers") {
+            return response()->json(["msg" => "the warehouse dont have distribution centers"], 404);
+        }
         return response()->json([
             "msg" => "here the disribution centers ",
             "distribution_centers" => $response
-        ],202);
+        ], 202);
     }
     public function send_products_from_To(Request $request)
     {
@@ -114,13 +116,13 @@ class WarehouseController extends Controller
         try {
             try {
                 $validated_values = $request->validate([
-                    "source_type" => "required|in:Warehouse,DistributionCenter",    
+                    "source_type" => "required|in:Warehouse,DistributionCenter",
                     "source_id" => "required",
                     "destination_type" => "required|in:Warehouse,DistributionCenter",
                     "destination_id" => "required",
                     "product_id" => "required|numeric",
                     "quantity" => "required|integer",
-                    "send_vehicles"=>"required|boolean",
+                    "send_vehicles" => "required|boolean",
                 ]);
             } catch (ValidationException $e) {
 
@@ -243,62 +245,70 @@ class WarehouseController extends Controller
             if ($validated_values["quantity"] > 0) {
                 return response()->json(["msg" => "you dont have enough containers"], 404);
             }
-            if($validated_values["send_vehicles"]==true){
-            $transfer_details = $this->resive_transfers($source, $destination, $all_containers);
-            if ($transfer_details == "the vehicles is not enough for the load") {
-                return response()->json(["msg" => $transfer_details], 400);
-            } elseif ($transfer_details == "No containers to transfer") {
-                return response()->json(["msg" => $transfer_details], 400);
-            }
-        }
-        else{
-          
-            $transfer=Transfer::create([
-                "sourceable_type" => get_class($source), //warehouse user or dest 
-                "sourceable_id" => $source->id,
-                "destinationable_type" => get_class($destination), //imp_op without load  warehouse 
-                "destinationable_id" => $destination->id,
-            ]);
-              $transfer_detail = Transfer_detail::create([
-                            "status" => "in_QA",
-                            "transfer_id" => $transfer->id
-                        ]);
-                        foreach ($all_containers as $continer) {
-                            Continer_transfer::create([
-                                "imp_op_contin_id" => $continer->id,
-                                "transfer_detail_id" => $transfer_detail->id
-                            ]);
-                        }
+            if ($validated_values["send_vehicles"] == true) {
+                $transfer_details = $this->resive_transfers($source, $destination, $all_containers);
+                if ($transfer_details == "the vehicles is not enough for the load") {
+                    return response()->json(["msg" => $transfer_details], 400);
+                } elseif ($transfer_details == "No containers to transfer") {
+                    return response()->json(["msg" => $transfer_details], 400);
+                }
+            } else {
 
-        }
-       
-            $source = $this->calcute_areas_on_place_for_a_specific_product($source, $product->id);
-             
-            if($source->actual_load_product <= $source->max_capacity_product*0.3){
-               
-            
-            $super_admin_specialization=Specialization::where("name","super_admin")->pluck("id");
-            $super_admin=Employe::where("specialization_id",$super_admin_specialization)->first();
-             
-            $goal_specialization=Specialization::whereIn("name",["warehouse_admin","distribution_center_admin"])->pluck("id");
-            
-            $admins=$source->employees()->whereIn("specialization_id",$goal_specialization)->get();
-            unset($source["garages"]);
-            $admins->push($super_admin);
-          
-           $source=$source->toArray($source);
-             foreach ($admins as $employe) {
-                
-              
-             
-                $notification = new Shortage_of_inventory($source, $product);
-                 $this->send_not($notification, $employe);
-               
-             
+                $transfer = Transfer::create([
+                    "sourceable_type" => get_class($source), //warehouse user or dest 
+                    "sourceable_id" => $source->id,
+                    "destinationable_type" => get_class($destination), //imp_op without load  warehouse 
+                    "destinationable_id" => $destination->id,
+                ]);
+                $transfer_detail = Transfer_detail::create([
+                    "status" => "in_QA",
+                    "transfer_id" => $transfer->id
+                ]);
+
+                foreach ($all_containers as $continer) {
+                    $posetion = $continer->posetion_on_stom;
+
+                    container_movments::create([
+                        "imp_op_cont_id" => $continer->id,
+                        "prev_position_id" => $posetion->id,
+                        "moved_why" => "loaded"
+                    ]);
+
+                    $posetion->update([
+                        "imp_op_contin_id" => null
+                    ]);
+                    Continer_transfer::create([
+                        "imp_op_contin_id" => $continer->id,
+                        "transfer_detail_id" => $transfer_detail->id
+                    ]);
+                }
             }
-        }
-      
-             DB::commit();
+
+            $source = $this->calcute_areas_on_place_for_a_specific_product($source, $product->id);
+
+            if ($source->actual_load_product <= $source->max_capacity_product * 0.3) {
+
+
+                $super_admin_specialization = Specialization::where("name", "super_admin")->pluck("id");
+                $super_admin = Employe::where("specialization_id", $super_admin_specialization)->first();
+
+                $goal_specialization = Specialization::whereIn("name", ["warehouse_admin", "distribution_center_admin"])->pluck("id");
+
+                $admins = $source->employees()->whereIn("specialization_id", $goal_specialization)->get();
+                unset($source["garages"]);
+                $admins->push($super_admin);
+
+                $source = $source->toArray($source);
+                foreach ($admins as $employe) {
+
+
+
+                    $notification = new Shortage_of_inventory($source, $product);
+                    $this->send_not($notification, $employe);
+                }
+            }
+
+            DB::commit();
             return response()->json(["msg" => "successfully"], 202);
         } catch (Exception $e) {
             DB::rollBack();
@@ -343,21 +353,19 @@ class WarehouseController extends Controller
             ], 422);
         }
     }
-     
 
-    public function calculate_ready_vehicles($warehouse_id){
-        try{
-     $warehouse=Warehouse::find($warehouse_id);
-     $product=Product::find(1);
-      $warehouse=$this->calculate_ready_vehiscles($warehouse, $product);
-      return   $warehouse;
-        }catch(Exception $e){
+
+    public function calculate_ready_vehicles($warehouse_id)
+    {
+        try {
+            $warehouse = Warehouse::find($warehouse_id);
+            $product = Product::find(1);
+            $warehouse = $this->calculate_ready_vehiscles($warehouse, $product);
+            return   $warehouse;
+        } catch (Exception $e) {
             return response()->json([
                 'errors' => $e->getMessage(),
             ], 422);
         }
     }
-
-
-
 }
