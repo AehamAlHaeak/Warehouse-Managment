@@ -262,6 +262,7 @@ class WarehouseController extends Controller
           
              foreach ($admins as $employe) {
                 $uuid = (string) Str::uuid();
+                $source=$source->toArray($source);
                 $notification = new Shortage_of_inventory($source, $product);
 
                 $notify = DatabaseNotification::create([

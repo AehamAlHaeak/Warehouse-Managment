@@ -45,6 +45,8 @@ use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\HttpCache\ResponseCacheStrategy;
 use App\Models\Containers_type;
 use App\Models\Import_operation_product;
+use App\Notifications\Take_new_task;
+
 
 class Distribution_Center_controller extends Controller
 {
@@ -944,42 +946,40 @@ class Distribution_Center_controller extends Controller
                 ->with('continers')
                 ->get();
 
-            
+
             $details = $details->filter(function ($detail) {
                 return $detail->continers->isNotEmpty();
             });
 
-           
+
             $grouped = $details->groupBy(function ($detail) {
                 return $detail->continers->first()->container_type_id;
             });
-            $products=collect();
-            foreach($grouped as $con_id=>$details){
-              $continer=Containers_type::find($con_id);
-              $product= $continer->product;
-              
-              $sold_load=0;
-              $reserved_load=0;
-              $rejected_load=0;
-              $remine_load=0;
-              foreach($details as $detail){
-                  $data=$this->inv_detail($detail);
-                  $sold_load+=$data["sold_load"];
-                  $reserved_load+=$data["reserved_load"];
-                  $rejected_load+=$data["rejected_load"];
-                  $remine_load+=$data["remine_load"];
-              }
-          $product->sold_load= $sold_load;
-          $product->reserved_load=$reserved_load;
-          $product->rejected_load= $rejected_load;
-          $product->remine_load=$remine_load;
-           
-          $products->push($product);
+            $products = collect();
+            foreach ($grouped as $con_id => $details) {
+                $continer = Containers_type::find($con_id);
+                $product = $continer->product;
 
+                $sold_load = 0;
+                $reserved_load = 0;
+                $rejected_load = 0;
+                $remine_load = 0;
+                foreach ($details as $detail) {
+                    $data = $this->inv_detail($detail);
+                    $sold_load += $data["sold_load"];
+                    $reserved_load += $data["reserved_load"];
+                    $rejected_load += $data["rejected_load"];
+                    $remine_load += $data["remine_load"];
+                }
+                $product->sold_load = $sold_load;
+                $product->reserved_load = $reserved_load;
+                $product->rejected_load = $rejected_load;
+                $product->remine_load = $remine_load;
 
+                $products->push($product);
             }
-             $details->makeHidden("continers");
-           return response()->json(["msg"=>"here the products invintory in the transfer","products"=>$products,"details"=>$details],202);
+            $details->makeHidden("continers");
+            return response()->json(["msg" => "here the products invintory in the transfer", "products" => $products, "details" => $details], 202);
         } catch (Exception $e) {
             return response()->json(["msg" => $e->getMessage()], 500);
         }
@@ -1121,6 +1121,10 @@ class Distribution_Center_controller extends Controller
                         $vehicle->save();
                         $next_transfer->date_of_resiving = now();
                         $next_transfer->save();
+                        $driver = $vehicle->driver;
+                        $task = Transfer::find($next_transfer->id);
+                        $notification = new Take_new_task($task);
+                        $this->send_not($notification, $driver);
                     } else {
                         $vehicle->transfer_id = null;
                         $vehicle->save();
@@ -1533,17 +1537,16 @@ class Distribution_Center_controller extends Controller
     }
     public function activate_inv()
     {
-        try{
-        $import_op_prod=Import_operation_product::find(1);
+        try {
+            $import_op_prod = Import_operation_product::find(1);
 
-        //  check_load_of_company_pr::dispatch(1);
-        //calculate_sold_quantity_freq::dispatch();
-        expiration::dispatch(1);
-        //$product = $this->invintory_product_in_company($product);
-        return response()->json(["msg" =>  $import_op_prod], 202);
-    }
-    catch (Exception $e) {
+            //  check_load_of_company_pr::dispatch(1);
+            //calculate_sold_quantity_freq::dispatch();
+            expiration::dispatch(1);
+            //$product = $this->invintory_product_in_company($product);
+            return response()->json(["msg" =>  $import_op_prod], 202);
+        } catch (Exception $e) {
             return response()->json(["msg" => $e->getMessage()], 500);
         }
-}
+    }
 }
