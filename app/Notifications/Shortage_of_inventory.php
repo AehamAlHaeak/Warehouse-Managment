@@ -31,8 +31,8 @@ class Shortage_of_inventory extends Notification
         return [
             "msg"=>"the place inventory is low  ",
             "place"=>$this->place,
-            "product"=>$this->product,
-            "actual_load"=>$this->place->actual_load_product
+            "product"=>$this->product
+
         ];
     }
 }

@@ -19,10 +19,12 @@ use App\Events\Send_Notification;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Models\Import_op_container;
+use App\Models\Transfer;
 use App\Notifications\Shortage_of_inventory;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Notifications\DatabaseNotification;
-
+use App\Models\Transfer_detail;
+use App\Models\Continer_transfer;
 class WarehouseController extends Controller
 {
     use AlgorithmsTrait;
@@ -117,7 +119,8 @@ class WarehouseController extends Controller
                     "destination_type" => "required|in:Warehouse,DistributionCenter",
                     "destination_id" => "required",
                     "product_id" => "required|numeric",
-                    "quantity" => "required|integer"
+                    "quantity" => "required|integer",
+                    "send_vehicles"=>"required|boolean",
                 ]);
             } catch (ValidationException $e) {
 
@@ -240,15 +243,38 @@ class WarehouseController extends Controller
             if ($validated_values["quantity"] > 0) {
                 return response()->json(["msg" => "you dont have enough containers"], 404);
             }
+            if($validated_values["send_vehicles"]==true){
             $transfer_details = $this->resive_transfers($source, $destination, $all_containers);
             if ($transfer_details == "the vehicles is not enough for the load") {
                 return response()->json(["msg" => $transfer_details], 400);
             } elseif ($transfer_details == "No containers to transfer") {
                 return response()->json(["msg" => $transfer_details], 400);
             }
+        }
+        else{
+          
+            $transfer=Transfer::create([
+                "sourceable_type" => get_class($source), //warehouse user or dest 
+                "sourceable_id" => $source->id,
+                "destinationable_type" => get_class($destination), //imp_op without load  warehouse 
+                "destinationable_id" => $destination->id,
+            ]);
+              $transfer_detail = Transfer_detail::create([
+                            "status" => "in_QA",
+                            "transfer_id" => $transfer->id
+                        ]);
+                        foreach ($all_containers as $continer) {
+                            Continer_transfer::create([
+                                "imp_op_contin_id" => $continer->id,
+                                "transfer_detail_id" => $transfer_detail->id
+                            ]);
+                        }
+
+        }
+       
             $source = $this->calcute_areas_on_place_for_a_specific_product($source, $product->id);
              
-            if($source->actual_load_product <= $source->max_capacity_product){
+            if($source->actual_load_product <= $source->max_capacity_product*0.3){
                
             
             $super_admin_specialization=Specialization::where("name","super_admin")->pluck("id");
@@ -260,25 +286,20 @@ class WarehouseController extends Controller
             unset($source["garages"]);
             $admins->push($super_admin);
           
+           $source=$source->toArray($source);
              foreach ($admins as $employe) {
-                $uuid = (string) Str::uuid();
-                $source=$source->toArray($source);
+                
+              
+             
                 $notification = new Shortage_of_inventory($source, $product);
-
-                $notify = DatabaseNotification::create([
-                    'id' => $uuid,
-                    'type' => get_class($notification),
-                    'notifiable_type' => get_class($employe),
-                    'notifiable_id' => $employe->id,
-                    'data' => $notification->toArray($employe),
-                    'read_at' => null,
-                ]);
-                $notification->id = $notify->id;
-                event(new Send_Notification($employe, $notification));
+                 $this->send_not($notification, $employe);
+               
+             
             }
         }
-        DB::commit();
-            return response()->json(["msg" => $transfer_details], 202);
+      
+             DB::commit();
+            return response()->json(["msg" => "successfully"], 202);
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
