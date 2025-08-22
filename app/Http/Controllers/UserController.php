@@ -386,7 +386,7 @@ class UserController extends Controller
             $types = type::all();
             foreach ($types as $type) {
                 $products = $type->products;
-
+                  unset($type->products);
                 $dis_Cs = $type->distribution_centers;
 
                 unset($type->distribution_centers);
@@ -408,7 +408,8 @@ class UserController extends Controller
                         $product->salled_load,
                         $product->rejected_load,
                         $product->reserved_load,
-                        $product->auto_rejected_load
+                        $product->auto_rejected_load,
+                        $product->transfered_load
                     );
 
                     $product->actual_load = $actual_load;
