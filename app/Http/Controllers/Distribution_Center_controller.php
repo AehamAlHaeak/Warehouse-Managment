@@ -1517,7 +1517,7 @@ class Distribution_Center_controller extends Controller
 
 
                 $storage_element = $posetion->storage_element;
-
+                unset($posetion->storage_element);
                 $posetion_of_storage_element = $storage_element->posetion_on_section()->select(["id", "section_id", "floor", "class", "positions_on_class",])->first();
 
                 $section = $posetion_of_storage_element->section()->select(["id", "name", "existable_type", "existable_id"])->first();
@@ -1530,6 +1530,7 @@ class Distribution_Center_controller extends Controller
                 $movment->section = $section;
                 $movment->storage_element = $storage_element;
                 $movment->posetion_of_storage_element = $posetion_of_storage_element;
+                
                 $movment->posetion = $posetion;
             }
 
