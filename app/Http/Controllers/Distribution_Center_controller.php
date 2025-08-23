@@ -375,13 +375,13 @@ class Distribution_Center_controller extends Controller
 
             foreach ($contined_load as $load) {
                 $imp_op_product = $load->impo_op_product;
+                $imp_op_product->impor_op_product_id=$imp_op_product->id;
                 $logs = $this->calculate_load_logs($load);
-
+                $imp_op_product->id=$load->id;
                 $imp_op_product->selled_load = $logs["selled_load"];
                 $imp_op_product->reserved_load = $logs["reserved_load"];
                 $imp_op_product->rejected_load = $logs["rejected_load"];
                 $imp_op_product->remine_load = $logs["remine_load"];
-
 
                 $contents[$i] =  $imp_op_product;
                 $i++;
