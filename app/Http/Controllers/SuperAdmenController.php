@@ -1008,7 +1008,7 @@ class SuperAdmenController extends Controller
         return response()->json([
             'msg' => 'Product updated successfully.',
             'product' => $product
-        ]);
+        ],202);
     }
 
 
