@@ -383,6 +383,7 @@ class UserController extends Controller
     public function show_products_in_centers()
     {
         try {
+              $calculated_products=collect();
             $types = type::all();
             foreach ($types as $type) {
                 $products = $type->products;
@@ -413,10 +414,11 @@ class UserController extends Controller
                     );
 
                     $product->actual_load = $actual_load;
+                    $calculated_products->push($product);
                 }
-                $type->calcculated_products = $products;
+
             }
-            return response()->json(["types" => $types], 202);
+            return response()->json(["products" =>$calculated_products ], 202);
         } catch (Exception $e) {
             return response()->json(["error" => $e->getMessage()], 400);
         }
