@@ -188,7 +188,7 @@ Route::controller(WarehouseController::class)->middleware('is_warehouse_admin')-
 
 Route::controller(Distribution_Center_controller::class)->middleware("is_dist_c_admin")->group(function () {
 
-    Route::get("show_employees_on_place/{place_type}/{place_id}");
+    Route::get("show_employees_on_place/{place_type}/{place_id}","show_employees_on_place");
 
     Route::get("show_garages_on_place/{place_type}/{place_id}", "show_garages_on_place");
 
