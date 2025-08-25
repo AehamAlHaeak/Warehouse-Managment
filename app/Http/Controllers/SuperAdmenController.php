@@ -443,7 +443,11 @@ class SuperAdmenController extends Controller
             ], 422);
         }
         try {
-            $validated_values["type_id"] = Warehouse::find($validated_values["warehouse_id"])->type_id;
+            $warehouse=Warehouse::find($validated_values["warehouse_id"]);
+            if(!$warehouse){
+              return response()->json(["msg" => "warehouse not found"], 404);
+            }
+            $validated_values["type_id"]=$warehouse->type_id;
             $center = DistributionCenter::create($validated_values);
         } catch (Exception $e) {
             return response()->json(["error" => $e->getMessage()], 400);
