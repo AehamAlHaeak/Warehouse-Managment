@@ -538,7 +538,7 @@ class SuperAdmenController extends Controller
         return response()->json(["msg" => "deleted successfully!"], 202);
     }
     catch(Exception $e){
-        
+       return response()->json(["error" => $e->getMessage()], 400);  
     }
 }
 
