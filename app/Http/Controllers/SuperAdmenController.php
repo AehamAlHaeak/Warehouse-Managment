@@ -532,10 +532,14 @@ class SuperAdmenController extends Controller
                         ], 400);
                     }
                 }
+                else{
+                    $validated_values["warehouse_id"]=$warehouse->id;
+                }
             }
         }
         if(!empty($validated_values["num_sections"])){
-            $sections=$warehouse->sections()->where("status","!=","deleted")->count();
+            $sections= $center->sections()->where("status","!=","deleted")->count();
+            echo $sections;
             if($validated_values["num_sections"]<$sections){
               return response()->json(["msg" => "the warehouse has sections more than the new number"], 400);
             }
