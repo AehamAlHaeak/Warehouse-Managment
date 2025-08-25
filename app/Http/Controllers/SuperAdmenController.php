@@ -533,10 +533,10 @@ class SuperAdmenController extends Controller
                     }
                 }
                 else{
-                    $validated_values["warehouse_id"]=$warehouse->id;
+                    $validated_values["type_id"]=$warehouse->type_id;
                 }
             }
-            
+
         }
         if(!empty($validated_values["num_sections"])){
             $sections= $center->sections()->where("status","!=","deleted")->count();
