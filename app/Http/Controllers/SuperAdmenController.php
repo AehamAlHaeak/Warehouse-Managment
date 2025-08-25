@@ -322,7 +322,7 @@ class SuperAdmenController extends Controller
     }
 
     public function delete_warehouse($warehouse_id)
-    {
+    {try
         $warehouse = Warehouse::find($warehouse_id);
         if (!$warehouse) {
             return response()->json(["msg" => "warehouse not found"], 404);
@@ -330,7 +330,8 @@ class SuperAdmenController extends Controller
         $has_sections = $warehouse->sections()->exists();
         $has_employees = $warehouse->employees()->exists();
         $has_des_centers = $warehouse->distribution_centers()->exists();
-        if ($has_sections ||  $has_employees) {
+        $has_garages=$warehouse->garages()->exists();
+        if ($has_sections ||  $has_employees|| $has_garages || $has_des_centers) {
             return response()->json([
                 "msg" => "the waehouse has realted data ! cannot delete it",
                 "has_sections" => $has_sections,
@@ -341,6 +342,11 @@ class SuperAdmenController extends Controller
         $warehouse->delete($warehouse->id);
         return response()->json(["msg" => "deleted succesfuly!"], 202);
     }
+    catch(Exception $e){
+        return response()->json(["error" => $e->getMessage()], 400);
+    }
+}
+
 
     public function create_new_employe(Request $request)
     {
@@ -508,14 +514,15 @@ class SuperAdmenController extends Controller
 
 
     public function delete_distribution_center($dest_id)
-    {
+    {try{
         $dist_c = DistributionCenter::find($dest_id);
         if (!$dist_c) {
             return response()->json(["msg" => "the distributin center not found"], 404);
         }
         $has_sections = $dist_c->sections()->exists();
         $has_employees = $dist_c->employes()->exists();
-        if ($has_sections ||  $has_employees) {
+        $has_garages=$dist_c->garages()->exists();
+        if ($has_sections ||  $has_employees || $has_garages) {
             return response()->json([
                 "msg" => "the distributin center has realted data ! cannot delete it",
                 "has_sections" => $has_sections,
@@ -525,6 +532,10 @@ class SuperAdmenController extends Controller
         $dist_c->delete($dist_c->id);
         return response()->json(["msg" => "deleted successfully!"], 202);
     }
+    catch(Exception $e){
+        
+    }
+}
 
     public function create_new_garage(Request $request)
     {
