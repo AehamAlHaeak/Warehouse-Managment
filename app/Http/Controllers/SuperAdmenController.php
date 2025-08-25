@@ -517,16 +517,16 @@ class SuperAdmenController extends Controller
     public function delete_distribution_center($dest_id)
     {try{
         $dist_c = DistributionCenter::find($dest_id);
-        echo $dist_c;
+       
         if (!$dist_c) {
             return response()->json(["msg" => "the distributin center not found"], 404);
         }
         $has_sections = $dist_c->sections()->exists();
-        echo "has_sections".": $has_sections";
+       
         $has_employees = $dist_c->employees()->exists();
-         echo "has_employees".": $has_employees";
+      
         $has_garages=$dist_c->garages()->exists();
-        
+
         if ($has_sections ||  $has_employees || $has_garages) {
             return response()->json([
                 "msg" => "the distributin center has realted data ! cannot delete it",
