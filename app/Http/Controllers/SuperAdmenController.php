@@ -423,10 +423,23 @@ class SuperAdmenController extends Controller
         return response()->json(["msg" => "succesfuly adding", "employe_data" => $employe], 201);
     }
 
-
     public function create_new_distribution_center(Request $request)
     {
         try {
+       
+        $validated_values = $request->validate([
+            "name" => "required|max:128",
+            "location" => "required",
+            "latitude" => "required|numeric",
+            "longitude" => "required|numeric",
+            "warehouse_id" => "required|numeric",
+            "num_sections" => "required|integer"
+        ]);
+    } catch (ValidationException $e) {
+       
+        $data = json_decode($request->getContent(), true);
+        if ($data) {
+            $request->merge($data); 
             $validated_values = $request->validate([
                 "name" => "required|max:128",
                 "location" => "required",
@@ -435,13 +448,16 @@ class SuperAdmenController extends Controller
                 "warehouse_id" => "required|numeric",
                 "num_sections" => "required|integer"
             ]);
-        } catch (ValidationException $e) {
-
+        } else {
             return response()->json([
                 'msg' => 'Validation failed',
                 'errors' => $e->errors(),
             ], 422);
         }
+    }
+
+   
+
         try {
             $warehouse=Warehouse::find($validated_values["warehouse_id"]);
             if(!$warehouse){
@@ -458,23 +474,38 @@ class SuperAdmenController extends Controller
     public function edit_distribution_center(Request $request)
     {
 
-        try {
+       try {
+        
+        $validated_values = $request->validate([
+            "dis_center_id" => "required|numeric",
+            "name" => "required|max:128",
+            "location" => "string",
+            "latitude" => "numeric",
+            "longitude" => "numeric",
+            "warehouse_id" => "numeric",
+            "num_sections" => "integer"
+        ]);
+    } catch (ValidationException $e) {
+        
+        $data = json_decode($request->getContent(), true);
+        if ($data) {
+            $request->merge($data); 
             $validated_values = $request->validate([
-                "dis_center_id" => "required",
+                "dis_center_id" => "required|numeric",
                 "name" => "max:128",
                 "location" => "string",
                 "latitude" => "numeric",
                 "longitude" => "numeric",
                 "warehouse_id" => "numeric",
-                "num_sections" => "integer|min:1"
+                "num_sections" => "integer"
             ]);
-        } catch (ValidationException $e) {
-
+        } else {
             return response()->json([
                 'msg' => 'Validation failed',
                 'errors' => $e->errors(),
             ], 422);
         }
+    }
 
         $center = DistributionCenter::find($validated_values["dis_center_id"]);
         if (!$center) {
