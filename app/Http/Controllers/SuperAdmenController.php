@@ -322,7 +322,7 @@ class SuperAdmenController extends Controller
     }
 
     public function delete_warehouse($warehouse_id)
-    {try
+    {try{
         $warehouse = Warehouse::find($warehouse_id);
         if (!$warehouse) {
             return response()->json(["msg" => "warehouse not found"], 404);
