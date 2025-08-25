@@ -539,17 +539,18 @@ class SuperAdmenController extends Controller
         }
         if(!empty($validated_values["num_sections"])){
             $sections= $center->sections()->where("status","!=","deleted")->count();
-            echo $sections;
+            
             if($validated_values["num_sections"]<$sections){
               return response()->json(["msg" => "the warehouse has sections more than the new number"], 400);
             }
         }
         try {
             $center->update($validated_values);
+             return response()->json(["msg" => "edited succesfuly!"], 202);
         } catch (Exception $e) {
             return response()->json(["error" => $e->getMessage()]);
         }
-        return response()->json(["msg" => "edited succesfuly!"], 202);
+       
     }
 
 
