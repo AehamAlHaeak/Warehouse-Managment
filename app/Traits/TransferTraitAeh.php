@@ -98,7 +98,9 @@ trait TransferTraitAeh
             ->whereDoesntHave('posetion_on_stom')
             ->whereNotIn('status', ['rejected', 'auto_reject'])
             ->get();
-            
+        if($continers->isEmpty()){
+             return "already passed or dont have continers without posetions";
+            }
         $parent_cont = $continers->first()->parent_continer;
         $product =  $parent_cont->product;
 
