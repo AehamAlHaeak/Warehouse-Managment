@@ -1930,7 +1930,14 @@ class SuperAdmenController extends Controller
         }
         return response()->json(["msg" => "here the warehouses", "warehouses" => $warehouses_with_details]);
     }
-
+    public function show_storage_media(){
+        try{
+         $storage_elements=Storage_media::all();
+         return response()->json(["storage_media"=>$storage_elements],202);
+        }catch(Exception $e){
+          return response()->json(["msg"=>$e->getMessage()],400);
+        }
+    }
 
     public function show_storage_media_of_supplier($id)
     {

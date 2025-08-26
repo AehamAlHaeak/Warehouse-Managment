@@ -130,6 +130,7 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
     //show_sections_of_storage_media_on_warehouse($storage_media_id,$warehouse_id)
     //import operation storage media operations
     //this api is public can use it in difirent cases here and on show in supplier details
+    Route::get("show_storage_media", "show_storage_media");
     Route::get("show_storage_media_of_supplier/{id}", "show_storage_media_of_supplier");
 
     Route::get("show_supplier_of_storage_media/{storage_media_id}", "show_supplier_of_storage_media");
