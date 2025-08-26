@@ -553,7 +553,19 @@ class SuperAdmenController extends Controller
         }
        
     }
-
+    public function show_all_distribution_centers(){
+        try{
+            $dist_Cs=DistributionCenter::all();
+            if($dist_Cs->isEmpty()){
+             return response()->json(["msg" => "no distribution centers found"], 404);
+            }
+            return response()->json(["msg" => "all distribution centers", "data" => $dist_Cs], 202);
+        }
+        catch(Exception $e){
+            return response()->json(["error" => $e->getMessage()], 400);
+        }
+    }
+    
 
     public function delete_distribution_center($dest_id)
     {try{
