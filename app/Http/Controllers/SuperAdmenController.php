@@ -618,7 +618,17 @@ class SuperAdmenController extends Controller
         return response()->json(["msg" => "created", "garage" => $garage], 201);
     }
 
-
+   public function show_all_garages(){
+       try{
+           $garages=Garage::all();
+           if($garages->isEmpty()){
+            return response()->json(["msg" => "no garages found"], 404);
+           }
+           return response()->json(["msg" => "all garages", "data" => $garages], 202);
+       } catch (Exception $e) {
+           return response()->json(["error" => $e->getMessage()], 400);
+       }
+   }
     public function edit_garage(Request $request)
     {
         try {
@@ -1137,7 +1147,18 @@ class SuperAdmenController extends Controller
 
         return response()->json(["msg" => "section created succesfully", "section" => $section], 201);
     }
-
+    public function show_all_sections(){
+        try{
+            $sections=Section::all();
+            if($sections->isEmpty()){
+                return response()->json(["msg"=>"there are no sections"],404);
+            }
+            return response()->json(["sections"=>$sections],202);
+        }
+        catch (Exception $e) {
+            return response()->json(["error" => $e->getMessage()], 400);
+        }
+    }
     public function edit_section(Request $request)
     {
         try {

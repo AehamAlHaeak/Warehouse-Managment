@@ -104,6 +104,8 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
 
     //end
     Route::post("create_new_section", "create_new_section");
+     
+    Route::get("show_all_sections","show_all_sections");
 
     Route::post("edit_section", "edit_section");
 
@@ -174,6 +176,8 @@ Route::controller(SuperAdmenController::class)->middleware('is_super_admin')->gr
     Route::get("try_choise_trucks/{warehouse_id}/{import_operation_id}", "try_choise_trucks");
 
     Route::get("show_all_distribution_centers", "show_all_distribution_centers");
+    
+    Route::get("show_all_garages","show_all_garages");
 
     Route::get("resive_notification", "resive_notification");
 });
