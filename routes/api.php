@@ -14,9 +14,9 @@ use App\Http\Controllers\SuperAdmenController;
 use App\Http\Controllers\Distribution_Center_controller;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\Notification_controller;
-use App\Http\Controllers\QAController;
+
 use App\Http\Controllers\ViolationController;
-use App\Models\DistributionCenter;
+
 
 
 Route::post("start_application", [SuperAdmenController::class, "start_application"]);

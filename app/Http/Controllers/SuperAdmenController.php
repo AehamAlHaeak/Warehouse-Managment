@@ -307,10 +307,10 @@ class SuperAdmenController extends Controller
                 }
             }
         }
-        if(!empty($validated_values["num_sections"])){
-            $sections=$warehouse->sections()->where("status","!=","deleted")->count();
-            if($validated_values["num_sections"]<$sections){
-              return response()->json(["msg" => "the warehouse has sections more than the new number"], 400);
+        if (!empty($validated_values["num_sections"])) {
+            $sections = $warehouse->sections()->where("status", "!=", "deleted")->count();
+            if ($validated_values["num_sections"] < $sections) {
+                return response()->json(["msg" => "the warehouse has sections more than the new number"], 400);
             }
         }
         try {
@@ -323,30 +323,29 @@ class SuperAdmenController extends Controller
 
     public function delete_warehouse($warehouse_id)
     {
-        try{
-        $warehouse = Warehouse::find($warehouse_id);
-        if (!$warehouse) {
-            return response()->json(["msg" => "warehouse not found"], 404);
+        try {
+            $warehouse = Warehouse::find($warehouse_id);
+            if (!$warehouse) {
+                return response()->json(["msg" => "warehouse not found"], 404);
+            }
+            $has_sections = $warehouse->sections()->exists();
+            $has_employees = $warehouse->employees()->exists();
+            $has_des_centers = $warehouse->distribution_centers()->exists();
+            $has_garages = $warehouse->garages()->exists();
+            if ($has_sections ||  $has_employees || $has_garages || $has_des_centers) {
+                return response()->json([
+                    "msg" => "the waehouse has realted data ! cannot delete it",
+                    "has_sections" => $has_sections,
+                    "has_employes" => $has_employees,
+                    "has_distribution_centers" => $has_des_centers
+                ], 400);
+            }
+            $warehouse->delete($warehouse->id);
+            return response()->json(["msg" => "deleted succesfuly!"], 202);
+        } catch (Exception $e) {
+            return response()->json(["error" => $e->getMessage()], 400);
         }
-        $has_sections = $warehouse->sections()->exists();
-        $has_employees = $warehouse->employees()->exists();
-        $has_des_centers = $warehouse->distribution_centers()->exists();
-        $has_garages=$warehouse->garages()->exists();
-        if ($has_sections ||  $has_employees|| $has_garages || $has_des_centers) {
-            return response()->json([
-                "msg" => "the waehouse has realted data ! cannot delete it",
-                "has_sections" => $has_sections,
-                "has_employes" => $has_employees,
-                "has_distribution_centers" => $has_des_centers
-            ], 400);
-        }
-        $warehouse->delete($warehouse->id);
-        return response()->json(["msg" => "deleted succesfuly!"], 202);
     }
-    catch(Exception $e){
-        return response()->json(["error" => $e->getMessage()], 400);
-    }
-}
 
 
     public function create_new_employe(Request $request)
@@ -414,6 +413,17 @@ class SuperAdmenController extends Controller
             $validated_values["img_path"] = 'storage/' . $image_path;
         }
         try {
+            $specialization = Specialization::find($validated_values["specialization_id"]);
+            if ($specialization->name == "super_admin") {
+                return response()->json(["msg" => "you cannot add super admin"], 403);
+            }
+            /**'warehouse_admin',
+            'distribution_center_admin', */
+            if ($specialization->name == "warehouse_admin" && $validated_values["workable_type"] != "App\Models\Warehouse") {
+                return response()->json(["msg" => "you cannot add warehouse admin to distribution center"], 403);
+            } else if ($specialization->name == "distribution_center_admin" && $validated_values["workable_type"] != "App\Models\DistributionCenter") {
+                return response()->json(["msg" => "you cannot add distribution center admin to warehouse"], 403);
+            }
             $employe = Employe::create($validated_values);
         } catch (Exception $e) {
             return response()->json(["error" => $e->getMessage()]);
@@ -426,20 +436,7 @@ class SuperAdmenController extends Controller
     public function create_new_distribution_center(Request $request)
     {
         try {
-       
-        $validated_values = $request->validate([
-            "name" => "required|max:128",
-            "location" => "required",
-            "latitude" => "required|numeric",
-            "longitude" => "required|numeric",
-            "warehouse_id" => "required|numeric",
-            "num_sections" => "required|integer"
-        ]);
-    } catch (ValidationException $e) {
-       
-        $data = json_decode($request->getContent(), true);
-        if ($data) {
-            $request->merge($data); 
+
             $validated_values = $request->validate([
                 "name" => "required|max:128",
                 "location" => "required",
@@ -448,22 +445,35 @@ class SuperAdmenController extends Controller
                 "warehouse_id" => "required|numeric",
                 "num_sections" => "required|integer"
             ]);
-        } else {
-            return response()->json([
-                'msg' => 'Validation failed',
-                'errors' => $e->errors(),
-            ], 422);
-        }
-    }
+        } catch (ValidationException $e) {
 
-   
+            $data = json_decode($request->getContent(), true);
+            if ($data) {
+                $request->merge($data);
+                $validated_values = $request->validate([
+                    "name" => "required|max:128",
+                    "location" => "required",
+                    "latitude" => "required|numeric",
+                    "longitude" => "required|numeric",
+                    "warehouse_id" => "required|numeric",
+                    "num_sections" => "required|integer"
+                ]);
+            } else {
+                return response()->json([
+                    'msg' => 'Validation failed',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
+        }
+
+
 
         try {
-            $warehouse=Warehouse::find($validated_values["warehouse_id"]);
-            if(!$warehouse){
-              return response()->json(["msg" => "warehouse not found"], 404);
+            $warehouse = Warehouse::find($validated_values["warehouse_id"]);
+            if (!$warehouse) {
+                return response()->json(["msg" => "warehouse not found"], 404);
             }
-            $validated_values["type_id"]=$warehouse->type_id;
+            $validated_values["type_id"] = $warehouse->type_id;
             $center = DistributionCenter::create($validated_values);
         } catch (Exception $e) {
             return response()->json(["error" => $e->getMessage()], 400);
@@ -474,38 +484,38 @@ class SuperAdmenController extends Controller
     public function edit_distribution_center(Request $request)
     {
 
-       try {
-        
-        $validated_values = $request->validate([
-            "dis_center_id" => "required|numeric",
-            "name" => "required|max:128",
-            "location" => "string",
-            "latitude" => "numeric",
-            "longitude" => "numeric",
-            "warehouse_id" => "numeric",
-            "num_sections" => "integer"
-        ]);
-    } catch (ValidationException $e) {
-        
-        $data = json_decode($request->getContent(), true);
-        if ($data) {
-            $request->merge($data); 
+        try {
+
             $validated_values = $request->validate([
                 "dis_center_id" => "required|numeric",
-                "name" => "max:128",
+                "name" => "required|max:128",
                 "location" => "string",
                 "latitude" => "numeric",
                 "longitude" => "numeric",
                 "warehouse_id" => "numeric",
                 "num_sections" => "integer"
             ]);
-        } else {
-            return response()->json([
-                'msg' => 'Validation failed',
-                'errors' => $e->errors(),
-            ], 422);
+        } catch (ValidationException $e) {
+
+            $data = json_decode($request->getContent(), true);
+            if ($data) {
+                $request->merge($data);
+                $validated_values = $request->validate([
+                    "dis_center_id" => "required|numeric",
+                    "name" => "max:128",
+                    "location" => "string",
+                    "latitude" => "numeric",
+                    "longitude" => "numeric",
+                    "warehouse_id" => "numeric",
+                    "num_sections" => "integer"
+                ]);
+            } else {
+                return response()->json([
+                    'msg' => 'Validation failed',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
         }
-    }
 
         $center = DistributionCenter::find($validated_values["dis_center_id"]);
         if (!$center) {
@@ -531,69 +541,66 @@ class SuperAdmenController extends Controller
                             "msg" => "the warehouse type is not the same as the type of products in the distribution center! cannot move it to warehouse editing denied"
                         ], 400);
                     }
-                }
-                else{
-                    $validated_values["type_id"]=$warehouse->type_id;
+                } else {
+                    $validated_values["type_id"] = $warehouse->type_id;
                 }
             }
-
         }
-        if(!empty($validated_values["num_sections"])){
-            $sections= $center->sections()->where("status","!=","deleted")->count();
-            
-            if($validated_values["num_sections"]<$sections){
-              return response()->json(["msg" => "the warehouse has sections more than the new number"], 400);
+        if (!empty($validated_values["num_sections"])) {
+            $sections = $center->sections()->where("status", "!=", "deleted")->count();
+
+            if ($validated_values["num_sections"] < $sections) {
+                return response()->json(["msg" => "the warehouse has sections more than the new number"], 400);
             }
         }
         try {
             $center->update($validated_values);
-             return response()->json(["msg" => "edited succesfuly!"], 202);
+            return response()->json(["msg" => "edited succesfuly!"], 202);
         } catch (Exception $e) {
             return response()->json(["error" => $e->getMessage()]);
         }
-       
     }
-    public function show_all_distribution_centers(){
-        try{
-            $dist_Cs=DistributionCenter::all();
-            if($dist_Cs->isEmpty()){
-             return response()->json(["msg" => "no distribution centers found"], 404);
+    public function show_all_distribution_centers()
+    {
+        try {
+            $dist_Cs = DistributionCenter::all();
+            if ($dist_Cs->isEmpty()) {
+                return response()->json(["msg" => "no distribution centers found"], 404);
             }
             return response()->json(["msg" => "all distribution centers", "data" => $dist_Cs], 202);
-        }
-        catch(Exception $e){
+        } catch (Exception $e) {
             return response()->json(["error" => $e->getMessage()], 400);
         }
     }
-    
+
 
     public function delete_distribution_center($dest_id)
-    {try{
-        $dist_c = DistributionCenter::find($dest_id);
-       
-        if (!$dist_c) {
-            return response()->json(["msg" => "the distributin center not found"], 404);
-        }
-        $has_sections = $dist_c->sections()->exists();
-       
-        $has_employees = $dist_c->employees()->exists();
-      
-        $has_garages=$dist_c->garages()->exists();
+    {
+        try {
+            $dist_c = DistributionCenter::find($dest_id);
 
-        if ($has_sections ||  $has_employees || $has_garages) {
-            return response()->json([
-                "msg" => "the distributin center has realted data ! cannot delete it",
-                "has_sections" => $has_sections,
-                "has_employes" => $has_employees
-            ], 400);
+            if (!$dist_c) {
+                return response()->json(["msg" => "the distributin center not found"], 404);
+            }
+            $has_sections = $dist_c->sections()->exists();
+
+            $has_employees = $dist_c->employees()->exists();
+
+            $has_garages = $dist_c->garages()->exists();
+
+            if ($has_sections ||  $has_employees || $has_garages) {
+                return response()->json([
+                    "msg" => "the distributin center has realted data ! cannot delete it",
+                    "has_sections" => $has_sections,
+                    "has_employes" => $has_employees
+                ], 400);
+            }
+            $dist_c->delete($dist_c->id);
+            return response()->json(["msg" => "deleted successfully!"], 202);
+        } catch (Exception $e) {
+            return response()->json(["error" => $e->getMessage()], 400);
         }
-        $dist_c->delete($dist_c->id);
-        return response()->json(["msg" => "deleted successfully!"], 202);
     }
-    catch(Exception $e){
-       return response()->json(["error" => $e->getMessage()], 400);  
-    }
-}
 
     public function create_new_garage(Request $request)
     {
@@ -618,17 +625,18 @@ class SuperAdmenController extends Controller
         return response()->json(["msg" => "created", "garage" => $garage], 201);
     }
 
-   public function show_all_garages(){
-       try{
-           $garages=Garage::all();
-           if($garages->isEmpty()){
-            return response()->json(["msg" => "no garages found"], 404);
-           }
-           return response()->json(["msg" => "all garages", "data" => $garages], 202);
-       } catch (Exception $e) {
-           return response()->json(["error" => $e->getMessage()], 400);
-       }
-   }
+    public function show_all_garages()
+    {
+        try {
+            $garages = Garage::all();
+            if ($garages->isEmpty()) {
+                return response()->json(["msg" => "no garages found"], 404);
+            }
+            return response()->json(["msg" => "all garages", "data" => $garages], 202);
+        } catch (Exception $e) {
+            return response()->json(["error" => $e->getMessage()], 400);
+        }
+    }
     public function edit_garage(Request $request)
     {
         try {
@@ -924,8 +932,8 @@ class SuperAdmenController extends Controller
     public function show_products()
     {
 
-        $products = Product::all(); 
-        
+        $products = Product::all();
+
         foreach ($products as $product) {
             $product = $this->invintory_product_in_company($product);
         }
@@ -1087,7 +1095,7 @@ class SuperAdmenController extends Controller
         return response()->json([
             'msg' => 'Product updated successfully.',
             'product' => $product
-        ],202);
+        ], 202);
     }
 
 
@@ -1147,15 +1155,15 @@ class SuperAdmenController extends Controller
 
         return response()->json(["msg" => "section created succesfully", "section" => $section], 201);
     }
-    public function show_all_sections(){
-        try{
-            $sections=Section::all();
-            if($sections->isEmpty()){
-                return response()->json(["msg"=>"there are no sections"],404);
+    public function show_all_sections()
+    {
+        try {
+            $sections = Section::all();
+            if ($sections->isEmpty()) {
+                return response()->json(["msg" => "there are no sections"], 404);
             }
-            return response()->json(["sections"=>$sections],202);
-        }
-        catch (Exception $e) {
+            return response()->json(["sections" => $sections], 202);
+        } catch (Exception $e) {
             return response()->json(["error" => $e->getMessage()], 400);
         }
     }
@@ -1708,7 +1716,7 @@ class SuperAdmenController extends Controller
 
         $import_op_vehicles_keys = Cache::get("import_op_vehicles_keys");
         if (!$import_op_vehicles_keys) {
-            return response()->json(["msg"=>"no operation"]);
+            return response()->json(["msg" => "no operation"]);
         }
         $import_operations = [];
         foreach ($import_op_vehicles_keys as $element) {
@@ -1723,13 +1731,13 @@ class SuperAdmenController extends Controller
             $element["location"] = $import_operation["location"];
             $element["latitude"] = $import_operation["latitude"];
             $element["longitude"] = $import_operation["longitude"];
-           
+
 
             foreach ($vehicles as $vehicle) {
                 $model = "App\\Models\\" . $vehicle["place_type"];
                 $vehicle["place"] = $model::find($vehicle["place_id"]);
             }
-             $element["vehicles"] = $vehicles;
+            $element["vehicles"] = $vehicles;
             $import_operations[] = $element;
         }
 
@@ -2070,55 +2078,54 @@ class SuperAdmenController extends Controller
         return $this->show_warehouses_of_product($product->id);
     }
 
-    public function show_sections_of_storage_media_on_place($storage_media_id, $place_type,$place_id)
-    { 
-        try{
-          $model="App\\Models\\".$place_type;
-          
-          $place=$model::find($place_id);
-          if(!$place){
-              return response()->json(["msg"=>"place not found"],404);
-          }
-        $storage_media = Storage_media::find($storage_media_id);
-        if (!$storage_media) {
-            return response()->json(["msg" => "storage_media not found"], 404);
+    public function show_sections_of_storage_media_on_place($storage_media_id, $place_type, $place_id)
+    {
+        try {
+            $model = "App\\Models\\" . $place_type;
+
+            $place = $model::find($place_id);
+            if (!$place) {
+                return response()->json(["msg" => "place not found"], 404);
+            }
+            $storage_media = Storage_media::find($storage_media_id);
+            if (!$storage_media) {
+                return response()->json(["msg" => "storage_media not found"], 404);
+            }
+
+            $product = $storage_media->product;
+
+
+
+            $sections = $place->sections()
+                ->where('product_id', $product->id)->where("status", "!=", "deleted")
+                ->select([
+                    'id',
+                    'name',
+                    'product_id',
+                    'num_floors',
+                    'num_classes',
+                    'num_positions_on_class',
+                    'average',
+                    'variance'
+                ])
+                ->get();
+
+            if ($sections->isEmpty()) {
+                return response()->json(["msg" => "sections not found"], 404);
+            }
+
+            foreach ($sections as $section) {
+
+                $areas = $this->calculate_areas($section);
+
+                $section->storage_media_avilable_area = $areas["storage_media_avilable_area"];
+                $section->storage_media_max_area = $areas["storage_media_max_area"];
+            }
+            return response()->json(["msg" => "here the sections", "sections" => $sections], 202);
+        } catch (Exception $e) {
+            return response()->json(["msg" => $e->getMessage()], 404);
         }
-
-        $product = $storage_media->product;
-
-        
-        
-        $sections = $place->sections()
-            ->where('product_id', $product->id)->where("status", "!=", "deleted")
-            ->select([
-                'id',
-                'name',
-                'product_id',
-                'num_floors',
-                'num_classes',
-                'num_positions_on_class',
-                'average',
-                'variance'
-            ])
-            ->get();
-
-        if ($sections->isEmpty()) {
-            return response()->json(["msg" => "sections not found"], 404);
-        }
-
-        foreach ($sections as $section) {
-
-            $areas = $this->calculate_areas($section);
-
-            $section->storage_media_avilable_area = $areas["storage_media_avilable_area"];
-            $section->storage_media_max_area = $areas["storage_media_max_area"];
-        }
-        return response()->json(["msg" => "here the sections", "sections" => $sections], 202);
     }
-    catch(Exception $e){
-       return response()->json(["msg"=>$e->getMessage()],404);
-    }
-}
 
     public function show_all_types()
     {
@@ -2391,10 +2398,30 @@ class SuperAdmenController extends Controller
             }
 
             unset($validated_values["employe_id"]);
-            $specialization = Specialization::find($validated_values["specialization_id"]);
+              if(!empty($validated_values["workable_type"])){
+                $validated_values["workable_type"] = "App\Models\\" . $validated_values["workable_type"];
+              }
             if (!empty($validated_values["specialization_id"])) {
+                $specialization = Specialization::find($validated_values["specialization_id"]);
                 if ($specialization->name == "super_admin") {
                     return response()->json(["msg" => "you cannot set specialization to super admin !editing denied"], 403);
+                }
+                if($employe->specialization->name == "driver"){
+                    
+                 $vehicle= $employe->vehicle;
+                 
+                  if($vehicle){
+                   if($employe->specialization->id!=$validated_values["specialization_id"]){
+                     return response()->json(["msg" => "you cannot change driver specialization while he has vehicle!! !editing denied"], 403);
+                   }
+                  }
+                }
+                if (!empty($validated_values["workable_type"])) {
+                    if ($specialization->name == "warehouse_admin" && $validated_values["workable_type"] != "App\Models\Warehouse") {
+                        return response()->json(["msg" => "you cannot add warehouse admin to distribution center"], 403);
+                    } else if ($specialization->name == "distribution_center_admin" && $validated_values["workable_type"] != "App\Models\DistributionCenter") {
+                        return response()->json(["msg" => "you cannot add distribution center admin to warehouse"], 403);
+                    }
                 }
             }
 
