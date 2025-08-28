@@ -249,6 +249,9 @@ class UserController extends Controller
 
             foreach ($valedated_values["order"] as $id => $quantity) {
                 $product = Product::find($id);
+                if($quantity==0){
+                return response()->json(["msg"=>"the quantity cannot be zero!?"],400);
+                }
                 if (!$product) {
                     DB::rollBack();
                     return response()->json(["msg" => "the product not found"], 404);
