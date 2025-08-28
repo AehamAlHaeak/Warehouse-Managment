@@ -289,7 +289,7 @@ class UserController extends Controller
                     if (is_null($min_Capacity)) {
                         return response()->json(["msg" => "the order is not enogh to transfer it by us ", "DistributionCenter" => $dist_C], 400);
                     }
-                    elseif($quantity < $min_Capacity ){
+                    if($quantity < $min_Capacity ){
                         return response()->json(["msg"=>"the quantity is to low to transferby us"],400);
                     }
                     $dist_C = $this->calculate_ready_vehiscles($dist_C, $product);
