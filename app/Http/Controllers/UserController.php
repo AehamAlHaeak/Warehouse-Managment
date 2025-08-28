@@ -404,7 +404,6 @@ class UserController extends Controller
                     unset(
                         $product->updated_at,
                         $product->created_at,
-                        $product->actual_load,
                         $product->max_load,
                         $product->avilable_load,
                         $product->average,
