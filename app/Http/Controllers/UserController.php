@@ -284,10 +284,13 @@ class UserController extends Controller
                     $continers = [];
                     if (!empty($garages)) {
 
-                        $min_Capacity = Vehicle::whereIn("garage_id", $garages)->min("capacity");
+                        $min_Capacity = Vehicle::whereIn("garage_id", $garages)->min("capacity")*$continer->capacity;
                     }
                     if (is_null($min_Capacity)) {
                         return response()->json(["msg" => "the order is not enogh to transfer it by us ", "DistributionCenter" => $dist_C], 400);
+                    }
+                    elseif($quantity < $min_Capacity ){
+                        return response()->json(["msg"=>"the quantity is to low to transferby us"],400);
                     }
                     $dist_C = $this->calculate_ready_vehiscles($dist_C, $product);
                     if ($dist_C->can_to_translate_load < $quantity) {
@@ -459,7 +462,7 @@ class UserController extends Controller
             foreach ($sections as $section) {
                 $product = $section->product;
                 $product = $this->inventry_product_in_place($product, $dist_C);
-                $this->calculate_ready_vehiscles($dist_C, $product);
+               $dist_C=$this->calculate_ready_vehiscles($dist_C, $product);
                 $product->can_transfer = $dist_C->can_to_translate_load;
                 $products->push($product);
                 $continer = $product->container;
@@ -467,7 +470,6 @@ class UserController extends Controller
                     $product->container,
                     $product->updated_at,
                     $product->created_at,
-                    $product->actual_load,
                     $product->max_load,
                     $product->avilable_load,
                     $product->average,
