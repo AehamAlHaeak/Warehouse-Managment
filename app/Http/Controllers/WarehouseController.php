@@ -26,6 +26,7 @@ use Illuminate\Notifications\DatabaseNotification;
 use App\Models\Transfer_detail;
 use App\Models\Continer_transfer;
 use App\Models\container_movments;
+use App\Notifications\Load_incoming;
 
 class WarehouseController extends Controller
 {
@@ -264,7 +265,16 @@ class WarehouseController extends Controller
                     "status" => "in_QA",
                     "transfer_id" => $transfer->id
                 ]);
+               $spec = Specialization::where("name", "QA")->first();
+                    
+                    unset($curent_transfer->destinationable);
+                    $Qa_admins = $destination->employees()->where("specialization_id", $spec->id)->get();
+                    foreach ($Qa_admins as $employe) {
+                        $uuid = (string) Str::uuid();
+                        $notification = new Load_incoming($transfer_detail->id);
 
+                        $this->send_not($notification, $employe);
+                    }
                 foreach ($all_containers as $continer) {
                     $posetion = $continer->posetion_on_stom;
 
