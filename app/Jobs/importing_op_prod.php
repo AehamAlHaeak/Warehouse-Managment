@@ -28,6 +28,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Notifications\DatabaseNotification;
+use App\Notifications\Load_incoming;
 
 class importing_op_prod implements ShouldQueue
 {
@@ -155,6 +156,17 @@ class importing_op_prod implements ShouldQueue
                             "status" => "in_QA",
                             "transfer_id" => $transfer->id
                         ]);
+
+                         $spec = Specialization::where("name", "QA")->first();
+                    $destination=Warehouse::find( $warehouse_id);
+                    unset($curent_transfer->destinationable);
+                    $Qa_admins = $destination->employees()->where("specialization_id", $spec->id)->get();
+                    foreach ($Qa_admins as $employe) {
+                        $uuid = (string) Str::uuid();
+                        $notification = new Load_incoming($transfer_detail->id);
+
+                        $this->send_not($notification, $employe);
+                    }
                         foreach ($containers as $continer) {
                             Continer_transfer::create([
                                 "imp_op_contin_id" => $continer->id,
