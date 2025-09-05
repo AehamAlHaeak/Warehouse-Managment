@@ -685,6 +685,7 @@ class Distribution_Center_controller extends Controller
 
                 return response()->json([
                     'msg' => 'Validation failed',
+                    
                     'errors' => $e->errors(),
                 ], 422);
             }
